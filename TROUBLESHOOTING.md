@@ -129,6 +129,7 @@ Look for specific error messages:
 | "User not authenticated" | Log in again or check auth state |
 | "List not found" | Refresh page or check list exists |
 | "Network error" | Check internet connection and API keys |
+| "Function addDoc() called with invalid data. Unsupported field value: undefined" | Fixed - undefined values are now filtered out before saving |
 
 ## Next Steps if Still Not Working
 

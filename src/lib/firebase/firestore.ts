@@ -264,12 +264,16 @@ export const addPlaceToList = async (
     
     // Otherwise add place to list
     console.log('addPlaceToList - Creating new list-place entry');
-    const docData = {
+    const docData: any = {
       listId,
       placeId,
       addedAt: serverTimestamp(),
-      notes,
     };
+    
+    // Only add notes if it's not undefined
+    if (notes !== undefined && notes !== null) {
+      docData.notes = notes;
+    }
     
     const docRef = await addDoc(collection(db, 'listPlaces'), docData);
     console.log('addPlaceToList - Successfully created with id:', docRef.id);
