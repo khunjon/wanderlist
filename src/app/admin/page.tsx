@@ -63,23 +63,20 @@ export default function AdminPage() {
   const fetchAdminStats = async () => {
     try {
       setStatsLoading(true);
-      // For now, we'll use the user ID as the token
-      // In production, you'd use the actual Firebase ID token
-      const response = await fetch('/api/admin/stats', {
-        headers: {
-          'Authorization': `Bearer ${user?.uid}`,
-        },
-      });
+      setError(null);
+      
+      const response = await fetch('/api/admin/stats');
 
       if (!response.ok) {
-        throw new Error('Failed to fetch admin stats');
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || 'Failed to fetch admin stats');
       }
 
       const data = await response.json();
       setStats(data);
     } catch (error) {
       console.error('Error fetching admin stats:', error);
-      setError('Failed to load admin statistics');
+      setError(error instanceof Error ? error.message : 'Failed to load admin statistics');
     } finally {
       setStatsLoading(false);
     }
@@ -87,10 +84,10 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -98,10 +95,10 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-gray-300">You don't have permission to access this page.</p>
         </div>
       </div>
     );
@@ -109,13 +106,13 @@ export default function AdminPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-          <p className="text-gray-600">{error}</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
+          <p className="text-gray-300 mb-4">{error}</p>
           <button
             onClick={fetchAdminStats}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
           >
             Retry
           </button>
@@ -124,21 +121,40 @@ export default function AdminPage() {
     );
   }
 
-  // Prepare chart data
+  // Prepare chart data with dark theme
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top' as const,
+        labels: {
+          color: '#e5e7eb', // gray-200
+        },
       },
       title: {
         display: true,
         text: 'New Users and Lists (Last 30 Days)',
+        color: '#f9fafb', // gray-50
       },
     },
     scales: {
+      x: {
+        ticks: {
+          color: '#9ca3af', // gray-400
+        },
+        grid: {
+          color: '#374151', // gray-700
+        },
+      },
       y: {
         beginAtZero: true,
+        ticks: {
+          color: '#9ca3af', // gray-400
+        },
+        grid: {
+          color: '#374151', // gray-700
+        },
       },
     },
   };
@@ -167,68 +183,68 @@ export default function AdminPage() {
   } : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">Overview of platform statistics and top performing content</p>
+          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+          <p className="mt-2 text-gray-300">Overview of platform statistics and top performing content</p>
         </div>
 
         {statsLoading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading statistics...</p>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-300">Loading statistics...</p>
           </div>
         ) : stats ? (
           <div className="space-y-8">
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-8 h-8 bg-blue-900 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                       </svg>
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Total Users</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-gray-400">Total Users</p>
+                    <p className="text-2xl font-semibold text-white">{stats.totalUsers.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-8 h-8 bg-green-900 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">New Users (30d)</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-sm font-medium text-gray-400">New Users (30d)</p>
+                    <p className="text-2xl font-semibold text-white">
                       {stats.chartData.reduce((sum, item) => sum + item.newUsers, 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-8 h-8 bg-purple-900 rounded-md flex items-center justify-center">
+                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
                     </div>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">New Lists (30d)</p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-sm font-medium text-gray-400">New Lists (30d)</p>
+                    <p className="text-2xl font-semibold text-white">
                       {stats.chartData.reduce((sum, item) => sum + item.newLists, 0).toLocaleString()}
                     </p>
                   </div>
@@ -237,8 +253,8 @@ export default function AdminPage() {
             </div>
 
             {/* Chart */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Growth Trends</h2>
+            <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+              <h2 className="text-lg font-semibold text-white mb-4">Growth Trends</h2>
               {chartDataConfig && (
                 <div className="h-96">
                   <Line options={chartOptions} data={chartDataConfig} />
@@ -247,44 +263,44 @@ export default function AdminPage() {
             </div>
 
             {/* Top Lists */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Top Lists by Views</h2>
+            <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-700">
+                <h2 className="text-lg font-semibold text-white">Top Lists by Views</h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-gray-900">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         List Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Views
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Created
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         User ID
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-gray-800 divide-y divide-gray-700">
                     {stats.topLists.map((list) => (
-                      <tr key={list.id} className="hover:bg-gray-50">
+                      <tr key={list.id} className="hover:bg-gray-700 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{list.name}</div>
+                          <div className="text-sm font-medium text-white">{list.name}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{list.viewCount.toLocaleString()}</div>
+                          <div className="text-sm text-gray-300">{list.viewCount.toLocaleString()}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-400">
                             {new Date(list.createdAt).toLocaleDateString()}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 font-mono">{list.userId}</div>
+                          <div className="text-sm text-gray-400 font-mono">{list.userId}</div>
                         </td>
                       </tr>
                     ))}
