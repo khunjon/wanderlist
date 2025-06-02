@@ -83,6 +83,13 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 export const signOut = async (): Promise<void> => {
   try {
     await firebaseSignOut(auth);
+    
+    // Force a full page refresh to ensure all auth state is properly cleared
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+    }
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;

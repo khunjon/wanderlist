@@ -7,58 +7,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 
-// Separate component to handle navigation
-function NavActions({ closeMenu }: { closeMenu: () => void }) {
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      // Redirect to home page instead of login
-      router.push('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  return {
-    signOut: async () => {
-      closeMenu();
-      await handleSignOut();
-    },
-    navigate: (path: string) => {
-      closeMenu();
-      router.push(path);
-    }
-  };
-}
-
 export default function Navbar() {
   const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
   
   const closeMenu = () => setIsMenuOpen(false);
 
-  // Wrapper function to handle navigation without direct router access
-  const handleNavigation = (callback: (actions: ReturnType<typeof NavActions>) => void) => {
-    return () => {
-      // We'll use this pattern to avoid directly using router here
-      callback({ 
-        signOut: async () => {
-          closeMenu();
-          // The actual navigation happens in NavActions
-          const signoutButton = document.getElementById('signout-button');
-          if (signoutButton) {
-            // TypeScript doesn't know this is a button with click method
-            (signoutButton as HTMLButtonElement).click();
-          }
-        },
-        navigate: (path: string) => {
-          closeMenu();
-          // Use regular links for navigation instead
-        }
-      });
-    };
+  const handleSignOut = async () => {
+    try {
+      setIsMenuOpen(false);
+      await signOut();
+      // Navigation is handled in auth.ts with window.location.href
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
@@ -136,27 +99,8 @@ export default function Navbar() {
                       >
                         Create New List
                       </Link>
-                      {/* Hidden button for signout action */}
-                      <Suspense fallback={null}>
-                        <button 
-                          id="signout-button"
-                          className="hidden"
-                          onClick={async () => {
-                            const actions = NavActions({ closeMenu });
-                            await actions.signOut();
-                          }}
-                        >
-                          Hidden Sign Out
-                        </button>
-                      </Suspense>
                       <button
-                        onClick={async () => {
-                          setIsMenuOpen(false);
-                          const signoutButton = document.getElementById('signout-button');
-                          if (signoutButton) {
-                            (signoutButton as HTMLButtonElement).click();
-                          }
-                        }}
+                        onClick={handleSignOut}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       >
                         Sign Out
@@ -286,13 +230,7 @@ export default function Navbar() {
                 Create New List
               </Link>
               <button
-                onClick={async () => {
-                  setIsMenuOpen(false);
-                  const signoutButton = document.getElementById('signout-button');
-                  if (signoutButton) {
-                    (signoutButton as HTMLButtonElement).click();
-                  }
-                }}
+                onClick={handleSignOut}
                 className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
               >
                 Sign Out
