@@ -103,10 +103,30 @@ export default function ProfilePage() {
 
       // Upload photo if selected
       if (selectedFile) {
-        await uploadProfilePhoto(authUser.uid, selectedFile);
+        try {
+          // Show uploading status
+          setSuccessMessage('Uploading photo... Please wait.');
+          
+          // Set a timeout to check if the upload is taking too long
+          const timeoutId = setTimeout(() => {
+            if (loading) {
+              setError('The upload is taking longer than expected. Please wait or try again later with a smaller image.');
+            }
+          }, 10000);
+          
+          await uploadProfilePhoto(authUser.uid, selectedFile);
+          
+          // Clear the timeout if upload succeeds
+          clearTimeout(timeoutId);
+          setSuccessMessage('Profile updated successfully!');
+        } catch (photoError) {
+          console.error('Error uploading photo:', photoError);
+          setError('Failed to upload profile photo. Please try again with a smaller image or check your connection.');
+          // Don't exit the function, we still updated other fields
+        }
+      } else {
+        setSuccessMessage('Profile updated successfully!');
       }
-
-      setSuccessMessage('Profile updated successfully!');
       
       // Refresh user data
       const updatedProfile = await getUserProfile(authUser.uid);

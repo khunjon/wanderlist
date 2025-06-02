@@ -55,9 +55,26 @@ export const uploadProfilePhoto = async (
   file: File
 ): Promise<string> => {
   try {
+    // Create a reference to the storage location
     const fileRef = ref(storage, `profile-photos/${userId}`);
-    await uploadBytes(fileRef, file);
-    const photoURL = await getDownloadURL(fileRef);
+    
+    // Upload the file with a timeout promise
+    const uploadPromise = uploadBytes(fileRef, file);
+    const uploadResult = await Promise.race([
+      uploadPromise,
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Upload timed out after 30 seconds')), 30000)
+      )
+    ]);
+    
+    // Get the download URL with a timeout promise
+    const downloadURLPromise = getDownloadURL(fileRef);
+    const photoURL = await Promise.race<string>([
+      downloadURLPromise,
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Getting download URL timed out after 10 seconds')), 10000)
+      )
+    ]);
     
     // Update user profile with new photo URL
     await updateUserProfile(userId, { photoURL });
@@ -65,6 +82,10 @@ export const uploadProfilePhoto = async (
     return photoURL;
   } catch (error) {
     console.error('Error uploading profile photo:', error);
+    // Add more detailed error information
+    if (error instanceof Error) {
+      console.error('Error details:', error.message, error.stack);
+    }
     throw error;
   }
 }; 

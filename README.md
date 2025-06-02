@@ -103,6 +103,28 @@ service cloud.firestore {
 }
 ```
 
+### Firebase Storage Rules
+
+Make sure to also configure Firebase Storage Rules to allow users to upload profile photos:
+
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile photos: users can upload and read their own photos
+    match /profile-photos/{userId} {
+      allow read;  // Allow everyone to read profile photos
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
 ### Google Cloud Setup
 
 1. Create a new project in Google Cloud Console
