@@ -109,10 +109,18 @@ export default function SearchContent() {
   };
 
   const handleAddToList = async (place: GooglePlace) => {
-    if (!selectedListId || !user) return;
+    if (!selectedListId || !user) {
+      console.log('Cannot add place: Missing selectedListId or user', { selectedListId, userId: user?.uid });
+      return;
+    }
     
     // Set loading state for this specific place
     setAddingToList(prev => ({ ...prev, [place.place_id]: true }));
+    console.log('Adding place to list:', { 
+      placeId: place.place_id, 
+      placeName: place.name,
+      listId: selectedListId
+    });
     
     try {
       // First create or get place in our database
@@ -129,10 +137,13 @@ export default function SearchContent() {
         placeTypes: place.types || [],
       };
       
+      console.log('Creating place with data:', placeData);
       const placeId = await createPlace(placeData);
+      console.log('Place created/found with ID:', placeId);
       
       // Then add it to the selected list
-      await addPlaceToList(selectedListId, placeId);
+      const listPlaceId = await addPlaceToList(selectedListId, placeId);
+      console.log('Place added to list with junction ID:', listPlaceId);
       
       // Show success feedback
       alert(`Added ${place.name} to your list!`);

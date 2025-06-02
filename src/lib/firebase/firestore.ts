@@ -25,6 +25,8 @@ const convertFirestoreDataToList = (
     userId: data.userId,
     name: data.name,
     description: data.description,
+    city: data.city,
+    tags: data.tags || [],
     isPublic: data.isPublic,
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -88,6 +90,8 @@ export const getList = async (listId: string): Promise<List | null> => {
         userId: data.userId,
         name: data.name,
         description: data.description,
+        city: data.city,
+        tags: data.tags || [],
         isPublic: data.isPublic,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -209,26 +213,40 @@ export const addPlaceToList = async (
   notes?: string
 ): Promise<string> => {
   try {
+    console.log('addPlaceToList - Starting with params:', { listId, placeId, notes });
+    
+    if (!listId || !placeId) {
+      console.error('addPlaceToList - Invalid parameters:', { listId, placeId });
+      throw new Error('Invalid listId or placeId');
+    }
+    
     // Check if place is already in the list
     const q = query(
       collection(db, 'listPlaces'),
       where('listId', '==', listId),
       where('placeId', '==', placeId)
     );
+    console.log('addPlaceToList - Querying for existing entries');
     const querySnapshot = await getDocs(q);
     
     // If place is already in list, return its ID
     if (!querySnapshot.empty) {
-      return querySnapshot.docs[0].id;
+      const existingId = querySnapshot.docs[0].id;
+      console.log('addPlaceToList - Place already in list:', existingId);
+      return existingId;
     }
     
     // Otherwise add place to list
-    const docRef = await addDoc(collection(db, 'listPlaces'), {
+    console.log('addPlaceToList - Creating new list-place entry');
+    const docData = {
       listId,
       placeId,
       addedAt: serverTimestamp(),
       notes,
-    });
+    };
+    
+    const docRef = await addDoc(collection(db, 'listPlaces'), docData);
+    console.log('addPlaceToList - Successfully created with id:', docRef.id);
     return docRef.id;
   } catch (error) {
     console.error('Error adding place to list:', error);

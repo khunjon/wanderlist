@@ -1,4 +1,4 @@
-# Wanderlist
+# Placemarks
 
 A better way to save and organize places from Google Maps.
 
@@ -8,6 +8,8 @@ A better way to save and organize places from Google Maps.
 - Search for places using Google Places API
 - Create and manage custom lists of places
 - Add places to lists with one click
+- Organize lists with tags for easy categorization
+- Edit and delete your lists
 - Clean, mobile-first responsive design
 - View saved lists with place details (name, address, rating, photos)
 

@@ -13,6 +13,7 @@ export interface List {
   name: string;
   description: string;
   city?: string;
+  tags?: string[];
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -64,6 +65,8 @@ export interface GooglePlace {
 export interface ListFormData {
   name: string;
   description: string;
+  city?: string;
+  tags?: string;
   isPublic: boolean;
 }
 
