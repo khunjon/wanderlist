@@ -77,4 +77,4 @@ export function useRequireAuth(redirectUrl = '/login') {
   }, [user, loading, router, redirectUrl]);
 
   return { user, loading };
-}
+} 
