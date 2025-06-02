@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { initGA, pageview } from '@/lib/analytics/gtag';
 
@@ -8,14 +8,10 @@ interface AnalyticsProviderProps {
   children: ReactNode;
 }
 
-export default function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+// Separate component to handle search params
+function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  useEffect(() => {
-    // Initialize Google Analytics
-    initGA();
-  }, []);
 
   useEffect(() => {
     // Track page views when the route changes
@@ -28,5 +24,21 @@ export default function AnalyticsProvider({ children }: AnalyticsProviderProps) 
     }
   }, [pathname, searchParams]);
 
-  return <>{children}</>;
+  return null;
+}
+
+export default function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+  useEffect(() => {
+    // Initialize Google Analytics
+    initGA();
+  }, []);
+
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
+      {children}
+    </>
+  );
 } 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, useRequireAuth } from '@/hooks/useAuth';
 import { getUserProfile, updateUserProfile, uploadProfilePhoto } from '@/lib/firebase/user';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -20,12 +20,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !authUser) {
-      router.push('/login');
-    }
-  }, [authUser, authLoading, router]);
+  // Use the updated require auth hook with NavigationHandler
+  const { NavigationHandler } = useRequireAuth();
 
   // Fetch user profile data
   useEffect(() => {
@@ -138,6 +134,8 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <NavigationHandler />
+      
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold tracking-tight text-white">Your Profile</h1>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, Suspense } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { User } from '@/types';
@@ -67,15 +67,34 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-export function useRequireAuth(redirectUrl = '/login') {
-  const { user, loading } = useAuth();
+// Navigation wrapper that uses router
+function NavigationHandler({ redirectUrl, isAuthenticated }: { redirectUrl: string, isAuthenticated: boolean }) {
   const router = useRouter();
-
+  
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isAuthenticated) {
       router.push(redirectUrl);
     }
-  }, [user, loading, router, redirectUrl]);
+  }, [isAuthenticated, redirectUrl, router]);
+  
+  return null;
+}
 
-  return { user, loading };
+export function useRequireAuth(redirectUrl = '/login') {
+  const { user, loading } = useAuth();
+  
+  const isAuthenticated = !loading && !!user;
+  
+  return { 
+    user, 
+    loading,
+    NavigationHandler: () => (
+      <Suspense fallback={null}>
+        <NavigationHandler 
+          redirectUrl={redirectUrl} 
+          isAuthenticated={isAuthenticated} 
+        />
+      </Suspense>
+    )
+  };
 } 

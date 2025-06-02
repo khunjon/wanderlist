@@ -1,12 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { searchPlaces } from '@/lib/google/places';
 import { createPlace, addPlaceToList, getUserLists, getList } from '@/lib/firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
+
+// Separate component to handle search params
+function SearchParamsHandler({ 
+  onListIdFound 
+}: { 
+  onListIdFound: (listId: string | null) => void 
+}) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const listIdFromUrl = searchParams.get('listId');
+    onListIdFound(listIdFromUrl);
+  }, [searchParams, onListIdFound]);
+
+  return null;
+}
 
 export default function SearchContent() {
   const { user, loading: authLoading } = useAuth();
@@ -20,10 +36,14 @@ export default function SearchContent() {
   const [loadingLists, setLoadingLists] = useState(true);
   const [addingToList, setAddingToList] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+  const [listIdFromUrl, setListIdFromUrl] = useState<string | null>(null);
   
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const listIdFromUrl = searchParams.get('listId');
+
+  // Handle list ID from URL
+  const handleListIdFromUrl = (listId: string | null) => {
+    setListIdFromUrl(listId);
+  };
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -169,6 +189,10 @@ export default function SearchContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Suspense fallback={null}>
+        <SearchParamsHandler onListIdFound={handleListIdFromUrl} />
+      </Suspense>
+      
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">

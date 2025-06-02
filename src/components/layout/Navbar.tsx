@@ -1,15 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 
-export default function Navbar() {
-  const { user } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+// Separate component to handle navigation
+function NavActions({ closeMenu }: { closeMenu: () => void }) {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -19,6 +18,42 @@ export default function Navbar() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  return {
+    signOut: () => {
+      closeMenu();
+      handleSignOut();
+    },
+    navigate: (path: string) => {
+      closeMenu();
+      router.push(path);
+    }
+  };
+}
+
+export default function Navbar() {
+  const { user } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const closeMenu = () => setIsMenuOpen(false);
+
+  // Wrapper function to handle navigation without direct router access
+  const handleNavigation = (callback: (actions: ReturnType<typeof NavActions>) => void) => {
+    return () => {
+      // We'll use this pattern to avoid directly using router here
+      callback({ 
+        signOut: () => {
+          closeMenu();
+          // The actual navigation happens in NavActions
+          document.getElementById('signout-button')?.click();
+        },
+        navigate: (path: string) => {
+          closeMenu();
+          // Use regular links for navigation instead
+        }
+      });
+    };
   };
 
   return (
@@ -96,10 +131,23 @@ export default function Navbar() {
                       >
                         Create New List
                       </Link>
+                      {/* Hidden button for signout action */}
+                      <Suspense fallback={null}>
+                        <button 
+                          id="signout-button"
+                          className="hidden"
+                          onClick={() => {
+                            const actions = NavActions({ closeMenu });
+                            actions.signOut();
+                          }}
+                        >
+                          Hidden Sign Out
+                        </button>
+                      </Suspense>
                       <button
                         onClick={() => {
                           setIsMenuOpen(false);
-                          handleSignOut();
+                          document.getElementById('signout-button')?.click();
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       >
@@ -232,7 +280,7 @@ export default function Navbar() {
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
-                  handleSignOut();
+                  document.getElementById('signout-button')?.click();
                 }}
                 className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
               >
