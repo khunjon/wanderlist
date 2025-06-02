@@ -150,6 +150,7 @@ If you encounter the "auth/unauthorized-domain" error when testing with Google A
 2. Navigate to Authentication > Settings > Authorized domains
 3. Add your domain (including `localhost` for local development)
 
+
 ## License
 
 This project is licensed under the MIT License.
