@@ -10,6 +10,7 @@ export default function NewListPage() {
   const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [city, setCity] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function NewListPage() {
         userId: user.uid,
         name: name.trim(),
         description: description.trim(),
+        city: city.trim(),
         isPublic,
       };
 
@@ -114,6 +116,27 @@ export default function NewListPage() {
                       required
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-white">
+                    City
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      name="city"
+                      id="city"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
+                      placeholder="San Francisco, CA"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm text-gray-300">
+                    Specify a city or area to limit your place searches.
+                  </p>
                 </div>
 
                 <div>

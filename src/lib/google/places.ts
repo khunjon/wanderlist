@@ -8,11 +8,11 @@ const PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 /**
  * Search for places by text query
  */
-export const searchPlaces = async (query: string): Promise<GooglePlace[]> => {
+export const searchPlaces = async (query: string, city?: string): Promise<GooglePlace[]> => {
   try {
     // Proxy request through our own API to protect API key from client exposure
     const response = await axios.get('/api/places/search', {
-      params: { query },
+      params: { query, city },
     });
 
     if (response.data && response.data.results) {
@@ -58,12 +58,16 @@ export const getPlacePhotoUrl = (photoReference: string, maxWidth = 400): string
  * Server-side function to search places (only use in API routes)
  * This contains the actual API key, so it should only be used server-side
  */
-export const searchPlacesServer = async (query: string): Promise<any> => {
+export const searchPlacesServer = async (query: string, city?: string): Promise<any> => {
   try {
     const url = `${PLACES_API_BASE_URL}/textsearch/json`;
+    
+    // If city is provided, add it to the query for location context
+    const searchQuery = city ? `${query} in ${city}` : query;
+    
     const response = await axios.get(url, {
       params: {
-        query,
+        query: searchQuery,
         key: PLACES_API_KEY,
       },
     });

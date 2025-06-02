@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { searchPlaces } from '@/lib/google/places';
-import { createPlace, addPlaceToList, getUserLists } from '@/lib/firebase/firestore';
+import { createPlace, addPlaceToList, getUserLists, getList } from '@/lib/firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
@@ -16,6 +16,7 @@ export default function SearchContent() {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [userLists, setUserLists] = useState<List[]>([]);
+  const [selectedListCity, setSelectedListCity] = useState<string | undefined>();
   const [loadingLists, setLoadingLists] = useState(true);
   const [addingToList, setAddingToList] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +44,23 @@ export default function SearchContent() {
         // If listId is provided in URL, set it as selected list
         if (listIdFromUrl) {
           setSelectedListId(listIdFromUrl);
+          
+          // Get the city for the selected list
+          const selectedList = lists.find(list => list.id === listIdFromUrl);
+          if (selectedList && selectedList.city) {
+            setSelectedListCity(selectedList.city);
+          } else if (listIdFromUrl) {
+            // If list not found in user lists, fetch it directly
+            const listDetails = await getList(listIdFromUrl);
+            if (listDetails && listDetails.city) {
+              setSelectedListCity(listDetails.city);
+            }
+          }
         } else if (lists.length > 0) {
           setSelectedListId(lists[0].id);
+          if (lists[0].city) {
+            setSelectedListCity(lists[0].city);
+          }
         }
       } catch (err) {
         console.error('Error fetching user lists:', err);
@@ -69,7 +85,7 @@ export default function SearchContent() {
     setSearchPerformed(true);
     
     try {
-      const results = await searchPlaces(query);
+      const results = await searchPlaces(query, selectedListCity);
       setSearchResults(results);
     } catch (err) {
       console.error('Error searching places:', err);
@@ -77,6 +93,18 @@ export default function SearchContent() {
       setSearchResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleListChange = async (listId: string) => {
+    setSelectedListId(listId);
+    
+    // Update the city when list changes
+    const selectedList = userLists.find(list => list.id === listId);
+    if (selectedList && selectedList.city) {
+      setSelectedListCity(selectedList.city);
+    } else {
+      setSelectedListCity(undefined);
     }
   };
 
@@ -181,7 +209,7 @@ export default function SearchContent() {
                     name="search"
                     id="search"
                     className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
-                    placeholder="Search for restaurants, cafes, attractions..."
+                    placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search for restaurants, cafes, attractions..."}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     disabled={loading}
@@ -194,6 +222,11 @@ export default function SearchContent() {
                     {loading ? 'Searching...' : 'Search'}
                   </button>
                 </div>
+                {selectedListCity && (
+                  <p className="mt-2 text-sm text-blue-300">
+                    Searching in: {selectedListCity}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -205,13 +238,13 @@ export default function SearchContent() {
                   name="list"
                   className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm h-10"
                   value={selectedListId || ''}
-                  onChange={(e) => setSelectedListId(e.target.value)}
+                  onChange={(e) => handleListChange(e.target.value)}
                   disabled={userLists.length === 0}
                 >
                   {userLists.length > 0 ? (
                     userLists.map((list) => (
                       <option key={list.id} value={list.id}>
-                        {list.name}
+                        {list.name}{list.city ? ` (${list.city})` : ''}
                       </option>
                     ))
                   ) : (

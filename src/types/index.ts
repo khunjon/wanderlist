@@ -12,6 +12,7 @@ export interface List {
   userId: string;
   name: string;
   description: string;
+  city?: string;
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -51,15 +52,12 @@ export interface GooglePlace {
     };
   };
   rating?: number;
-  photos?: GooglePlacePhoto[];
+  photos?: Array<{
+    photo_reference: string;
+    height: number;
+    width: number;
+  }>;
   types?: string[];
-}
-
-export interface GooglePlacePhoto {
-  photo_reference: string;
-  height: number;
-  width: number;
-  html_attributions: string[];
 }
 
 // Form Types

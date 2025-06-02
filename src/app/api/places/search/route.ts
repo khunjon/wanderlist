@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query');
+    const city = searchParams.get('city') || undefined;
 
     if (!query) {
       return NextResponse.json(
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await searchPlacesServer(query);
+    const data = await searchPlacesServer(query, city);
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error in places search API:', error);
