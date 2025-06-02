@@ -453,4 +453,25 @@ export const incrementListViewCount = async (listId: string): Promise<void> => {
     console.error('Error incrementing list view count:', error);
     // Don't throw error as this is not critical functionality
   }
+};
+
+// Get all public lists for discovery
+export const getPublicLists = async (): Promise<List[]> => {
+  try {
+    const q = query(
+      collection(db, 'lists'),
+      where('isPublic', '==', true)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const lists: List[] = [];
+    querySnapshot.forEach((doc) => {
+      lists.push(convertFirestoreDataToList(doc));
+    });
+    
+    return lists;
+  } catch (error) {
+    console.error('Error getting public lists:', error);
+    throw error;
+  }
 }; 

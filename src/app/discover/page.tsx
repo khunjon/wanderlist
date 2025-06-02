@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getUserLists } from '@/lib/firebase/firestore';
+import { getPublicLists } from '@/lib/firebase/firestore';
 import { List } from '@/types';
 import { useRouter } from 'next/navigation';
 import { trackListView } from '@/lib/analytics/gtag';
@@ -16,7 +16,7 @@ const sortOptions: SortOption[] = [
   { value: 'viewCount', label: 'Views' },
 ];
 
-export default function ListsPage() {
+export default function DiscoverPage() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<List[]>([]);
   const [filteredLists, setFilteredLists] = useState<List[]>([]);
@@ -94,16 +94,14 @@ export default function ListsPage() {
     setSortedLists(sortLists(filteredLists, sortState));
   }, [filteredLists, sortState]);
 
-  // Fetch user's lists
+  // Fetch public lists
   const fetchLists = async () => {
-    if (!user) return;
-    
     try {
       setLoading(true);
-      const userLists = await getUserLists(user.uid);
-      setAllLists(userLists);
+      const publicLists = await getPublicLists();
+      setAllLists(publicLists);
     } catch (error) {
-      console.error('Error fetching lists:', error);
+      console.error('Error fetching public lists:', error);
     } finally {
       setLoading(false);
     }
@@ -159,12 +157,12 @@ export default function ListsPage() {
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-            <h1 className="text-3xl font-bold tracking-tight text-white">My Lists</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Discover Lists</h1>
             <div className="flex items-center space-x-4">
               <div className="flex items-center relative">
                 <input
                   type="text"
-                  placeholder="Search lists..."
+                  placeholder="Search public lists..."
                   value={searchQuery}
                   onChange={handleSearchChange}
                   className="w-full md:w-64 px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -197,13 +195,13 @@ export default function ListsPage() {
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-white">Loading lists...</p>
+              <p className="mt-4 text-white">Loading public lists...</p>
             </div>
           ) : sortedLists.length > 0 ? (
             <>
               <div className="flex justify-between items-center mb-6">
                 <p className="text-sm text-gray-300">
-                  {sortedLists.length} {sortedLists.length === 1 ? 'list' : 'lists'}
+                  {sortedLists.length} public {sortedLists.length === 1 ? 'list' : 'lists'}
                 </p>
                 <SortControl
                   options={sortOptions}
@@ -221,11 +219,9 @@ export default function ListsPage() {
                     <div className="px-6 py-6">
                       <div className="flex justify-between items-start mb-3">
                         <h3 className="text-xl font-semibold text-white truncate pr-2">{list.name}</h3>
-                        {list.userId !== user?.uid && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200 flex-shrink-0">
-                            Public
-                          </span>
-                        )}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200 flex-shrink-0">
+                          Public
+                        </span>
                       </div>
                       <p className="text-sm text-gray-300 line-clamp-2 mb-4 min-h-[2.5rem]">
                         {list.description || 'No description'}
@@ -286,12 +282,12 @@ export default function ListsPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-white">No lists found</h3>
+              <h3 className="mt-2 text-sm font-medium text-white">No public lists found</h3>
               <p className="mt-1 text-sm text-gray-300">
-                {searchQuery ? `No lists matching "${searchQuery}"` : 'Get started by creating a new list.'}
+                {searchQuery ? `No public lists matching "${searchQuery}"` : 'No public lists are available yet.'}
               </p>
               <div className="mt-6">
                 <Link
@@ -311,7 +307,7 @@ export default function ListsPage() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Create New List
+                  Create Your First Public List
                 </Link>
               </div>
             </div>
