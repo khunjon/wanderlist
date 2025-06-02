@@ -7,7 +7,6 @@ import { createPlace, addPlaceToList, getUserLists, getList } from '@/lib/fireba
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
-import FirebaseDebug from '@/components/FirebaseDebug';
 
 // Separate component to handle search params
 function SearchParamsHandler({ 
@@ -131,18 +130,12 @@ export default function SearchContent() {
 
   const handleAddToList = async (place: GooglePlace) => {
     if (!selectedListId || !user) {
-      console.log('Cannot add place: Missing selectedListId or user', { selectedListId, userId: user?.uid });
       setError('Please select a list and make sure you are logged in.');
       return;
     }
     
     // Set loading state for this specific place
     setAddingToList(prev => ({ ...prev, [place.place_id]: true }));
-    console.log('Adding place to list:', { 
-      placeId: place.place_id, 
-      placeName: place.name,
-      listId: selectedListId
-    });
     
     try {
       // Clear any previous errors
@@ -162,13 +155,10 @@ export default function SearchContent() {
         placeTypes: place.types || [],
       };
       
-      console.log('Creating place with data:', placeData);
       const placeId = await createPlace(placeData);
-      console.log('Place created/found with ID:', placeId);
       
       // Then add it to the selected list
       const listPlaceId = await addPlaceToList(selectedListId, placeId);
-      console.log('Place added to list with junction ID:', listPlaceId);
       
       // Show success feedback
       alert(`Added ${place.name} to your list!`);
@@ -215,8 +205,6 @@ export default function SearchContent() {
       <Suspense fallback={null}>
         <SearchParamsHandler onListIdFound={handleListIdFromUrl} />
       </Suspense>
-      
-      <FirebaseDebug />
       
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

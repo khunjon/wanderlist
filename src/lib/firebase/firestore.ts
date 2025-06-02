@@ -214,20 +214,14 @@ export const addPlaceToList = async (
   notes?: string
 ): Promise<string> => {
   try {
-    console.log('addPlaceToList - Starting with params:', { listId, placeId, notes });
-    
     if (!listId || !placeId) {
-      console.error('addPlaceToList - Invalid parameters:', { listId, placeId });
       throw new Error('Invalid listId or placeId');
     }
 
     // Check authentication
     if (!auth.currentUser) {
-      console.error('addPlaceToList - User not authenticated');
       throw new Error('User must be authenticated to add places to lists');
     }
-
-    console.log('addPlaceToList - User authenticated:', auth.currentUser.uid);
     
     // Check if place is already in the list
     const q = query(
@@ -235,35 +229,25 @@ export const addPlaceToList = async (
       where('listId', '==', listId),
       where('placeId', '==', placeId)
     );
-    console.log('addPlaceToList - Querying for existing entries');
     const querySnapshot = await getDocs(q);
     
     // If place is already in list, return its ID
     if (!querySnapshot.empty) {
-      const existingId = querySnapshot.docs[0].id;
-      console.log('addPlaceToList - Place already in list:', existingId);
-      return existingId;
+      return querySnapshot.docs[0].id;
     }
     
     // Verify the list exists and user has permission
-    console.log('addPlaceToList - Verifying list ownership');
     const listDoc = await getDoc(doc(db, 'lists', listId));
     if (!listDoc.exists()) {
-      console.error('addPlaceToList - List does not exist:', listId);
       throw new Error('List does not exist');
     }
     
     const listData = listDoc.data();
     if (listData.userId !== auth.currentUser.uid) {
-      console.error('addPlaceToList - User does not own this list:', {
-        listUserId: listData.userId,
-        currentUserId: auth.currentUser.uid
-      });
       throw new Error('You do not have permission to add places to this list');
     }
     
-    // Otherwise add place to list
-    console.log('addPlaceToList - Creating new list-place entry');
+    // Add place to list
     const docData: any = {
       listId,
       placeId,
@@ -276,7 +260,6 @@ export const addPlaceToList = async (
     }
     
     const docRef = await addDoc(collection(db, 'listPlaces'), docData);
-    console.log('addPlaceToList - Successfully created with id:', docRef.id);
     return docRef.id;
   } catch (error) {
     console.error('Error adding place to list:', error);
