@@ -119,24 +119,24 @@ export default function SearchContent() {
 
   if (authLoading || loadingLists) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-white">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-background">
+      <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Search Places</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Search Places</h1>
             <Link
               href="/dashboard"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
             >
               Back to Dashboard
             </Link>
@@ -145,13 +145,13 @@ export default function SearchContent() {
       </header>
       <main>
         <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-          <div className="bg-white px-4 py-5 shadow sm:rounded-lg sm:p-6">
+          <div className="bg-gray-800 px-4 py-5 shadow sm:rounded-lg sm:p-6">
             {error && (
-              <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+              <div className="mb-4 bg-red-900 border-l-4 border-red-600 p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
-                      className="h-5 w-5 text-red-400"
+                      className="h-5 w-5 text-red-500"
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
@@ -164,7 +164,7 @@ export default function SearchContent() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+                    <p className="text-sm text-red-300">{error}</p>
                   </div>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export default function SearchContent() {
 
             <form onSubmit={handleSearch} className="space-y-6">
               <div>
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="search" className="block text-sm font-medium text-white">
                   Search for places
                 </label>
                 <div className="mt-1 flex rounded-md shadow-sm">
@@ -180,7 +180,7 @@ export default function SearchContent() {
                     type="text"
                     name="search"
                     id="search"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
                     placeholder="Search for restaurants, cafes, attractions..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
@@ -197,13 +197,13 @@ export default function SearchContent() {
               </div>
 
               <div>
-                <label htmlFor="list" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="list" className="block text-sm font-medium text-white">
                   Select list to add places to
                 </label>
                 <select
                   id="list"
                   name="list"
-                  className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm h-10"
                   value={selectedListId || ''}
                   onChange={(e) => setSelectedListId(e.target.value)}
                   disabled={userLists.length === 0}
@@ -219,9 +219,9 @@ export default function SearchContent() {
                   )}
                 </select>
                 {userLists.length === 0 && (
-                  <p className="mt-2 text-sm text-red-600">
+                  <p className="mt-2 text-sm text-red-400">
                     You need to create a list first.{' '}
-                    <Link href="/lists/new" className="font-medium text-blue-600 hover:text-blue-500">
+                    <Link href="/lists/new" className="font-medium text-blue-400 hover:text-blue-300">
                       Create a list
                     </Link>
                   </p>
@@ -232,22 +232,22 @@ export default function SearchContent() {
 
           {searchPerformed && (
             <div className="mt-8">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Search Results</h2>
+              <h2 className="text-lg font-medium text-white mb-4">Search Results</h2>
               
               {loading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">Searching for places...</p>
+                  <p className="mt-4 text-white">Searching for places...</p>
                 </div>
               ) : searchResults.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {searchResults.map((place) => (
                     <div
                       key={place.place_id}
-                      className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
+                      className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
                     >
                       {place.photos && place.photos.length > 0 && (
-                        <div className="relative h-48 w-full bg-gray-200">
+                        <div className="relative h-48 w-full bg-gray-700">
                           <img
                             src={`/api/places/photo?photoReference=${place.photos[0].photo_reference}&maxWidth=400`}
                             alt={place.name}
@@ -256,13 +256,13 @@ export default function SearchContent() {
                         </div>
                       )}
                       <div className="px-4 py-5 sm:p-6">
-                        <h3 className="text-lg font-medium text-gray-900 truncate">{place.name}</h3>
-                        <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                        <h3 className="text-lg font-medium text-white truncate">{place.name}</h3>
+                        <p className="mt-1 text-sm text-gray-300 line-clamp-2">
                           {place.formatted_address}
                         </p>
                         {place.rating && (
                           <div className="mt-2 flex items-center">
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-sm font-medium text-white">
                               {place.rating.toFixed(1)}
                             </span>
                             <div className="ml-1 flex">
@@ -274,7 +274,7 @@ export default function SearchContent() {
                                       ? 'text-yellow-400'
                                       : i < Math.ceil(place.rating || 0) && i >= Math.floor(place.rating || 0)
                                       ? 'text-yellow-300'
-                                      : 'text-gray-300'
+                                      : 'text-gray-500'
                                   }`}
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 20 20"
@@ -296,7 +296,7 @@ export default function SearchContent() {
                             {place.types.slice(0, 3).map((type, index) => (
                               <span
                                 key={index}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200"
                               >
                                 {type.replace(/_/g, ' ')}
                               </span>
@@ -362,7 +362,7 @@ export default function SearchContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-white shadow rounded-lg">
+                <div className="text-center py-12 bg-gray-800 shadow rounded-lg">
                   <svg
                     className="mx-auto h-12 w-12 text-gray-400"
                     fill="none"
@@ -377,8 +377,8 @@ export default function SearchContent() {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No places found</h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <h3 className="mt-2 text-sm font-medium text-white">No places found</h3>
+                  <p className="mt-1 text-sm text-gray-300">
                     Try searching with different keywords or locations.
                   </p>
                 </div>

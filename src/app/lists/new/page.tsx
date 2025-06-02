@@ -54,14 +54,14 @@ export default function NewListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-background">
+      <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Create New List</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Create New List</h1>
             <Link
               href="/dashboard"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
             >
               Cancel
             </Link>
@@ -70,13 +70,13 @@ export default function NewListPage() {
       </header>
       <main>
         <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-          <div className="bg-white px-4 py-5 shadow sm:rounded-lg sm:p-6">
+          <div className="bg-gray-800 px-4 py-5 shadow sm:rounded-lg sm:p-6">
             {error && (
-              <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+              <div className="mb-4 bg-red-900 border-l-4 border-red-600 p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
-                      className="h-5 w-5 text-red-400"
+                      className="h-5 w-5 text-red-500"
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
@@ -89,7 +89,7 @@ export default function NewListPage() {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+                    <p className="text-sm text-red-300">{error}</p>
                   </div>
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default function NewListPage() {
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="name" className="block text-sm font-medium text-white">
                     List Name
                   </label>
                   <div className="mt-1">
@@ -106,7 +106,7 @@ export default function NewListPage() {
                       type="text"
                       name="name"
                       id="name"
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
                       placeholder="My Favorite Restaurants"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -117,7 +117,7 @@ export default function NewListPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="description" className="block text-sm font-medium text-white">
                     Description
                   </label>
                   <div className="mt-1">
@@ -125,14 +125,14 @@ export default function NewListPage() {
                       id="description"
                       name="description"
                       rows={3}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
                       placeholder="A collection of my favorite places to eat around town."
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       disabled={loading}
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
+                  <p className="mt-2 text-sm text-gray-300">
                     Brief description of what this list is about.
                   </p>
                 </div>
@@ -143,17 +143,17 @@ export default function NewListPage() {
                       id="isPublic"
                       name="isPublic"
                       type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
                       checked={isPublic}
                       onChange={(e) => setIsPublic(e.target.checked)}
                       disabled={loading}
                     />
                   </div>
                   <div className="ml-3 text-sm">
-                    <label htmlFor="isPublic" className="font-medium text-gray-700">
+                    <label htmlFor="isPublic" className="font-medium text-white">
                       Public List
                     </label>
-                    <p className="text-gray-500">
+                    <p className="text-gray-300">
                       If checked, this list will be discoverable by other users.
                     </p>
                   </div>
@@ -162,7 +162,7 @@ export default function NewListPage() {
                 <div className="flex justify-end">
                   <Link
                     href="/dashboard"
-                    className="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md border border-gray-600 bg-gray-800 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
                     Cancel
                   </Link>
