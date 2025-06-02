@@ -71,36 +71,36 @@ export default function SignupPage() {
   // Show loading spinner if authentication is in progress
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Authenticating...</p>
+          <p className="mt-4 text-gray-300">Authenticating...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
       <div className="w-full max-w-md space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-300">
             Or{' '}
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/login" className="font-medium text-blue-400 hover:text-blue-300">
               sign in to your account
             </Link>
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="bg-red-900 border-l-4 border-red-600 p-4 mb-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
-                  className="h-5 w-5 text-red-400"
+                  className="h-5 w-5 text-red-500"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -114,7 +114,7 @@ export default function SignupPage() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
+                <p className="text-sm text-red-300">{error}</p>
               </div>
             </div>
           </div>
@@ -132,7 +132,7 @@ export default function SignupPage() {
                 type="text"
                 autoComplete="name"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -149,7 +149,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -166,7 +166,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -183,7 +183,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -196,7 +196,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-300"
+              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-400"
             >
               {loading ? 'Creating account...' : 'Sign up'}
             </button>
@@ -206,10 +206,10 @@ export default function SignupPage() {
         <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-gray-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-gray-50 px-2 text-gray-500">Or continue with</span>
+              <span className="bg-gray-900 px-2 text-gray-400">Or continue with</span>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ export default function SignupPage() {
             <button
               onClick={handleGoogleSignup}
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-300 disabled:bg-gray-100"
+              className="group relative flex w-full justify-center rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:bg-gray-700"
             >
               <span className="mr-2">
                 <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
