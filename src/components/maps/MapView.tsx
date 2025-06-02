@@ -156,7 +156,7 @@ export default function MapView({ places }: MapViewProps) {
           animation: google.maps.Animation.DROP,
           label: {
             text: displayName,
-            color: 'white',
+            color: '#1f2937',
             fontSize: '12px',
             fontWeight: 'bold'
           },
@@ -181,7 +181,6 @@ export default function MapView({ places }: MapViewProps) {
             <h3 class="text-lg font-semibold mb-1">${place.name}</h3>
             <p class="text-sm mb-2">${place.address}</p>
             ${place.rating ? `<p class="text-sm">Rating: ${place.rating.toFixed(1)}/5</p>` : ''}
-            ${place.photoUrl ? `<img src="${place.photoUrl}" alt="${place.name}" class="mt-2 w-full h-32 object-cover rounded" />` : ''}
           </div>
         `;
         

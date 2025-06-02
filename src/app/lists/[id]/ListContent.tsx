@@ -328,7 +328,7 @@ export default function ListContent({ id }: ListContentProps) {
             </div>
           ) : (
             <div className="flex justify-between items-start">
-              <div>
+              <div className="flex-1 min-w-0 pr-4">
                 <h1 className="text-3xl font-bold tracking-tight text-white">{list.name}</h1>
                 <p className="mt-1 text-sm text-gray-300">{list.description}</p>
                 {list.city && <p className="text-sm text-blue-300">Location: {list.city}</p>}
@@ -389,20 +389,29 @@ export default function ListContent({ id }: ListContentProps) {
                   </div>
                 )}
               </div>
-              <div className="flex space-x-3">
+              <div className="flex-shrink-0">
                 {isOwner && (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="inline-flex items-center px-3 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="inline-flex items-center p-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    title="Edit list"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span className="ml-1 hidden sm:inline">Edit</span>
+                  </button>
                 )}
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+      <main>
+        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+          {places.length > 0 ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
                 <Link
                   href={`/search?listId=${list.id}`}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -421,22 +430,6 @@ export default function ListContent({ id }: ListContentProps) {
                   </svg>
                   Add Places
                 </Link>
-                <Link
-                  href="/lists"
-                  className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
-                >
-                  Back
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-      <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-          {places.length > 0 ? (
-            <>
-              <div className="flex justify-end mb-4">
                 <div className="inline-flex rounded-md shadow-sm" role="group">
                   <button
                     type="button"
