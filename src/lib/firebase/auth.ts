@@ -102,10 +102,28 @@ export const createUserDocument = async (
   userData: User
 ): Promise<void> => {
   try {
-    await setDoc(doc(db, 'users', uid), {
-      ...userData,
-      createdAt: serverTimestamp(),
-    });
+    const userDocRef = doc(db, 'users', uid);
+    const existingDoc = await getDoc(userDocRef);
+    
+    if (existingDoc.exists()) {
+      // User document already exists, only update specific fields without overwriting
+      const existingData = existingDoc.data();
+      await setDoc(userDocRef, {
+        ...existingData, // Preserve existing data (including isAdmin)
+        email: userData.email,
+        displayName: userData.displayName,
+        photoURL: userData.photoURL,
+        // Don't overwrite createdAt or isAdmin if they already exist
+        ...(existingData.createdAt ? {} : { createdAt: serverTimestamp() }),
+      });
+    } else {
+      // New user, create the document
+      await setDoc(userDocRef, {
+        ...userData,
+        createdAt: serverTimestamp(),
+        isAdmin: false, // Default for new users
+      });
+    }
   } catch (error) {
     console.error('Error creating user document:', error);
     throw error;
