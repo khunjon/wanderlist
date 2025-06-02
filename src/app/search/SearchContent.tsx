@@ -7,6 +7,7 @@ import { createPlace, addPlaceToList, getUserLists, getList } from '@/lib/fireba
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
+import FirebaseDebug from '@/components/FirebaseDebug';
 
 // Separate component to handle search params
 function SearchParamsHandler({ 
@@ -131,6 +132,7 @@ export default function SearchContent() {
   const handleAddToList = async (place: GooglePlace) => {
     if (!selectedListId || !user) {
       console.log('Cannot add place: Missing selectedListId or user', { selectedListId, userId: user?.uid });
+      setError('Please select a list and make sure you are logged in.');
       return;
     }
     
@@ -143,6 +145,9 @@ export default function SearchContent() {
     });
     
     try {
+      // Clear any previous errors
+      setError(null);
+      
       // First create or get place in our database
       const placeData = {
         googlePlaceId: place.place_id,
@@ -169,7 +174,25 @@ export default function SearchContent() {
       alert(`Added ${place.name} to your list!`);
     } catch (err) {
       console.error('Error adding place to list:', err);
-      setError('Failed to add place to list. Please try again.');
+      
+      // Show specific error message
+      let errorMessage = 'Failed to add place to list. Please try again.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('permission')) {
+          errorMessage = 'Permission denied. Please check that you own this list and your account is properly configured.';
+        } else if (err.message.includes('authenticated')) {
+          errorMessage = 'You must be logged in to add places to lists. Please refresh the page and try again.';
+        } else if (err.message.includes('not found')) {
+          errorMessage = 'The list was not found. Please refresh the page and try again.';
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else {
+          errorMessage = `Error: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       // Clear loading state for this place
       setAddingToList(prev => ({ ...prev, [place.place_id]: false }));
@@ -192,6 +215,8 @@ export default function SearchContent() {
       <Suspense fallback={null}>
         <SearchParamsHandler onListIdFound={handleListIdFromUrl} />
       </Suspense>
+      
+      <FirebaseDebug />
       
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

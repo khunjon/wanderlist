@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 import { List, Place, ListPlace } from '@/types';
+import { auth } from './config';
 
 // Convert Firestore data to our app types
 const convertFirestoreDataToList = (
@@ -219,6 +220,14 @@ export const addPlaceToList = async (
       console.error('addPlaceToList - Invalid parameters:', { listId, placeId });
       throw new Error('Invalid listId or placeId');
     }
+
+    // Check authentication
+    if (!auth.currentUser) {
+      console.error('addPlaceToList - User not authenticated');
+      throw new Error('User must be authenticated to add places to lists');
+    }
+
+    console.log('addPlaceToList - User authenticated:', auth.currentUser.uid);
     
     // Check if place is already in the list
     const q = query(
@@ -236,6 +245,23 @@ export const addPlaceToList = async (
       return existingId;
     }
     
+    // Verify the list exists and user has permission
+    console.log('addPlaceToList - Verifying list ownership');
+    const listDoc = await getDoc(doc(db, 'lists', listId));
+    if (!listDoc.exists()) {
+      console.error('addPlaceToList - List does not exist:', listId);
+      throw new Error('List does not exist');
+    }
+    
+    const listData = listDoc.data();
+    if (listData.userId !== auth.currentUser.uid) {
+      console.error('addPlaceToList - User does not own this list:', {
+        listUserId: listData.userId,
+        currentUserId: auth.currentUser.uid
+      });
+      throw new Error('You do not have permission to add places to this list');
+    }
+    
     // Otherwise add place to list
     console.log('addPlaceToList - Creating new list-place entry');
     const docData = {
@@ -250,6 +276,18 @@ export const addPlaceToList = async (
     return docRef.id;
   } catch (error) {
     console.error('Error adding place to list:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('permission-denied')) {
+        throw new Error('Permission denied. Please check your Firestore security rules.');
+      } else if (error.message.includes('unauthenticated')) {
+        throw new Error('You must be logged in to add places to lists.');
+      } else if (error.message.includes('not-found')) {
+        throw new Error('The list or place was not found.');
+      }
+    }
+    
     throw error;
   }
 };
