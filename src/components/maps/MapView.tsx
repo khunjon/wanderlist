@@ -177,10 +177,9 @@ export default function MapView({ places }: MapViewProps) {
         
         // Create info window content
         const contentString = `
-          <div class="p-3 max-w-xs">
-            <h3 class="text-lg font-semibold mb-1">${place.name}</h3>
-            <p class="text-sm mb-2">${place.address}</p>
-            ${place.rating ? `<p class="text-sm">Rating: ${place.rating.toFixed(1)}/5</p>` : ''}
+          <div style="padding: 8px; max-width: 200px; font-family: system-ui, -apple-system, sans-serif;">
+            <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1f2937;">${place.name}</h3>
+            <p style="margin: 0; font-size: 12px; color: #6b7280;">${place.address}</p>
           </div>
         `;
         
