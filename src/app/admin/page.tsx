@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
 import { Line } from 'react-chartjs-2';
+import { collection, getDocs, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -65,15 +67,134 @@ export default function AdminPage() {
       setStatsLoading(true);
       setError(null);
       
-      const response = await fetch('/api/admin/stats');
+      // Fetch data directly from Firestore (client-side)
+      console.log('Fetching admin stats...');
+      
+      // Get total user count
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const totalUsers = usersSnapshot.size;
+      console.log('Total users:', totalUsers);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || 'Failed to fetch admin stats');
+      // Get top lists by view count (handle case where viewCount might not exist)
+      let topLists = [];
+      try {
+        const topListsQuery = query(
+          collection(db, 'lists'),
+          orderBy('viewCount', 'desc'),
+          limit(10)
+        );
+        const topListsSnapshot = await getDocs(topListsQuery);
+        topLists = topListsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || 'Untitled List',
+            viewCount: data.viewCount || 0,
+            userId: data.userId || 'Unknown',
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          };
+        });
+      } catch (orderError) {
+        console.log('ViewCount field might not exist, fetching all lists...');
+        const allListsSnapshot = await getDocs(collection(db, 'lists'));
+        const allLists = allListsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || 'Untitled List',
+            viewCount: data.viewCount || 0,
+            userId: data.userId || 'Unknown',
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          };
+        });
+        
+        // Sort by viewCount and take top 10
+        topLists = allLists
+          .sort((a, b) => b.viewCount - a.viewCount)
+          .slice(0, 10);
+      }
+      console.log('Top lists:', topLists.length);
+
+      // Get data for the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // Get new users by day (last 30 days)
+      let newUsersSnapshot;
+      try {
+        const newUsersQuery = query(
+          collection(db, 'users'),
+          where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+        );
+        newUsersSnapshot = await getDocs(newUsersQuery);
+      } catch (userError) {
+        console.log('Error querying users by date, using all users...');
+        newUsersSnapshot = await getDocs(collection(db, 'users'));
+      }
+      
+      // Get new lists by day (last 30 days)
+      let newListsSnapshot;
+      try {
+        const newListsQuery = query(
+          collection(db, 'lists'),
+          where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+        );
+        newListsSnapshot = await getDocs(newListsQuery);
+      } catch (listError) {
+        console.log('Error querying lists by date, using all lists...');
+        newListsSnapshot = await getDocs(collection(db, 'lists'));
       }
 
-      const data = await response.json();
-      setStats(data);
+      // Process data for charts
+      const usersByDay: { [key: string]: number } = {};
+      const listsByDay: { [key: string]: number } = {};
+
+      // Initialize all days with 0
+      for (let i = 0; i < 30; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0];
+        usersByDay[dateKey] = 0;
+        listsByDay[dateKey] = 0;
+      }
+
+      // Count new users by day
+      newUsersSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate?.() || new Date();
+        const dateKey = createdAt.toISOString().split('T')[0];
+        if (usersByDay.hasOwnProperty(dateKey)) {
+          usersByDay[dateKey]++;
+        }
+      });
+
+      // Count new lists by day
+      newListsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate?.() || new Date();
+        const dateKey = createdAt.toISOString().split('T')[0];
+        if (listsByDay.hasOwnProperty(dateKey)) {
+          listsByDay[dateKey]++;
+        }
+      });
+
+      // Convert to chart data format
+      const chartData = Object.keys(usersByDay)
+        .sort()
+        .map(date => ({
+          date,
+          newUsers: usersByDay[date],
+          newLists: listsByDay[date],
+        }));
+
+      const statsData = {
+        totalUsers,
+        topLists,
+        chartData,
+      };
+      
+      console.log('Stats loaded successfully:', statsData);
+      setStats(statsData);
     } catch (error) {
       console.error('Error fetching admin stats:', error);
       setError(error instanceof Error ? error.message : 'Failed to load admin statistics');

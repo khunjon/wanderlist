@@ -76,15 +76,25 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own documents
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // Lists can be read by owner or if they're public
+    // Users can read/write their own documents, admins can read all
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAdmin(); // Admins can read all user documents
+    }
+    
+    // Lists can be read by owner, if they're public, or by admins
     match /lists/{listId} {
       allow create: if request.auth != null;
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
+      allow read: if request.auth != null && 
+                     (resource.data.userId == request.auth.uid || 
+                      resource.data.isPublic == true ||
+                      isAdmin()); // Admins can read all lists
       allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
@@ -94,10 +104,12 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
     
-    // ListPlaces can be read/written by the list owner
+    // ListPlaces can be read/written by the list owner or admins
     match /listPlaces/{listPlaceId} {
       allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && 
+                                     (get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid ||
+                                      isAdmin()); // Admins can read all listPlaces
     }
   }
 }
