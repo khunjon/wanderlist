@@ -111,6 +111,7 @@ export const convertFirebaseUserToUser = (firebaseUser: FirebaseUser): User => {
     uid: firebaseUser.uid,
     email: firebaseUser.email || '',
     displayName: firebaseUser.displayName || '',
+    photoURL: firebaseUser.photoURL || '',
     createdAt: new Date(),
   };
 }; 

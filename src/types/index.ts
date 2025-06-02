@@ -4,6 +4,7 @@ export interface User {
   email: string;
   displayName: string;
   createdAt: Date;
+  photoURL?: string;
 }
 
 // List type

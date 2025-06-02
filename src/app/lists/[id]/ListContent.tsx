@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getList, getPlacesInList, deleteList, updateList } from '@/lib/firebase/firestore';
-import { List, Place } from '@/types';
+import { List, Place, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getUserProfile } from '@/lib/firebase/user';
 
 interface ListContentProps {
   id: string;
@@ -24,6 +25,7 @@ export default function ListContent({ id }: ListContentProps) {
   const [editTags, setEditTags] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
+  const [author, setAuthor] = useState<User | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -55,6 +57,14 @@ export default function ListContent({ id }: ListContentProps) {
         setList(listData);
         setEditName(listData.name);
         setEditTags(listData.tags?.join(', ') || '');
+        
+        // Fetch author information
+        try {
+          const authorData = await getUserProfile(listData.userId);
+          setAuthor(authorData);
+        } catch (err) {
+          console.error('Error fetching author data:', err);
+        }
         
         // Fetch places in this list
         const placesData = await getPlacesInList(id);
@@ -238,6 +248,34 @@ export default function ListContent({ id }: ListContentProps) {
                         {tag}
                       </span>
                     ))}
+                  </div>
+                )}
+                {!isEditing && (
+                  <div className="mt-2 flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-700">
+                        {author?.photoURL ? (
+                          <Image
+                            src={author.photoURL}
+                            alt={author.displayName || 'Author'}
+                            className="h-full w-full object-cover"
+                            width={32}
+                            height={32}
+                          />
+                        ) : (
+                          <svg
+                            className="h-full w-full text-gray-500"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ml-2 text-sm text-gray-300">
+                      Created by {author?.displayName || 'Unknown User'}
+                    </div>
                   </div>
                 )}
               </div>
