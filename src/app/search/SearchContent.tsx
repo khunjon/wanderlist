@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { searchPlaces } from '@/lib/google/places';
 import { createPlace, addPlaceToList, getUserLists, getList } from '@/lib/firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
+import { debounce } from 'lodash';
 
 // Separate component to handle search params
 function SearchParamsHandler({ 
@@ -29,6 +30,7 @@ export default function SearchContent() {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [userLists, setUserLists] = useState<List[]>([]);
@@ -39,11 +41,73 @@ export default function SearchContent() {
   const [listIdFromUrl, setListIdFromUrl] = useState<string | null>(null);
   
   const router = useRouter();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Handle list ID from URL
   const handleListIdFromUrl = (listId: string | null) => {
     setListIdFromUrl(listId);
   };
+
+  // Debounced search function
+  const performDebouncedSearch = useCallback(async (searchQuery: string, city?: string) => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchPerformed(false);
+      setIsTyping(false);
+      return;
+    }
+
+    // Cancel previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+
+    setLoading(true);
+    setError(null);
+    setSearchPerformed(true);
+    setIsTyping(false);
+    
+    try {
+      const results = await searchPlaces(searchQuery, city);
+      // Only update results if the request wasn't aborted
+      if (!abortControllerRef.current.signal.aborted) {
+        setSearchResults(results);
+      }
+    } catch (err) {
+      // Only handle error if the request wasn't aborted
+      if (!abortControllerRef.current.signal.aborted) {
+        console.error('Error searching places:', err);
+        setError('Failed to search places. Please try again.');
+        setSearchResults([]);
+      }
+    } finally {
+      // Only update loading state if the request wasn't aborted
+      if (!abortControllerRef.current.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  // Create debounced version of the search function
+  const debouncedSearch = useCallback(
+    debounce((searchQuery: string, city?: string) => {
+      performDebouncedSearch(searchQuery, city);
+    }, 300),
+    [performDebouncedSearch]
+  );
+
+  // Cleanup function to cancel debounced calls
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [debouncedSearch]);
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -99,20 +163,33 @@ export default function SearchContent() {
     e.preventDefault();
     
     if (!query.trim()) return;
+
+    // Cancel any pending debounced search
+    debouncedSearch.cancel();
     
-    setLoading(true);
-    setError(null);
-    setSearchPerformed(true);
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Perform immediate search for form submission
+    setIsTyping(false);
+    await performDebouncedSearch(query, selectedListCity);
+  };
+
+  // Handle input change with debounced search
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
     
-    try {
-      const results = await searchPlaces(query, selectedListCity);
-      setSearchResults(results);
-    } catch (err) {
-      console.error('Error searching places:', err);
-      setError('Failed to search places. Please try again.');
+    if (newQuery.trim()) {
+      setIsTyping(true);
+      debouncedSearch(newQuery, selectedListCity);
+    } else {
+      setIsTyping(false);
+      debouncedSearch.cancel();
       setSearchResults([]);
-    } finally {
-      setLoading(false);
+      setSearchPerformed(false);
     }
   };
 
@@ -121,10 +198,16 @@ export default function SearchContent() {
     
     // Update the city when list changes
     const selectedList = userLists.find(list => list.id === listId);
-    if (selectedList && selectedList.city) {
-      setSelectedListCity(selectedList.city);
-    } else {
-      setSelectedListCity(undefined);
+    const newCity = selectedList?.city;
+    
+    if (newCity !== selectedListCity) {
+      setSelectedListCity(newCity);
+      
+      // If there's an active search query, re-run the search with the new city
+      if (query.trim()) {
+        setIsTyping(true);
+        debouncedSearch(query, newCity);
+      }
     }
   };
 
@@ -252,22 +335,48 @@ export default function SearchContent() {
                   Search for places
                 </label>
                 <div className="mt-1 flex rounded-md shadow-sm">
-                  <input
-                    type="text"
-                    name="search"
-                    id="search"
-                    className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
-                    placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search for restaurants, cafes, attractions..."}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    disabled={loading}
-                  />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      name="search"
+                      id="search"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 pr-10"
+                      placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search for restaurants, cafes, attractions..."}
+                      value={query}
+                      onChange={handleInputChange}
+                      disabled={loading && !isTyping}
+                    />
+                    {isTyping && (
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <svg
+                          className="animate-spin h-4 w-4 text-blue-400"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="submit"
                     disabled={loading || !query.trim()}
                     className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
                   >
-                    {loading ? 'Searching...' : 'Search'}
+                    {loading && !isTyping ? 'Searching...' : 'Search'}
                   </button>
                 </div>
                 {selectedListCity && (
