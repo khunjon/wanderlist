@@ -33,6 +33,12 @@ export interface Place {
   placeTypes: string[];
 }
 
+// Enhanced Place type with notes for list context
+export interface PlaceWithNotes extends Place {
+  notes?: string;
+  listPlaceId: string; // ID of the ListPlace junction record
+}
+
 // ListPlace type (junction)
 export interface ListPlace {
   id: string;

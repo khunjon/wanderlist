@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getList, getPlacesInList, deleteList, updateList } from '@/lib/firebase/firestore';
-import { List, Place, User } from '@/types';
+import { getList, getPlacesInList, deleteList, updateList, updatePlaceNotes, removePlaceFromListById } from '@/lib/firebase/firestore';
+import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,7 +16,7 @@ interface ListContentProps {
 export default function ListContent({ id }: ListContentProps) {
   const { user, loading: authLoading } = useAuth();
   const [list, setList] = useState<List | null>(null);
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
@@ -27,6 +27,9 @@ export default function ListContent({ id }: ListContentProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [author, setAuthor] = useState<User | null>(null);
+  const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState('');
+  const [deletingPlaceId, setDeletingPlaceId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -135,6 +138,56 @@ export default function ListContent({ id }: ListContentProps) {
         console.error('Error deleting list:', err);
         setIsDeleting(false);
         alert('Failed to delete list. Please try again.');
+      }
+    }
+  };
+
+  const handleEditPlaceNotes = (place: PlaceWithNotes) => {
+    setEditingPlaceId(place.listPlaceId);
+    setEditingNotes(place.notes || '');
+  };
+
+  const handleSavePlaceNotes = async () => {
+    if (!editingPlaceId) return;
+    
+    try {
+      await updatePlaceNotes(editingPlaceId, editingNotes);
+      
+      // Update local state
+      setPlaces(places.map(place => 
+        place.listPlaceId === editingPlaceId 
+          ? { ...place, notes: editingNotes.trim() || undefined }
+          : place
+      ));
+      
+      setEditingPlaceId(null);
+      setEditingNotes('');
+    } catch (err) {
+      console.error('Error updating place notes:', err);
+      alert('Failed to update notes. Please try again.');
+    }
+  };
+
+  const handleCancelEditNotes = () => {
+    setEditingPlaceId(null);
+    setEditingNotes('');
+  };
+
+  const handleDeletePlace = async (place: PlaceWithNotes) => {
+    if (!user || user.uid !== list?.userId) return;
+    
+    if (window.confirm(`Are you sure you want to remove "${place.name}" from this list?`)) {
+      setDeletingPlaceId(place.listPlaceId);
+      try {
+        await removePlaceFromListById(place.listPlaceId);
+        
+        // Update local state
+        setPlaces(places.filter(p => p.listPlaceId !== place.listPlaceId));
+      } catch (err) {
+        console.error('Error removing place from list:', err);
+        alert('Failed to remove place. Please try again.');
+      } finally {
+        setDeletingPlaceId(null);
       }
     }
   };
@@ -415,66 +468,144 @@ export default function ListContent({ id }: ListContentProps) {
               
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {places.map((place) => (
-                    <div
-                      key={place.id}
-                      className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
-                    >
-                      {place.photoUrl && (
-                        <div className="relative h-48 w-full">
-                          <Image
-                            src={place.photoUrl}
-                            alt={place.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="px-4 py-5 sm:p-6">
-                        <h3 className="text-lg font-medium text-white truncate">{place.name}</h3>
-                        <p className="mt-1 text-sm text-gray-300 line-clamp-2">{place.address}</p>
-                        {place.rating > 0 && (
-                          <div className="mt-2 flex items-center">
-                            <span className="text-sm font-medium text-white">{place.rating.toFixed(1)}</span>
-                            <div className="ml-1 flex">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <svg
-                                  key={i}
-                                  className={`h-5 w-5 ${
-                                    i < Math.floor(place.rating)
-                                      ? 'text-yellow-400'
-                                      : i < Math.ceil(place.rating) && i >= Math.floor(place.rating)
-                                      ? 'text-yellow-300'
-                                      : 'text-gray-500'
-                                  }`}
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              ))}
-                            </div>
+                  {places.map((place) => {
+                    const isOwner = user && list && user.uid === list.userId;
+                    const isEditingThisPlace = editingPlaceId === place.listPlaceId;
+                    const isDeletingThisPlace = deletingPlaceId === place.listPlaceId;
+                    
+                    return (
+                      <div
+                        key={place.id}
+                        className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
+                      >
+                        {place.photoUrl && (
+                          <div className="relative h-48 w-full">
+                            <Image
+                              src={place.photoUrl}
+                              alt={place.name}
+                              fill
+                              className="object-cover"
+                            />
                           </div>
                         )}
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {place.placeTypes.slice(0, 3).map((type, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200"
-                            >
-                              {type.replace(/_/g, ' ')}
-                            </span>
-                          ))}
+                        <div className="px-4 py-5 sm:p-6">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="text-lg font-medium text-white truncate flex-1">{place.name}</h3>
+                            {isOwner && (
+                              <div className="flex space-x-1 ml-2">
+                                <button
+                                  onClick={() => handleEditPlaceNotes(place)}
+                                  className="p-1 text-gray-400 hover:text-white transition-colors"
+                                  title="Edit notes"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePlace(place)}
+                                  disabled={isDeletingThisPlace}
+                                  className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50"
+                                  title="Remove from list"
+                                >
+                                  {isDeletingThisPlace ? (
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                  ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <p className="mt-1 text-sm text-gray-300 line-clamp-2">{place.address}</p>
+                          
+                          {place.rating > 0 && (
+                            <div className="mt-2 flex items-center">
+                              <span className="text-sm font-medium text-white">{place.rating.toFixed(1)}</span>
+                              <div className="ml-1 flex">
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <svg
+                                    key={i}
+                                    className={`h-5 w-5 ${
+                                      i < Math.floor(place.rating)
+                                        ? 'text-yellow-400'
+                                        : i < Math.ceil(place.rating) && i >= Math.floor(place.rating)
+                                        ? 'text-yellow-300'
+                                        : 'text-gray-500'
+                                    }`}
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Notes section */}
+                          <div className="mt-4">
+                            {isEditingThisPlace ? (
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-300">
+                                  Your notes:
+                                </label>
+                                <textarea
+                                  value={editingNotes}
+                                  onChange={(e) => setEditingNotes(e.target.value)}
+                                  className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Add your notes about this place..."
+                                  rows={3}
+                                />
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={handleSavePlaceNotes}
+                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEditNotes}
+                                    className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {place.notes && (
+                                  <div className="bg-gray-700 rounded-md p-3">
+                                    <p className="text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
+                                  </div>
+                                )}
+                                {!place.notes && isOwner && (
+                                  <button
+                                    onClick={() => handleEditPlaceNotes(place)}
+                                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                                  >
+                                    + Add notes
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="bg-gray-800 rounded-lg shadow overflow-hidden">

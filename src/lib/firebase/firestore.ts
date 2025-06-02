@@ -13,7 +13,7 @@ import {
   DocumentData,
 } from 'firebase/firestore';
 import { db } from './config';
-import { List, Place, ListPlace } from '@/types';
+import { List, Place, ListPlace, PlaceWithNotes } from '@/types';
 import { auth } from './config';
 
 // Convert Firestore data to our app types
@@ -302,7 +302,7 @@ export const removePlaceFromList = async (
   }
 };
 
-export const getPlacesInList = async (listId: string): Promise<Place[]> => {
+export const getPlacesInList = async (listId: string): Promise<PlaceWithNotes[]> => {
   try {
     // Get all list-place relationships for this list
     const q = query(
@@ -311,34 +311,33 @@ export const getPlacesInList = async (listId: string): Promise<Place[]> => {
     );
     const querySnapshot = await getDocs(q);
     
-    // Extract place IDs
-    const placeIds = querySnapshot.docs.map((doc) => 
-      doc.data().placeId
-    );
-    
     // If no places in list, return empty array
-    if (placeIds.length === 0) {
+    if (querySnapshot.empty) {
       return [];
     }
     
-    // Get all places
-    const places: Place[] = [];
+    // Get all places with their notes
+    const places: PlaceWithNotes[] = [];
     
-    // Fetch each place (we can't use 'in' operator with large arrays)
-    const placePromises = placeIds.map(async (placeId) => {
-      const placeDoc = await getDoc(doc(db, 'places', placeId));
+    // Fetch each place with its notes
+    const placePromises = querySnapshot.docs.map(async (listPlaceDoc) => {
+      const listPlaceData = listPlaceDoc.data();
+      const placeDoc = await getDoc(doc(db, 'places', listPlaceData.placeId));
+      
       if (placeDoc.exists()) {
-        const data = placeDoc.data();
+        const placeData = placeDoc.data();
         places.push({
           id: placeDoc.id,
-          googlePlaceId: data.googlePlaceId,
-          name: data.name,
-          address: data.address,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          rating: data.rating,
-          photoUrl: data.photoUrl,
-          placeTypes: data.placeTypes || [],
+          googlePlaceId: placeData.googlePlaceId,
+          name: placeData.name,
+          address: placeData.address,
+          latitude: placeData.latitude,
+          longitude: placeData.longitude,
+          rating: placeData.rating,
+          photoUrl: placeData.photoUrl,
+          placeTypes: placeData.placeTypes || [],
+          notes: listPlaceData.notes,
+          listPlaceId: listPlaceDoc.id,
         });
       }
     });
@@ -348,6 +347,41 @@ export const getPlacesInList = async (listId: string): Promise<Place[]> => {
     return places;
   } catch (error) {
     console.error('Error getting places in list:', error);
+    throw error;
+  }
+};
+
+// Update notes for a place in a list
+export const updatePlaceNotes = async (
+  listPlaceId: string,
+  notes: string
+): Promise<void> => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('User must be authenticated to update place notes');
+    }
+
+    await updateDoc(doc(db, 'listPlaces', listPlaceId), {
+      notes: notes.trim() || null, // Store null if empty string
+    });
+  } catch (error) {
+    console.error('Error updating place notes:', error);
+    throw error;
+  }
+};
+
+// Remove a specific place from a list using the listPlace ID
+export const removePlaceFromListById = async (
+  listPlaceId: string
+): Promise<void> => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('User must be authenticated to remove places from lists');
+    }
+
+    await deleteDoc(doc(db, 'listPlaces', listPlaceId));
+  } catch (error) {
+    console.error('Error removing place from list:', error);
     throw error;
   }
 };
