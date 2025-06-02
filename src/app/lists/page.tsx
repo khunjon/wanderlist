@@ -6,13 +6,66 @@ import { useAuth } from '@/hooks/useAuth';
 import { getUserLists, searchLists } from '@/lib/firebase/firestore';
 import { List } from '@/types';
 import { useRouter } from 'next/navigation';
+import { trackListView } from '@/lib/analytics/gtag';
+import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
+
+const sortOptions: SortOption[] = [
+  { value: 'updatedAt', label: 'Last Edited' },
+  { value: 'name', label: 'Name' },
+  { value: 'createdAt', label: 'Created Date' },
+  { value: 'viewCount', label: 'Views' },
+];
 
 export default function ListsPage() {
   const { user, loading: authLoading } = useAuth();
   const [lists, setLists] = useState<List[]>([]);
+  const [sortedLists, setSortedLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
   const router = useRouter();
+
+  // Sort lists based on current sort state
+  const sortLists = (listsToSort: List[], sort: SortState) => {
+    const sorted = [...listsToSort].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sort.field) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = a.createdAt.getTime();
+          bValue = b.createdAt.getTime();
+          break;
+        case 'updatedAt':
+          aValue = a.updatedAt.getTime();
+          bValue = b.updatedAt.getTime();
+          break;
+        case 'viewCount':
+          aValue = a.viewCount || 0;
+          bValue = b.viewCount || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sort.direction === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    return sorted;
+  };
+
+  // Update sorted lists when lists or sort state changes
+  useEffect(() => {
+    setSortedLists(sortLists(lists, sortState));
+  }, [lists, sortState]);
 
   // Fetch lists based on search query
   const fetchLists = async (searchTerm = '') => {
@@ -65,6 +118,17 @@ export default function ListsPage() {
   const handleClearSearch = () => {
     setSearchQuery('');
     fetchLists('');
+  };
+
+  // Handle list click with analytics tracking
+  const handleListClick = (list: List) => {
+    trackListView(list.name, list.id);
+    router.push(`/lists/${list.id}`);
+  };
+
+  // Handle sort change
+  const handleSortChange = (newSort: SortState) => {
+    setSortState(newSort);
   };
 
   if (authLoading) {
@@ -131,54 +195,82 @@ export default function ListsPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
               <p className="mt-4 text-white">Loading lists...</p>
             </div>
-          ) : lists.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {lists.map((list) => (
-                <div
-                  key={list.id}
-                  className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
-                >
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-lg font-medium text-white truncate">{list.name}</h3>
-                      {list.userId !== user?.uid && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200">
-                          Public
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm text-gray-300 line-clamp-2">
-                      {list.description || 'No description'}
-                    </p>
-                    {list.tags && list.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {list.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-300"
-                          >
-                            {tag}
+          ) : sortedLists.length > 0 ? (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <p className="text-sm text-gray-300">
+                  {sortedLists.length} {sortedLists.length === 1 ? 'list' : 'lists'}
+                </p>
+                <SortControl
+                  options={sortOptions}
+                  currentSort={sortState}
+                  onSortChange={handleSortChange}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {sortedLists.map((list) => (
+                  <div
+                    key={list.id}
+                    onClick={() => handleListClick(list)}
+                    className="bg-gray-800 overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-105 border border-gray-700 hover:border-gray-600"
+                  >
+                    <div className="px-6 py-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-xl font-semibold text-white truncate pr-2">{list.name}</h3>
+                        {list.userId !== user?.uid && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200 flex-shrink-0">
+                            Public
                           </span>
-                        ))}
+                        )}
                       </div>
-                    )}
-                    <div className="mt-4 flex justify-between items-center">
-                      <span className="text-xs text-gray-300">
-                        {list.userId === user?.uid ? 'Created' : 'Shared'} {list.createdAt.toLocaleDateString()}
-                      </span>
-                      <Link
-                        href={`/lists/${list.id}`}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-200 bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        View
-                      </Link>
+                      <p className="text-sm text-gray-300 line-clamp-2 mb-4 min-h-[2.5rem]">
+                        {list.description || 'No description'}
+                      </p>
+                      {list.tags && list.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {list.tags.slice(0, 3).map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-700 text-gray-300"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {list.tags.length > 3 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-600 text-gray-400">
+                              +{list.tags.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-xs text-gray-400">
+                        <div className="flex flex-col space-y-1">
+                          <span>
+                            Last edited {list.updatedAt.toLocaleDateString()}
+                          </span>
+                          {list.viewCount !== undefined && list.viewCount > 0 && (
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              {list.viewCount} {list.viewCount === 1 ? 'view' : 'views'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           ) : (
-            <div className="text-center py-12 bg-gray-800 shadow rounded-lg">
+            <div className="text-center py-12 bg-gray-800 shadow-lg rounded-xl border border-gray-700">
               <svg
                 className="mx-auto h-12 w-12 text-gray-400"
                 fill="none"

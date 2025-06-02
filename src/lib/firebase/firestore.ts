@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   QueryDocumentSnapshot,
   DocumentData,
+  increment,
 } from 'firebase/firestore';
 import { db } from './config';
 import { List, Place, ListPlace, PlaceWithNotes } from '@/types';
@@ -31,6 +32,7 @@ const convertFirestoreDataToList = (
     isPublic: data.isPublic,
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
+    viewCount: data.viewCount || 0,
   };
 };
 
@@ -96,6 +98,7 @@ export const getList = async (listId: string): Promise<List | null> => {
         isPublic: data.isPublic,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
+        viewCount: data.viewCount || 0,
       };
     }
     return null;
@@ -338,6 +341,7 @@ export const getPlacesInList = async (listId: string): Promise<PlaceWithNotes[]>
           placeTypes: placeData.placeTypes || [],
           notes: listPlaceData.notes,
           listPlaceId: listPlaceDoc.id,
+          addedAt: listPlaceData.addedAt?.toDate() || new Date(),
         });
       }
     });
@@ -435,5 +439,18 @@ export const searchLists = async (searchTerm: string, userId: string): Promise<L
   } catch (error) {
     console.error('Error searching lists:', error);
     throw error;
+  }
+};
+
+// Increment list view count
+export const incrementListViewCount = async (listId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, 'lists', listId);
+    await updateDoc(docRef, {
+      viewCount: increment(1)
+    });
+  } catch (error) {
+    console.error('Error incrementing list view count:', error);
+    // Don't throw error as this is not critical functionality
   }
 }; 

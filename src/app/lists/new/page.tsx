@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { createList } from '@/lib/firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { event } from '@/lib/analytics/gtag';
+import { trackListCreate } from '@/lib/analytics/gtag';
 
 export default function NewListPage() {
   const { user, loading: authLoading } = useAuth();
@@ -57,12 +57,8 @@ export default function NewListPage() {
 
       const listId = await createList(listData);
       
-      // Track list creation event
-      event({
-        action: 'list_create',
-        category: 'Lists',
-        label: name.trim(),
-      });
+      // Track list creation event with custom dimensions
+      trackListCreate(name.trim(), listId);
       
       router.push(`/lists/${listId}`);
     } catch (err) {

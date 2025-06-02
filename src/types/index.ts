@@ -18,6 +18,7 @@ export interface List {
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
+  viewCount?: number;
 }
 
 // Place type
@@ -37,6 +38,7 @@ export interface Place {
 export interface PlaceWithNotes extends Place {
   notes?: string;
   listPlaceId: string; // ID of the ListPlace junction record
+  addedAt: Date; // Date when place was added to the list
 }
 
 // ListPlace type (junction)

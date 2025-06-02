@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getList, getPlacesInList, deleteList, updateList, updatePlaceNotes, removePlaceFromListById } from '@/lib/firebase/firestore';
+import { getList, getPlacesInList, deleteList, updateList, updatePlaceNotes, removePlaceFromListById, incrementListViewCount } from '@/lib/firebase/firestore';
 import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getUserProfile } from '@/lib/firebase/user';
 import MapView from '@/components/maps/MapView';
+import { trackListView } from '@/lib/analytics/gtag';
+import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
+
+const placeSortOptions: SortOption[] = [
+  { value: 'addedAt', label: 'Date Added' },
+  { value: 'name', label: 'Name' },
+  { value: 'rating', label: 'Rating' },
+];
 
 interface ListContentProps {
   id: string;
@@ -18,6 +26,7 @@ export default function ListContent({ id }: ListContentProps) {
   const { user, loading: authLoading } = useAuth();
   const [list, setList] = useState<List | null>(null);
   const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
+  const [sortedPlaces, setSortedPlaces] = useState<PlaceWithNotes[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
@@ -31,62 +40,111 @@ export default function ListContent({ id }: ListContentProps) {
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState('');
   const [deletingPlaceId, setDeletingPlaceId] = useState<string | null>(null);
+  const [placeSortState, setPlaceSortState] = useState<SortState>({ field: 'addedAt', direction: 'desc' });
   const router = useRouter();
 
-  useEffect(() => {
-    // Redirect if not authenticated
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
+  // Sort places based on current sort state
+  const sortPlaces = (placesToSort: PlaceWithNotes[], sort: SortState) => {
+    const sorted = [...placesToSort].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
 
-    const fetchListAndPlaces = async () => {
+      switch (sort.field) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'rating':
+          aValue = a.rating || 0;
+          bValue = b.rating || 0;
+          break;
+        case 'addedAt':
+          aValue = a.addedAt.getTime();
+          bValue = b.addedAt.getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (sort.direction === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    return sorted;
+  };
+
+  // Update sorted places when places or sort state changes
+  useEffect(() => {
+    setSortedPlaces(sortPlaces(places, placeSortState));
+  }, [places, placeSortState]);
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch list details
+        setError(null);
+
+        // Fetch list data
         const listData = await getList(id);
-        
         if (!listData) {
           setError('List not found');
-          setLoading(false);
           return;
         }
 
         // Check if user has permission to view this list
-        if (listData.userId !== user?.uid && !listData.isPublic) {
+        if (!listData.isPublic && (!user || listData.userId !== user.uid)) {
           setError('You do not have permission to view this list');
-          setLoading(false);
           return;
         }
 
         setList(listData);
+
+        // Track list view and increment view count
+        if (user) {
+          trackListView(listData.name, listData.id);
+          // Only increment view count if user is not the owner
+          if (listData.userId !== user.uid) {
+            await incrementListViewCount(id);
+          }
+        }
+
+        // Set edit form values
         setEditName(listData.name);
         setEditTags(listData.tags?.join(', ') || '');
         setEditIsPublic(listData.isPublic);
-        
-        // Fetch author information
+
+        // Fetch author profile
         try {
-          const authorData = await getUserProfile(listData.userId);
-          setAuthor(authorData);
+          const authorProfile = await getUserProfile(listData.userId);
+          setAuthor(authorProfile);
         } catch (err) {
-          console.error('Error fetching author data:', err);
+          console.error('Error fetching author profile:', err);
         }
-        
-        // Fetch places in this list
+
+        // Fetch places in the list
         const placesData = await getPlacesInList(id);
         setPlaces(placesData);
       } catch (err) {
-        console.error('Error fetching list data:', err);
-        setError('An error occurred while loading the list. Please try again.');
+        console.error('Error fetching list:', err);
+        setError('Failed to load list. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
-      fetchListAndPlaces();
+    // Only fetch if we have the ID and either no user requirement or user is loaded
+    if (id && (!authLoading || user)) {
+      fetchData();
     }
-  }, [id, user, authLoading, router]);
+  }, [id, user, authLoading]);
+
+  // Handle place sort change
+  const handlePlaceSortChange = (newSort: SortState) => {
+    setPlaceSortState(newSort);
+  };
 
   const handleEditList = async () => {
     if (!list || !user || user.uid !== list.userId) return;
@@ -411,7 +469,7 @@ export default function ListContent({ id }: ListContentProps) {
         <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
           {places.length > 0 ? (
             <>
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <Link
                   href={`/search?listId=${list.id}`}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -430,39 +488,48 @@ export default function ListContent({ id }: ListContentProps) {
                   </svg>
                   Add Places
                 </Link>
-                <div className="inline-flex rounded-md shadow-sm" role="group">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('grid')}
-                    className={`px-4 py-2 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                      viewMode === 'grid'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-800 text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('map')}
-                    className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                      viewMode === 'map'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-800 text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
-                    </svg>
-                  </button>
+                <div className="flex items-center gap-4">
+                  {viewMode === 'grid' && (
+                    <SortControl
+                      options={placeSortOptions}
+                      currentSort={placeSortState}
+                      onSortChange={handlePlaceSortChange}
+                    />
+                  )}
+                  <div className="inline-flex rounded-md shadow-sm" role="group">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`px-4 py-2 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                        viewMode === 'grid'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-800 text-white hover:bg-gray-700'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('map')}
+                      className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                        viewMode === 'map'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-800 text-white hover:bg-gray-700'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
               
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {places.map((place) => {
+                  {sortedPlaces.map((place) => {
                     const isOwner = user && list && user.uid === list.userId;
                     const isEditingThisPlace = editingPlaceId === place.listPlaceId;
                     const isDeletingThisPlace = deletingPlaceId === place.listPlaceId;

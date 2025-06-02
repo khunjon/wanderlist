@@ -16,19 +16,53 @@ export const pageview = (url: string) => {
   }
 };
 
-// Track events
-export const event = ({ action, category, label, value }: {
+// Track events with optional custom dimensions
+export const event = ({ action, category, label, value, customDimensions }: {
   action: string;
   category: string;
   label?: string;
   value?: number;
+  customDimensions?: Record<string, string>;
 }) => {
   if (typeof window !== 'undefined') {
-    ReactGA.event({
+    const eventData: any = {
       action,
       category,
       label,
       value
-    });
+    };
+
+    // Add custom dimensions if provided
+    if (customDimensions) {
+      Object.entries(customDimensions).forEach(([key, value]) => {
+        eventData[key] = value;
+      });
+    }
+
+    ReactGA.event(eventData);
   }
+};
+
+// Specific event for list views
+export const trackListView = (listName: string, listId: string) => {
+  event({
+    action: 'list_view',
+    category: 'Lists',
+    label: listId,
+    customDimensions: {
+      list_name: listName
+    }
+  });
+};
+
+// Specific event for list creation
+export const trackListCreate = (listName: string, listId: string) => {
+  event({
+    action: 'list_create',
+    category: 'Lists',
+    label: listId,
+    customDimensions: {
+      list_name: listName
+    }
+  });
 }; 
