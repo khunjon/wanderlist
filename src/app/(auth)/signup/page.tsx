@@ -19,7 +19,7 @@ export default function SignupPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !authLoading) {
-      router.push('/dashboard');
+      router.push('/lists');
     }
   }, [user, authLoading, router]);
 

@@ -198,10 +198,10 @@ export default function SearchContent() {
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold tracking-tight text-white">Search Places</h1>
             <Link
-              href="/dashboard"
+              href="/lists"
               className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
             >
-              Back to Dashboard
+              Back to My Lists
             </Link>
           </div>
         </div>

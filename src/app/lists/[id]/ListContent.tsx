@@ -129,7 +129,7 @@ export default function ListContent({ id }: ListContentProps) {
         setIsDeleting(false);
         // Navigate after the state update
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/lists');
         }, 100);
       } catch (err) {
         console.error('Error deleting list:', err);
@@ -173,10 +173,10 @@ export default function ListContent({ id }: ListContentProps) {
             <p className="mt-1 text-sm text-gray-300">{error}</p>
             <div className="mt-6">
               <Link
-                href="/dashboard"
+                href="/lists"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Back to Dashboard
+                Back to My Lists
               </Link>
             </div>
           </div>
@@ -368,7 +368,7 @@ export default function ListContent({ id }: ListContentProps) {
                   Add Places
                 </Link>
                 <Link
-                  href="/dashboard"
+                  href="/lists"
                   className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
                 >
                   Back

@@ -79,10 +79,10 @@ export default function NewListPage() {
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold tracking-tight text-white">Create New List</h1>
             <Link
-              href="/dashboard"
+              href="/lists"
               className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
             >
-              Cancel
+              Back to My Lists
             </Link>
           </div>
         </div>
@@ -222,10 +222,10 @@ export default function NewListPage() {
 
                 <div className="flex justify-end">
                   <Link
-                    href="/dashboard"
+                    href="/lists"
                     className="rounded-md border border-gray-600 bg-gray-800 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
-                    Cancel
+                    Back to My Lists
                   </Link>
                   <button
                     type="submit"
