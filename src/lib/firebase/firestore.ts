@@ -325,4 +325,56 @@ export const getPlacesInList = async (listId: string): Promise<Place[]> => {
     console.error('Error getting places in list:', error);
     throw error;
   }
+};
+
+// Search for lists by name
+export const searchLists = async (searchTerm: string, userId: string): Promise<List[]> => {
+  try {
+    // Search for user's lists and public lists
+    const searchTermLower = searchTerm.toLowerCase();
+    const searchTermUpper = searchTermLower + '\uf8ff';
+    
+    const userListsQuery = query(
+      collection(db, 'lists'),
+      where('userId', '==', userId),
+      where('name', '>=', searchTermLower),
+      where('name', '<=', searchTermUpper)
+    );
+    
+    const publicListsQuery = query(
+      collection(db, 'lists'),
+      where('isPublic', '==', true),
+      where('name', '>=', searchTermLower),
+      where('name', '<=', searchTermUpper)
+    );
+    
+    const [userListsSnapshot, publicListsSnapshot] = await Promise.all([
+      getDocs(userListsQuery),
+      getDocs(publicListsQuery)
+    ]);
+    
+    // Combine user lists and public lists, removing duplicates
+    const allLists: List[] = [];
+    const listIds = new Set<string>();
+    
+    // First add user lists
+    userListsSnapshot.forEach((doc) => {
+      const list = convertFirestoreDataToList(doc);
+      allLists.push(list);
+      listIds.add(doc.id);
+    });
+    
+    // Then add public lists that aren't already in the list
+    publicListsSnapshot.forEach((doc) => {
+      if (!listIds.has(doc.id)) {
+        const list = convertFirestoreDataToList(doc);
+        allLists.push(list);
+      }
+    });
+    
+    return allLists;
+  } catch (error) {
+    console.error('Error searching lists:', error);
+    throw error;
+  }
 }; 
