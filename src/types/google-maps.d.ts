@@ -147,6 +147,7 @@ declare namespace google.maps {
   class event {
     static addListener(instance: MVCObject, eventName: string, handler: Function): MapsEventListener;
     static removeListener(listener: MapsEventListener): void;
+    static addListenerOnce(instance: MVCObject, eventName: string, handler: Function): MapsEventListener;
   }
 
   interface Icon {

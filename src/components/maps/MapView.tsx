@@ -173,9 +173,11 @@ export default function MapView({ places }: MapViewProps) {
       map.fitBounds(bounds);
       
       // Adjust zoom if too close
-      const listener = google.maps.event.addListener(map, 'idle', () => {
-        if (map.getZoom() > 16) {
-          map.setZoom(16);
+      const mapInstance = map; // Store reference to ensure it's stable in the callback
+      const listener = google.maps.event.addListener(mapInstance, 'idle', () => {
+        const currentZoom = mapInstance.getZoom();
+        if (currentZoom !== undefined && currentZoom > 16) {
+          mapInstance.setZoom(16);
         }
         google.maps.event.removeListener(listener);
       });
