@@ -13,7 +13,7 @@ A better way to save and organize places from Google Maps.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 with TypeScript
+- **Frontend**: Next.js 15 with TypeScript
 - **Styling**: Tailwind CSS
 - **Database**: Firebase Firestore
 - **Authentication**: Firebase Auth
@@ -116,6 +116,14 @@ service cloud.firestore {
 - `src/lib/` - Utility functions and API clients
 - `src/types/` - TypeScript type definitions
 
+## Next.js 15 Compatibility
+
+This project has been updated to work with Next.js 15, which introduces some important changes:
+
+- Dynamic route segments now receive params as a Promise that must be awaited
+- Client components that use hooks like `useSearchParams` must be wrapped in Suspense boundaries
+- The project architecture separates server and client components for optimal performance
+
 ## Deployment
 
 The easiest way to deploy the application is using Vercel:
@@ -124,6 +132,23 @@ The easiest way to deploy the application is using Vercel:
 2. Connect your repository to Vercel
 3. Add the environment variables in the Vercel dashboard
 4. Deploy!
+
+### Vercel Environment Variables
+
+Make sure to add all the environment variables listed in the Environment Setup section to your Vercel project settings.
+
+### Firebase Auth Configuration
+
+When deploying to Vercel, make sure to:
+1. Add your deployment domain to the authorized domains list in Firebase Authentication settings
+2. If testing on a preview deployment, add the preview URL to authorized domains as well
+
+## Troubleshooting
+
+If you encounter the "auth/unauthorized-domain" error when testing with Google Auth:
+1. Go to the Firebase Console
+2. Navigate to Authentication > Settings > Authorized domains
+3. Add your domain (including `localhost` for local development)
 
 ## Contributing
 
