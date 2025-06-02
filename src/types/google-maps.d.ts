@@ -156,6 +156,7 @@ declare namespace google.maps {
     origin?: Point;
     anchor?: Point;
     scaledSize?: Size;
+    labelOrigin?: Point;
   }
 
   class Point {

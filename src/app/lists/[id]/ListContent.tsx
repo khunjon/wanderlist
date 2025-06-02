@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getUserProfile } from '@/lib/firebase/user';
+import MapView from '@/components/maps/MapView';
 
 interface ListContentProps {
   id: string;
@@ -610,11 +611,7 @@ export default function ListContent({ id }: ListContentProps) {
               ) : (
                 <div className="bg-gray-800 rounded-lg shadow overflow-hidden">
                   <div className="h-[600px] w-full flex items-center justify-center">
-                    {/* Map view is temporarily disabled */}
-                    <div className="text-white text-center">
-                      <p className="text-xl mb-2">Map View</p>
-                      <p className="text-gray-400">Map visualization is temporarily unavailable.</p>
-                    </div>
+                    <MapView places={places} />
                   </div>
                 </div>
               )}

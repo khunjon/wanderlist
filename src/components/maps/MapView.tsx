@@ -139,14 +139,30 @@ export default function MapView({ places }: MapViewProps) {
         
         bounds.extend(position);
         
+        // Truncate place name if too long for better display
+        const displayName = place.name.length > 20 ? place.name.substring(0, 17) + '...' : place.name;
+        
         const marker = new google.maps.Marker({
           position,
           map,
           title: place.name,
           animation: google.maps.Animation.DROP,
           label: {
-            text: `${index + 1}`,
-            color: 'white'
+            text: displayName,
+            color: 'white',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          },
+          icon: {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="20" cy="20" r="8" fill="#3B82F6" stroke="white" stroke-width="2"/>
+                <circle cx="20" cy="20" r="3" fill="white"/>
+              </svg>
+            `),
+            scaledSize: new google.maps.Size(40, 40),
+            anchor: new google.maps.Point(20, 20),
+            labelOrigin: new google.maps.Point(20, 45)
           }
         });
         
