@@ -2,15 +2,15 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between">
-      <div className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-blue-50 to-white">
+    <main className="flex min-h-screen flex-col items-center justify-between bg-background text-foreground">
+      <div className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-blue-950 to-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-white">
                 Organize Your Favorite Places with Wanderlist
               </h1>
-              <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
+              <p className="mx-auto max-w-[700px] text-gray-300 md:text-xl">
                 Save, organize, and discover places better than Google Maps. Create beautiful lists
                 of your favorite spots and easily share them with friends.
               </p>
@@ -24,7 +24,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/login"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-gray-200 bg-white px-8 text-sm font-medium shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-gray-600 bg-gray-800 px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400"
               >
                 Log In
               </Link>
@@ -33,11 +33,11 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="w-full py-12 md:py-24 lg:py-32 bg-white">
+      <div className="w-full py-12 md:py-24 lg:py-32 bg-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-6 lg:grid-cols-3 lg:gap-12">
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-100 p-2 text-blue-600">
+              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -54,13 +54,13 @@ export default function Home() {
                   <circle cx="12" cy="10" r="3" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold">Save Any Place</h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-bold text-white">Save Any Place</h3>
+              <p className="text-gray-300">
                 Search for any place on Google Maps and save it to your lists with a single click.
               </p>
             </div>
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-100 p-2 text-blue-600">
+              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -78,13 +78,13 @@ export default function Home() {
                   <path d="M9 21V9" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold">Organize in Lists</h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-bold text-white">Organize in Lists</h3>
+              <p className="text-gray-300">
                 Create custom lists for different categories like restaurants, cafes, hotels, or attractions.
               </p>
             </div>
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-100 p-2 text-blue-600">
+              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -101,8 +101,8 @@ export default function Home() {
                   <path d="M9 18c-4.51 2-5-2-7-2" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold">Share with Friends</h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <h3 className="text-lg font-bold text-white">Share with Friends</h3>
+              <p className="text-gray-300">
                 Share your lists with friends and family so they can discover your favorite places.
               </p>
             </div>
