@@ -14,16 +14,17 @@ function NavActions({ closeMenu }: { closeMenu: () => void }) {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push('/login');
+      // Redirect to home page instead of login
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
   return {
-    signOut: () => {
+    signOut: async () => {
       closeMenu();
-      handleSignOut();
+      await handleSignOut();
     },
     navigate: (path: string) => {
       closeMenu();
@@ -43,10 +44,14 @@ export default function Navbar() {
     return () => {
       // We'll use this pattern to avoid directly using router here
       callback({ 
-        signOut: () => {
+        signOut: async () => {
           closeMenu();
           // The actual navigation happens in NavActions
-          document.getElementById('signout-button')?.click();
+          const signoutButton = document.getElementById('signout-button');
+          if (signoutButton) {
+            // TypeScript doesn't know this is a button with click method
+            (signoutButton as HTMLButtonElement).click();
+          }
         },
         navigate: (path: string) => {
           closeMenu();
@@ -136,18 +141,21 @@ export default function Navbar() {
                         <button 
                           id="signout-button"
                           className="hidden"
-                          onClick={() => {
+                          onClick={async () => {
                             const actions = NavActions({ closeMenu });
-                            actions.signOut();
+                            await actions.signOut();
                           }}
                         >
                           Hidden Sign Out
                         </button>
                       </Suspense>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           setIsMenuOpen(false);
-                          document.getElementById('signout-button')?.click();
+                          const signoutButton = document.getElementById('signout-button');
+                          if (signoutButton) {
+                            (signoutButton as HTMLButtonElement).click();
+                          }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       >
@@ -278,9 +286,12 @@ export default function Navbar() {
                 Create New List
               </Link>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setIsMenuOpen(false);
-                  document.getElementById('signout-button')?.click();
+                  const signoutButton = document.getElementById('signout-button');
+                  if (signoutButton) {
+                    (signoutButton as HTMLButtonElement).click();
+                  }
                 }}
                 className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
               >
