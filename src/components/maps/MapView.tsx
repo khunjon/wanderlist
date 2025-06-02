@@ -52,70 +52,77 @@ export default function MapView({ places }: MapViewProps) {
         fullscreenControl: true,
         zoomControl: true,
         styles: [
-          { 
-            featureType: "all", 
-            elementType: "labels.text.fill", 
-            stylers: [{ color: "#ffffff" }] 
+          // Hide all points of interest
+          {
+            featureType: "poi",
+            stylers: [{ visibility: "off" }]
           },
-          { 
-            featureType: "all", 
-            elementType: "labels.text.stroke", 
-            stylers: [{ color: "#000000" }, { lightness: 13 }] 
+          // Hide business labels
+          {
+            featureType: "poi.business",
+            stylers: [{ visibility: "off" }]
           },
-          { 
-            featureType: "administrative", 
-            elementType: "geometry.fill", 
-            stylers: [{ color: "#000000" }] 
+          // Hide transit stations
+          {
+            featureType: "transit.station",
+            stylers: [{ visibility: "off" }]
           },
-          { 
-            featureType: "administrative", 
-            elementType: "geometry.stroke", 
-            stylers: [{ color: "#144b53" }, { lightness: 14 }, { weight: 1.4 }] 
+          // Simplify road labels
+          {
+            featureType: "road",
+            elementType: "labels",
+            stylers: [{ visibility: "simplified" }]
           },
-          { 
-            featureType: "landscape", 
-            elementType: "all", 
-            stylers: [{ color: "#08304b" }] 
+          // Light background
+          {
+            featureType: "all",
+            elementType: "geometry",
+            stylers: [{ color: "#f5f5f5" }]
           },
-          { 
-            featureType: "poi", 
-            elementType: "geometry", 
-            stylers: [{ color: "#0c4152" }, { lightness: 5 }] 
+          // Light water
+          {
+            featureType: "water",
+            elementType: "geometry",
+            stylers: [{ color: "#c9d6e5" }]
           },
-          { 
-            featureType: "road.highway", 
-            elementType: "geometry.fill", 
-            stylers: [{ color: "#000000" }] 
+          // Subtle roads
+          {
+            featureType: "road",
+            elementType: "geometry",
+            stylers: [{ color: "#ffffff" }]
           },
-          { 
-            featureType: "road.highway", 
-            elementType: "geometry.stroke", 
-            stylers: [{ color: "#0b434f" }, { lightness: 25 }] 
+          {
+            featureType: "road.highway",
+            elementType: "geometry",
+            stylers: [{ color: "#e8e8e8" }]
           },
-          { 
-            featureType: "road.arterial", 
-            elementType: "geometry.fill", 
-            stylers: [{ color: "#000000" }] 
+          // Minimal labels with good contrast
+          {
+            featureType: "all",
+            elementType: "labels.text.fill",
+            stylers: [{ color: "#666666" }]
           },
-          { 
-            featureType: "road.arterial", 
-            elementType: "geometry.stroke", 
-            stylers: [{ color: "#0b3d51" }, { lightness: 16 }] 
+          {
+            featureType: "all",
+            elementType: "labels.text.stroke",
+            stylers: [{ color: "#ffffff" }, { weight: 2 }]
           },
-          { 
-            featureType: "road.local", 
-            elementType: "geometry", 
-            stylers: [{ color: "#000000" }] 
+          // Light parks/landscape
+          {
+            featureType: "landscape",
+            elementType: "geometry",
+            stylers: [{ color: "#f0f0f0" }]
           },
-          { 
-            featureType: "transit", 
-            elementType: "all", 
-            stylers: [{ color: "#146474" }] 
+          {
+            featureType: "landscape.natural",
+            elementType: "geometry",
+            stylers: [{ color: "#e8f5e8" }]
           },
-          { 
-            featureType: "water", 
-            elementType: "all", 
-            stylers: [{ color: "#021019" }] 
+          // Subtle administrative boundaries
+          {
+            featureType: "administrative",
+            elementType: "geometry.stroke",
+            stylers: [{ color: "#cccccc" }, { weight: 0.5 }]
           }
         ]
       };
