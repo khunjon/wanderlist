@@ -4,7 +4,7 @@ import { useState, useEffect, createContext, useContext, ReactNode, Suspense } f
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { User } from '@/types';
-import { convertFirebaseUserToUser } from '@/lib/firebase/auth';
+import { convertFirebaseUserToUser, getUserWithAdminStatus } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -29,11 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const unsubscribe = onAuthStateChanged(
       auth,
-      (firebaseUser: FirebaseUser | null) => {
+      async (firebaseUser: FirebaseUser | null) => {
         try {
           if (firebaseUser) {
-            // Convert Firebase user to our User type
-            const appUser = convertFirebaseUserToUser(firebaseUser);
+            // Get user with admin status from Firestore
+            const appUser = await getUserWithAdminStatus(firebaseUser);
             setUser(appUser);
           } else {
             setUser(null);

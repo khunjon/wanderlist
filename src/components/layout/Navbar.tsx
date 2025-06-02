@@ -4,11 +4,13 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdmin } from '@/hooks/useAdmin';
 import { signOut } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   
@@ -46,6 +48,14 @@ export default function Navbar() {
                 >
                   Discover
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="rounded-md px-3 py-2 text-sm font-medium text-yellow-300 hover:bg-gray-700 hover:text-yellow-200"
+                  >
+                    Admin
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -99,6 +109,15 @@ export default function Navbar() {
                       >
                         Create New List
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          href="/admin"
+                          className="block px-4 py-2 text-sm text-yellow-300 hover:bg-gray-700"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Admin Panel
+                        </Link>
+                      )}
                       <button
                         onClick={handleSignOut}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
@@ -184,6 +203,15 @@ export default function Navbar() {
           >
             Discover
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="block rounded-md px-3 py-2 text-base font-medium text-yellow-300 hover:bg-gray-700 hover:text-yellow-200"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Admin
+            </Link>
+          )}
         </div>
         {user ? (
           <div className="border-t border-gray-700 pb-3 pt-4">
@@ -229,6 +257,15 @@ export default function Navbar() {
               >
                 Create New List
               </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="block rounded-md px-3 py-2 text-base font-medium text-yellow-300 hover:bg-gray-700 hover:text-yellow-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin Panel
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"

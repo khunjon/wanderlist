@@ -5,6 +5,7 @@ export interface User {
   displayName: string;
   createdAt: Date;
   photoURL?: string;
+  isAdmin?: boolean;
 }
 
 // List type

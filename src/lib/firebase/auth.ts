@@ -8,7 +8,7 @@ import {
   UserCredential,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { auth, db } from './config';
 import { User } from '@/types';
 
@@ -120,5 +120,27 @@ export const convertFirebaseUserToUser = (firebaseUser: FirebaseUser): User => {
     displayName: firebaseUser.displayName || '',
     photoURL: firebaseUser.photoURL || '',
     createdAt: new Date(),
+    isAdmin: false, // Default to false, will be updated by getUserWithAdminStatus
   };
+};
+
+// Get user with admin status from Firestore
+export const getUserWithAdminStatus = async (firebaseUser: FirebaseUser): Promise<User> => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+    const userData = userDoc.exists() ? userDoc.data() : {};
+    
+    return {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email || '',
+      displayName: firebaseUser.displayName || '',
+      photoURL: firebaseUser.photoURL || '',
+      createdAt: userData.createdAt?.toDate() || new Date(),
+      isAdmin: userData.isAdmin || false,
+    };
+  } catch (error) {
+    console.error('Error getting user admin status:', error);
+    // Return user without admin status if there's an error
+    return convertFirebaseUserToUser(firebaseUser);
+  }
 }; 

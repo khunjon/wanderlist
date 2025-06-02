@@ -18,6 +18,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         displayName: data.displayName || '',
         photoURL: data.photoURL || '',
         createdAt: data.createdAt?.toDate() || new Date(),
+        isAdmin: data.isAdmin || false,
       };
     }
     return null;
