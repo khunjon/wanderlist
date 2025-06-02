@@ -31,107 +31,112 @@ export default function Home() {
   // Only show the landing page if the user is not logged in
   return (
     <main className="flex min-h-screen flex-col items-center justify-between bg-background text-foreground">
-      <div className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-blue-950 to-gray-900">
+      {/* Hero Section */}
+      <div className="w-full py-16 md:py-28 lg:py-36 bg-gradient-to-b from-blue-950 to-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-white">
-                Organize Your Favorite Places with Placemarks
+          <div className="flex flex-col items-center gap-6 text-center">
+            <div className="space-y-4 max-w-3xl">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-white">
+                Never lose track of great places again
               </h1>
-              <p className="mx-auto max-w-[700px] text-gray-300 md:text-xl">
-                Save, organize, and discover places better than Google Maps. Create beautiful lists
-                of your favorite spots and easily share them with friends.
+              <p className="mx-auto max-w-[800px] text-gray-300 md:text-xl lg:text-2xl">
+                Organize your favorite spots, restaurants, and discoveries in lists that actually make sense
+              </p>
+              <p className="mx-auto max-w-[700px] text-gray-400 md:text-lg mt-4">
+                Turn your scattered bookmarks into organized collections. Whether it's that perfect coffee shop, 
+                the restaurant you've been meaning to try, or your weekend adventure spots – keep them all in one 
+                place that's actually easy to use.
               </p>
             </div>
-            <div className="flex flex-col md:flex-row gap-4">
-              <Link
-                href="/signup"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
-              >
-                Get Started
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-gray-600 bg-gray-800 px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400"
-              >
-                Log In
-              </Link>
+            <Link
+              href="/signup"
+              className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
+            >
+              Start Organizing Your Places
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Problem/Solution Section */}
+      <div className="w-full py-16 md:py-24 lg:py-32 bg-gray-900">
+        <div className="container px-4 md:px-6 mx-auto">
+          <div className="grid gap-12 md:grid-cols-2 lg:gap-16">
+            <div className="space-y-5">
+              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                >
+                  <path d="M9.879 14.121L12 12"></path>
+                  <path d="M21.071 13.172a3 3 0 0 0-.415-4.243L15.414 3.686a1 1 0 0 0-1.414 0l-2.829 2.829a1 1 0 0 0-.293.707v5.172a3 3 0 0 0 3 3h5.172a.997.997 0 0 0 .707-.293l1.414-1.414"></path>
+                  <path d="M7.757 16.243l-1.414 1.414a1 1 0 0 1-1.414 0l-2.829-2.829a1 1 0 0 1 0-1.414l5.243-5.243a1 1 0 0 1 1.414 0l2.829 2.829a1 1 0 0 1 0 1.414l-3.829 3.829"></path>
+                  <path d="M6 16v2a4 4 0 0 0 4 4h8"></path>
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white">The Problem</h3>
+              <p className="text-gray-300 text-lg">
+                We all save places when we're out exploring, but finding them later? That's the hard part. 
+                Buried in apps, scattered across platforms, with no real way to organize what matters to you.
+              </p>
+            </div>
+            <div className="space-y-5">
+              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-6 w-6"
+                >
+                  <path d="M12 2v20"></path>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white">The Solution</h3>
+              <p className="text-gray-300 text-lg">
+                Placemarks gives you the simple, organized place management you've always wanted. 
+                Create custom lists, add personal notes, and actually find what you're looking for.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="w-full py-12 md:py-24 lg:py-32 bg-gray-900">
+      {/* Final CTA Section */}
+      <div className="w-full py-16 md:py-24 bg-gradient-to-t from-blue-950 to-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-6 lg:grid-cols-3 lg:gap-12">
-            <div className="space-y-3">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-6 w-6"
-                >
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-white">Save Any Place</h3>
-              <p className="text-gray-300">
-                Search for any place on Google Maps and save it to your lists with a single click.
+          <div className="flex flex-col items-center gap-6 text-center">
+            <div className="space-y-3 max-w-2xl">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
+                Ready to get organized?
+              </h2>
+              <p className="text-gray-300 text-lg">
+                Join early users who are finally making sense of their saved places.
               </p>
             </div>
-            <div className="space-y-3">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-6 w-6"
-                >
-                  <rect width="18" height="18" x="3" y="3" rx="2" />
-                  <path d="M3 9h18" />
-                  <path d="M9 21V9" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-white">Organize in Lists</h3>
-              <p className="text-gray-300">
-                Create custom lists for different categories like restaurants, cafes, hotels, or attractions.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-6 w-6"
-                >
-                  <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-                  <path d="M9 18c-4.51 2-5-2-7-2" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-white">Share with Friends</h3>
-              <p className="text-gray-300">
-                Share your lists with friends and family so they can discover your favorite places.
+            <div className="flex flex-col items-center">
+              <Link
+                href="/signup"
+                className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700 w-full md:w-auto"
+              >
+                Get Started Free
+              </Link>
+              <p className="text-sm text-gray-400 mt-3">
+                No credit card required. Works with any device.
               </p>
             </div>
           </div>
