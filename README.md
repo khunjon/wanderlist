@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wanderlist
+
+A better way to save and organize places from Google Maps.
+
+## Features
+
+- User authentication (Firebase Auth)
+- Search for places using Google Places API
+- Create and manage custom lists of places
+- Add places to lists with one click
+- Clean, mobile-first responsive design
+- View saved lists with place details (name, address, rating, photos)
+
+## Tech Stack
+
+- **Frontend**: Next.js 14 with TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: Firebase Firestore
+- **Authentication**: Firebase Auth
+- **Maps Integration**: Google Places API
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ and npm
+- Firebase account
+- Google Cloud account with Maps/Places API enabled
+
+### Environment Setup
+
+1. Clone the repository
+2. Create a `.env.local` file in the root directory with the following variables:
+
+```
+# Firebase
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+
+# Google Maps
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Firebase Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a new Firebase project at [firebase.google.com](https://firebase.google.com)
+2. Enable Authentication with Email/Password and Google Sign-in methods
+3. Create a Firestore database
+4. Set up the security rules (example below)
 
-## Learn More
+### Firestore Security Rules
 
-To learn more about Next.js, take a look at the following resources:
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own documents
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Lists can be read by owner or if they're public
+    match /lists/{listId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Places can be read by anyone (they're public data)
+    match /places/{placeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // ListPlaces can be read/written by the list owner
+    match /listPlaces/{listPlaceId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid;
+    }
+  }
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Google Cloud Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Create a new project in Google Cloud Console
+2. Enable the Places API and Maps JavaScript API
+3. Create an API key with appropriate restrictions
+4. Add the API key to your `.env.local` file
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `src/app/` - Next.js app directory with routes
+- `src/components/` - React components
+- `src/hooks/` - Custom React hooks
+- `src/lib/` - Utility functions and API clients
+- `src/types/` - TypeScript type definitions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+The easiest way to deploy the application is using Vercel:
+
+1. Push your code to a GitHub repository
+2. Connect your repository to Vercel
+3. Add the environment variables in the Vercel dashboard
+4. Deploy!
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License.
