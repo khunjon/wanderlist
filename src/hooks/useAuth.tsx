@@ -25,10 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    setLoading(true); // Set loading to true before auth state changes
+    
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser: FirebaseUser | null) => {
-        setLoading(true);
         try {
           if (firebaseUser) {
             // Convert Firebase user to our User type

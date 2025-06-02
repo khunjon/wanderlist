@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { registerWithEmailAndPassword, signInWithGoogle } from '@/lib/firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -13,6 +14,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +42,7 @@ export default function SignupPage() {
 
     try {
       await registerWithEmailAndPassword(email, password, name);
-      router.push('/dashboard');
+      // Don't redirect here - let the auth state change handle it
     } catch (err: any) {
       console.error('Signup error:', err);
       if (err.code === 'auth/email-already-in-use') {
@@ -41,7 +50,6 @@ export default function SignupPage() {
       } else {
         setError('Error signing up. Please try again.');
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -52,14 +60,25 @@ export default function SignupPage() {
 
     try {
       await signInWithGoogle();
-      router.push('/dashboard');
+      // Don't redirect here - let the auth state change handle it
     } catch (err) {
       console.error('Google signup error:', err);
       setError('Error signing up with Google. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
+  
+  // Show loading spinner if authentication is in progress
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
