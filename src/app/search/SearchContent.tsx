@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback, useRef } from 'react';
+import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { searchPlaces } from '@/lib/google/places';
 import { createPlace, addPlaceToList, getUserLists, getList } from '@/lib/firebase/firestore';
@@ -43,12 +43,12 @@ export default function SearchContent() {
   const router = useRouter();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Handle list ID from URL
-  const handleListIdFromUrl = (listId: string | null) => {
+  // Memoized callback for handling list ID from URL
+  const handleListIdFromUrl = useCallback((listId: string | null) => {
     setListIdFromUrl(listId);
-  };
+  }, []);
 
-  // Debounced search function
+  // Memoized debounced search function
   const performDebouncedSearch = useCallback(async (searchQuery: string, city?: string) => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -91,9 +91,9 @@ export default function SearchContent() {
     }
   }, []);
 
-  // Create debounced version of the search function
-  const debouncedSearch = useCallback(
-    debounce((searchQuery: string, city?: string) => {
+  // Create memoized debounced version of the search function
+  const debouncedSearch = useMemo(
+    () => debounce((searchQuery: string, city?: string) => {
       performDebouncedSearch(searchQuery, city);
     }, 300),
     [performDebouncedSearch]
@@ -159,7 +159,8 @@ export default function SearchContent() {
     }
   }, [user, authLoading, router, listIdFromUrl]);
 
-  const handleSearch = async (e: React.FormEvent) => {
+  // Memoized search handler
+  const handleSearch = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!query.trim()) return;
@@ -175,10 +176,10 @@ export default function SearchContent() {
     // Perform immediate search for form submission
     setIsTyping(false);
     await performDebouncedSearch(query, selectedListCity);
-  };
+  }, [query, selectedListCity, debouncedSearch, performDebouncedSearch]);
 
   // Handle input change with debounced search
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
     
@@ -191,9 +192,9 @@ export default function SearchContent() {
       setSearchResults([]);
       setSearchPerformed(false);
     }
-  };
+  }, [selectedListCity, debouncedSearch]);
 
-  const handleListChange = async (listId: string) => {
+  const handleListChange = useCallback(async (listId: string) => {
     setSelectedListId(listId);
     
     // Update the city when list changes
@@ -209,9 +210,10 @@ export default function SearchContent() {
         debouncedSearch(query, newCity);
       }
     }
-  };
+  }, [userLists, selectedListCity, query, debouncedSearch]);
 
-  const handleAddToList = async (place: GooglePlace) => {
+  // Memoized add to list handler
+  const handleAddToList = useCallback(async (place: GooglePlace) => {
     if (!selectedListId || !user) {
       setError('Please select a list and make sure you are logged in.');
       return;
@@ -270,7 +272,16 @@ export default function SearchContent() {
       // Clear loading state for this place
       setAddingToList(prev => ({ ...prev, [place.place_id]: false }));
     }
-  };
+  }, [selectedListId, user]);
+
+  // Memoized filtered and sorted search results
+  const processedSearchResults = useMemo(() => {
+    if (!searchResults.length) return [];
+    
+    // You can add filtering logic here if needed
+    // For now, just return the results as-is since they come pre-filtered from the API
+    return searchResults;
+  }, [searchResults]);
 
   if (authLoading || loadingLists) {
     return (
@@ -418,67 +429,61 @@ export default function SearchContent() {
                 )}
               </div>
             </form>
-          </div>
 
-          {searchPerformed && (
-            <div className="mt-8">
-              <h2 className="text-lg font-medium text-white mb-4">Search Results</h2>
-              
-              {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-4 text-white">Searching for places...</p>
-                </div>
-              ) : searchResults.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {searchResults.map((place) => (
+            {/* Search Results */}
+            {loading && !isTyping && (
+              <div className="mt-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-2 text-white">Searching...</p>
+              </div>
+            )}
+
+            {searchPerformed && !loading && processedSearchResults.length === 0 && (
+              <div className="mt-8 text-center">
+                <p className="text-white">No places found. Try a different search term.</p>
+              </div>
+            )}
+
+            {processedSearchResults.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-medium text-white mb-4">
+                  Search Results ({processedSearchResults.length})
+                </h3>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {processedSearchResults.map((place) => (
                     <div
                       key={place.place_id}
-                      className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
+                      className="bg-gray-700 overflow-hidden shadow rounded-lg"
                     >
-                      {place.photos && place.photos.length > 0 && (
-                        <div className="relative h-48 w-full bg-gray-700">
-                          <img
-                            src={`/api/places/photo?photoReference=${place.photos[0].photo_reference}&maxWidth=400`}
-                            alt={place.name}
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                      )}
                       <div className="px-4 py-5 sm:p-6">
-                        <h3 className="text-lg font-medium text-white truncate">{place.name}</h3>
-                        <p className="mt-1 text-sm text-gray-300 line-clamp-2">
-                          {place.formatted_address}
-                        </p>
+                        <h4 className="text-lg font-medium text-white truncate">{place.name}</h4>
+                        <p className="mt-1 text-sm text-gray-300">{place.formatted_address}</p>
                         {place.rating && (
                           <div className="mt-2 flex items-center">
-                            <span className="text-sm font-medium text-white">
-                              {place.rating.toFixed(1)}
-                            </span>
-                            <div className="ml-1 flex">
+                            <div className="flex items-center">
                               {Array.from({ length: 5 }, (_, i) => (
                                 <svg
                                   key={i}
-                                  className={`h-5 w-5 ${
+                                  className={`h-4 w-4 ${
                                     i < Math.floor(place.rating || 0)
                                       ? 'text-yellow-400'
-                                      : i < Math.ceil(place.rating || 0) && i >= Math.floor(place.rating || 0)
-                                      ? 'text-yellow-300'
-                                      : 'text-gray-500'
+                                      : 'text-gray-400'
                                   }`}
                                   xmlns="http://www.w3.org/2000/svg"
                                   viewBox="0 0 20 20"
                                   fill="currentColor"
-                                  aria-hidden="true"
                                 >
                                   <path
                                     fillRule="evenodd"
-                                    d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
+                                    d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
                                     clipRule="evenodd"
                                   />
                                 </svg>
                               ))}
                             </div>
+                            <span className="ml-2 text-sm text-gray-300">
+                              {place.rating}
+                            </span>
                           </div>
                         )}
                         {place.types && place.types.length > 0 && (
@@ -551,30 +556,9 @@ export default function SearchContent() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-12 bg-gray-800 shadow rounded-lg">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-white">No places found</h3>
-                  <p className="mt-1 text-sm text-gray-300">
-                    Try searching with different keywords or locations.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

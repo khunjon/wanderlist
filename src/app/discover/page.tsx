@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getPublicLists } from '@/lib/firebase/firestore';
@@ -19,15 +19,13 @@ const sortOptions: SortOption[] = [
 export default function DiscoverPage() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<List[]>([]);
-  const [filteredLists, setFilteredLists] = useState<List[]>([]);
-  const [sortedLists, setSortedLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
   const router = useRouter();
 
-  // Sort lists based on current sort state
-  const sortLists = (listsToSort: List[], sort: SortState) => {
+  // Memoized sort function
+  const sortLists = useCallback((listsToSort: List[], sort: SortState) => {
     const sorted = [...listsToSort].sort((a, b) => {
       let aValue: any;
       let bValue: any;
@@ -61,10 +59,10 @@ export default function DiscoverPage() {
     });
 
     return sorted;
-  };
+  }, []);
 
-  // Filter lists based on search query
-  const filterLists = (listsToFilter: List[], query: string) => {
+  // Memoized filter function
+  const filterLists = useCallback((listsToFilter: List[], query: string) => {
     if (!query.trim()) {
       return listsToFilter;
     }
@@ -81,21 +79,20 @@ export default function DiscoverPage() {
       
       return nameMatch || tagMatch;
     });
-  };
+  }, []);
 
-  // Update filtered lists when search query changes
-  useEffect(() => {
-    const filtered = filterLists(allLists, searchQuery);
-    setFilteredLists(filtered);
-  }, [allLists, searchQuery]);
+  // Memoized filtered lists
+  const filteredLists = useMemo(() => {
+    return filterLists(allLists, searchQuery);
+  }, [allLists, searchQuery, filterLists]);
 
-  // Update sorted lists when filtered lists or sort state changes
-  useEffect(() => {
-    setSortedLists(sortLists(filteredLists, sortState));
-  }, [filteredLists, sortState]);
+  // Memoized sorted lists
+  const sortedLists = useMemo(() => {
+    return sortLists(filteredLists, sortState);
+  }, [filteredLists, sortState, sortLists]);
 
   // Fetch public lists
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     try {
       setLoading(true);
       const publicLists = await getPublicLists();
@@ -105,7 +102,7 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -118,28 +115,28 @@ export default function DiscoverPage() {
     if (user) {
       fetchLists();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, fetchLists]);
 
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoized search input change handler
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-  };
+  }, []);
 
-  // Clear search
-  const handleClearSearch = () => {
+  // Memoized clear search handler
+  const handleClearSearch = useCallback(() => {
     setSearchQuery('');
-  };
+  }, []);
 
-  // Handle list click with analytics tracking
-  const handleListClick = (list: List) => {
+  // Memoized list click handler
+  const handleListClick = useCallback((list: List) => {
     trackListView(list.name, list.id);
     router.push(`/lists/${list.id}`);
-  };
+  }, [router]);
 
-  // Handle sort change
-  const handleSortChange = (newSort: SortState) => {
+  // Memoized sort change handler
+  const handleSortChange = useCallback((newSort: SortState) => {
     setSortState(newSort);
-  };
+  }, []);
 
   if (authLoading) {
     return (
@@ -248,24 +245,18 @@ export default function DiscoverPage() {
                       )}
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <div className="flex flex-col space-y-1">
-                          <span>
-                            Last edited {list.updatedAt.toLocaleDateString()}
-                          </span>
-                          {list.viewCount !== undefined && list.viewCount > 0 && (
-                            <span className="flex items-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              {list.viewCount} {list.viewCount === 1 ? 'view' : 'views'}
-                            </span>
-                          )}
+                          <span>Created: {list.createdAt.toLocaleDateString()}</span>
+                          <span>Updated: {list.updatedAt.toLocaleDateString()}</span>
                         </div>
-                        <div className="text-right">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
+                        {list.viewCount !== undefined && (
+                          <div className="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>{list.viewCount} views</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -273,7 +264,7 @@ export default function DiscoverPage() {
               </div>
             </>
           ) : (
-            <div className="text-center py-12 bg-gray-800 shadow-lg rounded-xl border border-gray-700">
+            <div className="text-center py-12 bg-gray-800 shadow rounded-lg">
               <svg
                 className="mx-auto h-12 w-12 text-gray-400"
                 fill="none"
@@ -285,13 +276,11 @@ export default function DiscoverPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                 />
               </svg>
-              <h3 className="mt-2 text-sm font-medium text-white">No public lists found</h3>
-              <p className="mt-1 text-sm text-gray-300">
-                {searchQuery ? `No public lists matching "${searchQuery}"` : 'No public lists are available yet.'}
-              </p>
+              <h3 className="mt-2 text-sm font-medium text-white">No public lists</h3>
+              <p className="mt-1 text-sm text-gray-300">Be the first to create a public list!</p>
               <div className="mt-6">
                 <Link
                   href="/lists/new"
@@ -310,7 +299,7 @@ export default function DiscoverPage() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Create Your First Public List
+                  Create New List
                 </Link>
               </div>
             </div>

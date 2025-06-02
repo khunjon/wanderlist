@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getList, getPlacesInList, deleteList, updateList, updatePlaceNotes, removePlaceFromListById, incrementListViewCount } from '@/lib/firebase/firestore';
 import { List, PlaceWithNotes, User } from '@/types';
@@ -26,7 +26,6 @@ export default function ListContent({ id }: ListContentProps) {
   const { user, loading: authLoading } = useAuth();
   const [list, setList] = useState<List | null>(null);
   const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
-  const [sortedPlaces, setSortedPlaces] = useState<PlaceWithNotes[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
@@ -43,8 +42,8 @@ export default function ListContent({ id }: ListContentProps) {
   const [placeSortState, setPlaceSortState] = useState<SortState>({ field: 'addedAt', direction: 'desc' });
   const router = useRouter();
 
-  // Sort places based on current sort state
-  const sortPlaces = (placesToSort: PlaceWithNotes[], sort: SortState) => {
+  // Memoized sort function for places
+  const sortPlaces = useCallback((placesToSort: PlaceWithNotes[], sort: SortState) => {
     const sorted = [...placesToSort].sort((a, b) => {
       let aValue: any;
       let bValue: any;
@@ -74,12 +73,17 @@ export default function ListContent({ id }: ListContentProps) {
     });
 
     return sorted;
-  };
+  }, []);
 
-  // Update sorted places when places or sort state changes
-  useEffect(() => {
-    setSortedPlaces(sortPlaces(places, placeSortState));
-  }, [places, placeSortState]);
+  // Memoized sorted places array
+  const sortedPlaces = useMemo(() => {
+    return sortPlaces(places, placeSortState);
+  }, [places, placeSortState, sortPlaces]);
+
+  // Memoized check if user is owner
+  const isOwner = useMemo(() => {
+    return user?.uid === list?.userId;
+  }, [user?.uid, list?.userId]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,12 +145,13 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [id, user, authLoading]);
 
-  // Handle place sort change
-  const handlePlaceSortChange = (newSort: SortState) => {
+  // Memoized place sort change handler
+  const handlePlaceSortChange = useCallback((newSort: SortState) => {
     setPlaceSortState(newSort);
-  };
+  }, []);
 
-  const handleEditList = async () => {
+  // Memoized edit list handler
+  const handleEditList = useCallback(async () => {
     if (!list || !user || user.uid !== list.userId) return;
     
     setUpdateLoading(true);
@@ -178,9 +183,10 @@ export default function ListContent({ id }: ListContentProps) {
     } finally {
       setUpdateLoading(false);
     }
-  };
+  }, [list, user, id, editName, editTags, editIsPublic]);
 
-  const handleDeleteList = async () => {
+  // Memoized delete list handler
+  const handleDeleteList = useCallback(async () => {
     if (!list || !user || user.uid !== list.userId) return;
     
     if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
@@ -199,14 +205,16 @@ export default function ListContent({ id }: ListContentProps) {
         alert('Failed to delete list. Please try again.');
       }
     }
-  };
+  }, [list, user, id, router]);
 
-  const handleEditPlaceNotes = (place: PlaceWithNotes) => {
+  // Memoized edit place notes handler
+  const handleEditPlaceNotes = useCallback((place: PlaceWithNotes) => {
     setEditingPlaceId(place.listPlaceId);
     setEditingNotes(place.notes || '');
-  };
+  }, []);
 
-  const handleSavePlaceNotes = async () => {
+  // Memoized save place notes handler
+  const handleSavePlaceNotes = useCallback(async () => {
     if (!editingPlaceId) return;
     
     try {
@@ -225,14 +233,16 @@ export default function ListContent({ id }: ListContentProps) {
       console.error('Error updating place notes:', err);
       alert('Failed to update notes. Please try again.');
     }
-  };
+  }, [editingPlaceId, editingNotes, places]);
 
-  const handleCancelEditNotes = () => {
+  // Memoized cancel edit notes handler
+  const handleCancelEditNotes = useCallback(() => {
     setEditingPlaceId(null);
     setEditingNotes('');
-  };
+  }, []);
 
-  const handleDeletePlace = async (place: PlaceWithNotes) => {
+  // Memoized delete place handler
+  const handleDeletePlace = useCallback(async (place: PlaceWithNotes) => {
     if (!user || user.uid !== list?.userId) return;
     
     if (window.confirm(`Are you sure you want to remove "${place.name}" from this list?`)) {
@@ -249,7 +259,11 @@ export default function ListContent({ id }: ListContentProps) {
         setDeletingPlaceId(null);
       }
     }
-  };
+  }, [user, list?.userId, places]);
+
+  // Memoized view mode handlers
+  const handleSetGridView = useCallback(() => setViewMode('grid'), []);
+  const handleSetMapView = useCallback(() => setViewMode('map'), []);
 
   if (authLoading || loading) {
     return (
@@ -300,8 +314,6 @@ export default function ListContent({ id }: ListContentProps) {
   if (!list) {
     return null;
   }
-
-  const isOwner = user?.uid === list.userId;
 
   return (
     <div className="min-h-screen bg-background">
@@ -499,7 +511,7 @@ export default function ListContent({ id }: ListContentProps) {
                   <div className="inline-flex rounded-md shadow-sm" role="group">
                     <button
                       type="button"
-                      onClick={() => setViewMode('grid')}
+                      onClick={handleSetGridView}
                       className={`px-4 py-2 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                         viewMode === 'grid'
                           ? 'bg-blue-600 text-white'
@@ -512,7 +524,7 @@ export default function ListContent({ id }: ListContentProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setViewMode('map')}
+                      onClick={handleSetMapView}
                       className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                         viewMode === 'map'
                           ? 'bg-blue-600 text-white'
@@ -530,7 +542,6 @@ export default function ListContent({ id }: ListContentProps) {
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {sortedPlaces.map((place) => {
-                    const isOwner = user && list && user.uid === list.userId;
                     const isEditingThisPlace = editingPlaceId === place.listPlaceId;
                     const isDeletingThisPlace = deletingPlaceId === place.listPlaceId;
                     
