@@ -125,6 +125,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ### Firestore Security Rules
 
+**Important**: The security rules have been updated to allow unauthenticated users to view public lists for the discover functionality. Deploy these updated rules to your Firebase project:
+
 ```
 rules_version = '2';
 service cloud.firestore {
@@ -141,13 +143,15 @@ service cloud.firestore {
       allow read: if isAdmin(); // Admins can read all user documents
     }
     
-    // Lists can be read by owner, if they're public, or by admins
+    // Lists can be read by owner, if they're public (even without auth), or by admins
     match /lists/{listId} {
       allow create: if request.auth != null;
-      allow read: if request.auth != null && 
-                     (resource.data.userId == request.auth.uid || 
-                      resource.data.isPublic == true ||
-                      isAdmin()); // Admins can read all lists
+      // Allow reading public lists without authentication for discovery
+      // Allow reading own lists when authenticated
+      // Allow admins to read all lists
+      allow read: if resource.data.isPublic == true || 
+                     (request.auth != null && resource.data.userId == request.auth.uid) ||
+                     (request.auth != null && isAdmin());
       allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
@@ -157,16 +161,34 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
     
-    // ListPlaces can be read/written by the list owner or admins
+    // ListPlaces can be read by anyone if the parent list is public
+    // Can be written only by the list owner or admins
     match /listPlaces/{listPlaceId} {
       allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && 
-                                     (get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid ||
-                                      isAdmin()); // Admins can read all listPlaces
+      // Allow reading if the parent list is public (for discovery)
+      // Allow reading/writing if user owns the list
+      // Allow admins to read all listPlaces
+      allow read: if get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.isPublic == true ||
+                     (request.auth != null && get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid) ||
+                     (request.auth != null && isAdmin());
+      allow update, delete: if request.auth != null && 
+                               (get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid ||
+                                isAdmin());
     }
   }
 }
 ```
+
+**To deploy these rules:**
+1. Install Firebase CLI: `npm install -g firebase-tools`
+2. Login to Firebase: `firebase login`
+3. Initialize Firebase in your project: `firebase init firestore`
+4. Deploy the rules: `firebase deploy --only firestore:rules`
+
+**Key Changes:**
+- Public lists can now be read without authentication
+- This enables the discover page to work for unauthenticated users
+- Authentication is still required for interactive features (future like/favorite functionality)
 
 ### Firebase Storage Rules
 

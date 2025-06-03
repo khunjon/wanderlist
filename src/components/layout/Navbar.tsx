@@ -36,12 +36,14 @@ export default function Navbar() {
             </Link>
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <Link
-                  href="/lists"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-gray-700"
-                >
-                  My Lists
-                </Link>
+                {user && (
+                  <Link
+                    href="/lists"
+                    className="rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                  >
+                    My Lists
+                  </Link>
+                )}
                 <Link
                   href="/discover"
                   className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -189,13 +191,15 @@ export default function Navbar() {
       {/* Mobile menu */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
         <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          <Link
-            href="/lists"
-            className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-gray-700"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            My Lists
-          </Link>
+          {user && (
+            <Link
+              href="/lists"
+              className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-gray-700"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              My Lists
+            </Link>
+          )}
           <Link
             href="/discover"
             className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"

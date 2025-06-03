@@ -37,21 +37,33 @@ Ensure your Firebase project is properly configured:
 3. **Security Rules**: Must allow the operations (see below)
 
 ### 3. Firestore Security Rules
-Your Firestore security rules must allow the operations. Here are the correct rules:
+Your Firestore security rules must allow the operations. Here are the updated rules that allow unauthenticated users to view public lists:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own documents
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // Lists can be read by owner or if they're public
+    // Users can read/write their own documents, admins can read all
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAdmin(); // Admins can read all user documents
+    }
+    
+    // Lists can be read by owner, if they're public (even without auth), or by admins
     match /lists/{listId} {
       allow create: if request.auth != null;
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || resource.data.isPublic == true);
+      // Allow reading public lists without authentication for discovery
+      // Allow reading own lists when authenticated
+      // Allow admins to read all lists
+      allow read: if resource.data.isPublic == true || 
+                     (request.auth != null && resource.data.userId == request.auth.uid) ||
+                     (request.auth != null && isAdmin());
       allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
@@ -61,14 +73,29 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
     
-    // ListPlaces can be read/written by the list owner
+    // ListPlaces can be read by anyone if the parent list is public
+    // Can be written only by the list owner or admins
     match /listPlaces/{listPlaceId} {
       allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid;
+      // Allow reading if the parent list is public (for discovery)
+      // Allow reading/writing if user owns the list
+      // Allow admins to read all listPlaces
+      allow read: if get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.isPublic == true ||
+                     (request.auth != null && get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid) ||
+                     (request.auth != null && isAdmin());
+      allow update, delete: if request.auth != null && 
+                               (get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid ||
+                                isAdmin());
     }
   }
 }
 ```
+
+**Key Changes:**
+- Public lists can now be read without authentication (`resource.data.isPublic == true`)
+- ListPlaces associated with public lists can also be read without authentication
+- This enables the discover page to work for unauthenticated users
+- Authentication is still required for creating, updating, and deleting content
 
 ## Debugging Steps
 

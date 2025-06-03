@@ -135,9 +135,18 @@ export default function Home() {
               >
                 Get Started Free
               </Link>
-              <p className="text-sm text-gray-400 mt-3">
-                No credit card required. Works with any device.
-              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
+                <p className="text-sm text-gray-400">
+                  No credit card required. Works with any device.
+                </p>
+                <span className="text-gray-500 hidden sm:inline">•</span>
+                <Link
+                  href="/discover"
+                  className="text-sm text-blue-400 hover:text-blue-300 underline"
+                >
+                  Browse public lists first
+                </Link>
+              </div>
             </div>
           </div>
         </div>

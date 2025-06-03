@@ -105,17 +105,12 @@ export default function DiscoverPage() {
   }, []);
 
   useEffect(() => {
-    // Redirect if not authenticated
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    // Initial fetch of lists
-    if (user) {
-      fetchLists();
-    }
-  }, [user, authLoading, router, fetchLists]);
+    // Don't redirect unauthenticated users - they can view public lists
+    // Authentication will be required for future features like liking/favoriting
+    
+    // Fetch public lists regardless of authentication status
+    fetchLists();
+  }, [fetchLists]);
 
   // Memoized search input change handler
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
