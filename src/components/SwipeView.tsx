@@ -90,22 +90,22 @@ export default function SwipeView({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Header with close button and progress */}
-        <div className="absolute top-0 left-0 right-0 z-10 p-4">
+        {/* Header with close button and progress - entire area is clickable to close */}
+        <div 
+          className="absolute top-0 left-0 right-0 z-10 p-4 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onClose();
+          }}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onClose();
+          }}
+        >
           <div className="flex items-center justify-between mb-2">
-            <div 
-              className="p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-colors cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onClose();
-              }}
-              onTouchEnd={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onClose();
-              }}
-            >
+            <div className="p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -140,10 +140,10 @@ export default function SwipeView({
             </div>
           )}
 
-          {/* Navigation areas */}
+          {/* Navigation areas - positioned below the header */}
           <button
             onClick={onPrev}
-            className="absolute left-0 top-0 w-1/3 h-full z-20 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity"
+            className="absolute left-0 top-20 w-1/3 h-3/4 z-20 flex items-center justify-start pl-4 opacity-0 hover:opacity-100 transition-opacity"
             aria-label="Previous place"
           >
             <div className="p-2 rounded-full bg-black bg-opacity-50 text-white">
@@ -155,7 +155,7 @@ export default function SwipeView({
 
           <button
             onClick={onNext}
-            className="absolute right-0 top-0 w-1/3 h-full z-20 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity"
+            className="absolute right-0 top-20 w-1/3 h-3/4 z-20 flex items-center justify-end pr-4 opacity-0 hover:opacity-100 transition-opacity"
             aria-label="Next place"
           >
             <div className="p-2 rounded-full bg-black bg-opacity-50 text-white">
