@@ -4,14 +4,33 @@ A better way to save and organize places from Google Maps.
 
 ## Features
 
+### Core Functionality
 - User authentication (Firebase Auth)
 - Search for places using Google Places API
 - Create and manage custom lists of places
 - Add places to lists with one click
 - Organize lists with tags for easy categorization
 - Edit and delete your lists
-- Clean, mobile-first responsive design
+- Add personal notes to saved places
 - View saved lists with place details (name, address, rating, photos)
+
+### Modern User Experience
+- **Multiple View Modes**: Grid view, interactive map view, and immersive swipe view
+- **Swipe View**: Instagram story-style browsing with touch gestures and keyboard navigation
+- **Mobile-First Design**: Fully responsive with optimized mobile interactions
+- **Clean Interface**: Streamlined UI with improved information hierarchy
+- **Smart Search**: Search your personal lists and discover public lists from other users
+
+### List Management
+- **Public/Private Lists**: Share your lists publicly or keep them private
+- **Enhanced List Display**: Organized information showing location, description, author, and last updated date
+- **Contextual Actions**: Edit mode with prominent action buttons
+- **Tag Organization**: Categorize lists with custom tags (visible in detailed view)
+
+### Discovery Features
+- **Discover Page**: Browse public lists created by other users
+- **List Analytics**: View counts and engagement metrics
+- **Author Profiles**: See who created each list with profile photos
 
 ## Tech Stack
 
@@ -21,6 +40,32 @@ A better way to save and organize places from Google Maps.
 - **Authentication**: Firebase Auth
 - **Maps Integration**: Google Places API
 - **Deployment**: Vercel
+
+## User Interface
+
+### List Views
+- **Grid View**: Traditional card-based layout for browsing multiple places
+- **Map View**: Interactive map showing all places with location markers
+- **Swipe View**: Full-screen, story-style browsing with:
+  - Touch/swipe gestures for navigation
+  - Keyboard shortcuts (arrow keys, spacebar, escape)
+  - Immersive photo backgrounds with gradient overlays
+  - Easy access to notes with slide-up panel
+  - Progress indicator and smooth transitions
+
+### Mobile Optimization
+- **Touch-Friendly Controls**: Large tap targets and swipe gestures
+- **Responsive Sort Controls**: Full-width on mobile, compact on desktop
+- **Adaptive Layouts**: Content reflows optimally for different screen sizes
+- **Context-Aware Actions**: Edit buttons and features appear when appropriate
+
+### Enhanced Information Display
+Lists now show information in a logical hierarchy:
+1. **Location** (with location pin emoji)
+2. **Description** 
+3. **Author** (with profile photo)
+4. **Last Updated Date**
+5. **Tags and Privacy Status**
 
 ## Getting Started
 
@@ -147,10 +192,31 @@ service firebase.storage {
 ## Project Structure
 
 - `src/app/` - Next.js app directory with routes
+  - `lists/` - List management pages
+  - `discover/` - Public list discovery
+  - `search/` - Place search functionality
 - `src/components/` - React components
+  - `SwipeView.tsx` - Immersive swipe view component
+  - `ui/` - Reusable UI components
 - `src/hooks/` - Custom React hooks
 - `src/lib/` - Utility functions and API clients
 - `src/types/` - TypeScript type definitions
+
+## Key Components
+
+### SwipeView Component
+A modern, Instagram story-style interface for browsing places:
+- **Full-screen immersive experience** with photo backgrounds
+- **Touch gesture support** for mobile devices
+- **Keyboard navigation** for desktop users
+- **Notes integration** with slide-up panel
+- **Progress tracking** with visual indicators
+
+### Enhanced List Management
+- **Contextual editing** with streamlined workflows
+- **Mobile-optimized controls** that adapt to screen size
+- **Smart information hierarchy** for better readability
+- **Improved search functionality** with personalized placeholders
 
 ## Next.js 15 Compatibility
 
@@ -185,7 +251,6 @@ If you encounter the "auth/unauthorized-domain" error when testing with Google A
 1. Go to the Firebase Console
 2. Navigate to Authentication > Settings > Authorized domains
 3. Add your domain (including `localhost` for local development)
-
 
 ## License
 
