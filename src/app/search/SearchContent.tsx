@@ -18,7 +18,12 @@ function SearchParamsHandler({
   const searchParams = useSearchParams();
   
   useEffect(() => {
+    console.log('🔍 SearchParamsHandler running');
+    console.log('📋 All search params:', Object.fromEntries(searchParams.entries()));
+    
     const listIdFromUrl = searchParams.get('listId');
+    console.log('🆔 Extracted listId from URL:', listIdFromUrl);
+    
     onListIdFound(listIdFromUrl);
   }, [searchParams, onListIdFound]);
 
@@ -117,23 +122,31 @@ export default function SearchContent() {
   }, [debouncedSearch]);
 
   useEffect(() => {
+    console.log('🔄 Main useEffect triggered:', { authLoading, user: !!user, listIdFromUrl });
+    
     // Redirect if not authenticated
     if (!authLoading && !user) {
+      console.log('🚫 User not authenticated, redirecting to login');
       router.push('/login');
       return;
     }
 
     // Fetch list details if listId is provided
     const fetchListDetails = async () => {
+      console.log('📋 fetchListDetails called with:', { user: !!user, listIdFromUrl });
+      
       if (!user || !listIdFromUrl) {
+        console.log('❌ Missing requirements for fetchListDetails:', { user: !!user, listIdFromUrl });
         return;
       }
       
       try {
+        console.log('⏳ Starting to fetch list details for:', listIdFromUrl);
         setLoadingLists(true);
         
         // Get the specific list details
         const listDetails = await getList(listIdFromUrl);
+        console.log('📄 Got list details:', listDetails);
         
         if (listDetails) {
           setSelectedList(listDetails);
@@ -142,14 +155,17 @@ export default function SearchContent() {
           if (listDetails.city) {
             setSelectedListCity(listDetails.city);
           }
+          console.log('✅ List details set successfully');
         } else {
+          console.log('❌ List not found');
           setError('List not found. Please go back and try again.');
         }
       } catch (err) {
-        console.error('Error fetching list details:', err);
+        console.error('💥 Error fetching list details:', err);
         setError('Failed to load list details. Please try again.');
       } finally {
         setLoadingLists(false);
+        console.log('🏁 fetchListDetails completed');
       }
     };
 
