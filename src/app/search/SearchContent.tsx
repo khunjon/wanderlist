@@ -9,31 +9,11 @@ import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
 import { debounce } from 'lodash';
 
-// Separate component to handle search params
-function SearchParamsHandler({ 
-  onListIdFound 
-}: { 
-  onListIdFound: (listId: string | null) => void 
-}) {
-  const searchParams = useSearchParams();
-  
-  useEffect(() => {
-    console.log('🔍 SearchParamsHandler running');
-    console.log('📋 All search params:', Object.fromEntries(searchParams.entries()));
-    
-    const listIdFromUrl = searchParams.get('listId');
-    console.log('🆔 Extracted listId from URL:', listIdFromUrl);
-    
-    onListIdFound(listIdFromUrl);
-  }, [searchParams, onListIdFound]);
-
-  return null;
-}
-
 export default function SearchContent() {
   console.log('🚨 SearchContent component is loading!');
   
   const { user, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,7 +25,9 @@ export default function SearchContent() {
   const [addingToList, setAddingToList] = useState<Record<string, boolean>>({});
   const [addedToList, setAddedToList] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
-  const [listIdFromUrl, setListIdFromUrl] = useState<string | null>(null);
+  
+  // Get listId directly from search params
+  const listIdFromUrl = searchParams.get('listId');
   
   console.log('🔧 SearchContent state initialized:', {
     user: !!user,
@@ -57,10 +39,10 @@ export default function SearchContent() {
   const router = useRouter();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Memoized callback for handling list ID from URL
-  const handleListIdFromUrl = useCallback((listId: string | null) => {
-    setListIdFromUrl(listId);
-  }, []);
+  // Memoized callback for handling list ID from URL - no longer needed
+  // const handleListIdFromUrl = useCallback((listId: string | null) => {
+  //   setListIdFromUrl(listId);
+  // }, []);
 
   // Memoized debounced search function
   const performSearch = useCallback(async (searchQuery: string, city?: string) => {
@@ -123,6 +105,7 @@ export default function SearchContent() {
 
   useEffect(() => {
     console.log('🔄 Main useEffect triggered:', { authLoading, user: !!user, listIdFromUrl });
+    console.log('🔍 Direct search params check:', Object.fromEntries(searchParams.entries()));
     
     // Redirect if not authenticated
     if (!authLoading && !user) {
@@ -172,7 +155,7 @@ export default function SearchContent() {
     if (user) {
       fetchListDetails();
     }
-  }, [user, authLoading, router, listIdFromUrl]);
+  }, [user, authLoading, router, listIdFromUrl, searchParams]);
 
   // Memoized search handler
   const handleSearch = useCallback(async (e: React.FormEvent) => {
@@ -324,10 +307,6 @@ export default function SearchContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Suspense fallback={null}>
-        <SearchParamsHandler onListIdFound={handleListIdFromUrl} />
-      </Suspense>
-      
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
