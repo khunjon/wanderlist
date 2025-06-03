@@ -32,37 +32,40 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between bg-background text-foreground">
       {/* Hero Section */}
-      <div className="w-full py-16 md:py-28 lg:py-36 bg-gradient-to-b from-blue-950 to-gray-900">
+      <div className="w-full py-12 md:py-20 lg:py-28 bg-gradient-to-b from-blue-950 to-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="flex flex-col items-center gap-6 text-center">
             <div className="space-y-4 max-w-3xl">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl text-white">
                 Never lose track of great places again
               </h1>
-              <p className="mx-auto max-w-[800px] text-gray-300 md:text-xl lg:text-2xl">
-                Organize your favorite spots, restaurants, and discoveries in lists that actually make sense
-              </p>
-              <p className="mx-auto max-w-[700px] text-gray-400 md:text-lg mt-4">
-                Turn your scattered bookmarks into organized collections. Whether it's that perfect coffee shop, 
-                the restaurant you've been meaning to try, or your weekend adventure spots – keep them all in one 
-                place that's actually easy to use.
+              <p className="mx-auto max-w-[600px] text-gray-300 md:text-xl lg:text-2xl">
+                Organize your favorite spots in lists that actually make sense.
               </p>
             </div>
-            <Link
-              href="/signup"
-              className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
-            >
-              Start Organizing Your Places
-            </Link>
+            <div className="flex flex-col items-center gap-4">
+              <Link
+                href="/signup"
+                className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
+              >
+                Start Here
+              </Link>
+              <Link
+                href="/discover"
+                className="text-sm text-blue-400 hover:text-blue-300 underline"
+              >
+                Discover Public Lists
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Problem/Solution Section */}
-      <div className="w-full py-16 md:py-24 lg:py-32 bg-gray-900">
+      <div className="w-full py-12 md:py-16 lg:py-20 bg-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-12 md:grid-cols-2 lg:gap-16">
-            <div className="space-y-5">
+          <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
+            <div className="space-y-4">
               <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -88,7 +91,7 @@ export default function Home() {
                 Buried in apps, scattered across platforms, with no real way to organize what matters to you.
               </p>
             </div>
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -117,7 +120,7 @@ export default function Home() {
       </div>
 
       {/* Final CTA Section */}
-      <div className="w-full py-16 md:py-24 bg-gradient-to-t from-blue-950 to-gray-900">
+      <div className="w-full py-12 md:py-16 bg-gradient-to-t from-blue-950 to-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="flex flex-col items-center gap-6 text-center">
             <div className="space-y-3 max-w-2xl">

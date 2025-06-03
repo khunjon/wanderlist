@@ -86,13 +86,13 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
+    <div className="flex min-h-screen flex-col items-center justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8 bg-gray-900">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
+          <p className="mt-2 text-sm text-gray-300">
             Or{' '}
             <Link href="/login" className="font-medium text-blue-400 hover:text-blue-300">
               sign in to your account
@@ -101,7 +101,7 @@ export default function SignupPage() {
         </div>
 
         {error && (
-          <div className="bg-red-900 border-l-4 border-red-600 p-4 mb-4">
+          <div className="bg-red-900 border-l-4 border-red-600 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
@@ -125,8 +125,8 @@ export default function SignupPage() {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleEmailSignup}>
-          <div className="space-y-4">
+        <form className="space-y-4" onSubmit={handleEmailSignup}>
+          <div className="space-y-3">
             <div>
               <label htmlFor="name" className="sr-only">
                 Full name
@@ -137,7 +137,7 @@ export default function SignupPage() {
                 type="text"
                 autoComplete="name"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-2.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -154,7 +154,7 @@ export default function SignupPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-2.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -171,7 +171,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-2.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -188,7 +188,7 @@ export default function SignupPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full rounded-md border-0 py-1.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
+                className="relative block w-full rounded-md border-0 py-2.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -197,18 +197,18 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <div>
+          <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-400"
+              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-blue-400"
             >
               {loading ? 'Creating account...' : 'Sign up'}
             </button>
           </div>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-600" />
@@ -218,11 +218,11 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-4">
             <button
               onClick={handleGoogleSignup}
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:bg-gray-700"
+              className="group relative flex w-full justify-center rounded-md border border-gray-600 bg-gray-800 px-3 py-2.5 text-sm font-semibold text-gray-300 hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 disabled:bg-gray-700"
             >
               <span className="mr-2">
                 <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
