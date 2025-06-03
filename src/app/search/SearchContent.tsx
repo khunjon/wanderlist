@@ -181,17 +181,23 @@ export default function SearchContent() {
 
   // Memoized add to list handler
   const handleAddToList = useCallback(async (place: GooglePlace) => {
+    console.log('🚀 Starting handleAddToList for:', place.name);
+    console.log('📋 Initial state:', { selectedListId, user: !!user, userId: user?.uid });
+    
     if (!selectedListId || !user) {
+      console.log('❌ Missing requirements:', { selectedListId, user: !!user });
       setError('Please make sure you are logged in and have a valid list selected.');
       return;
     }
     
+    console.log('⏳ Setting loading state for place:', place.place_id);
     // Set loading state for this specific place
     setAddingToList(prev => ({ ...prev, [place.place_id]: true }));
     
     try {
       // Clear any previous errors
       setError(null);
+      console.log('🧹 Cleared errors');
       
       // First create or get place in our database
       const placeData = {
@@ -207,26 +213,50 @@ export default function SearchContent() {
         placeTypes: place.types || [],
       };
       
-      const placeId = await createPlace(placeData);
+      console.log('📍 About to call createPlace with data:', placeData);
+      
+      // Add a timeout to detect hanging calls
+      const createPlacePromise = createPlace(placeData);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('createPlace timeout after 10 seconds')), 10000)
+      );
+      
+      const placeId = await Promise.race([createPlacePromise, timeoutPromise]) as string;
+      console.log('✅ createPlace completed, got placeId:', placeId);
       
       // Then add it to the selected list
-      const listPlaceId = await addPlaceToList(selectedListId, placeId);
+      console.log('📝 About to call addPlaceToList with:', { selectedListId, placeId });
+      
+      const addToListPromise = addPlaceToList(selectedListId, placeId);
+      const timeoutPromise2 = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('addPlaceToList timeout after 10 seconds')), 10000)
+      );
+      
+      const listPlaceId = await Promise.race([addToListPromise, timeoutPromise2]) as string;
+      console.log('✅ addPlaceToList completed, got listPlaceId:', listPlaceId);
       
       // Mark as added and show success feedback
+      console.log('🎉 Setting success state');
       setAddedToList(prev => ({ ...prev, [place.place_id]: true }));
       
       // Clear the added state after 3 seconds
       setTimeout(() => {
         setAddedToList(prev => ({ ...prev, [place.place_id]: false }));
+        console.log('🔄 Cleared success state for:', place.place_id);
       }, 3000);
+      
+      console.log('✨ handleAddToList completed successfully');
     } catch (err) {
-      console.error('Error adding place to list:', err);
+      console.error('💥 Error in handleAddToList:', err);
       
       // Show specific error message
       let errorMessage = 'Failed to add place to list. Please try again.';
       
       if (err instanceof Error) {
-        if (err.message.includes('permission')) {
+        console.log('📝 Error details:', err.message);
+        if (err.message.includes('timeout')) {
+          errorMessage = 'Request timed out. Please check your internet connection and try again.';
+        } else if (err.message.includes('permission')) {
           errorMessage = 'Permission denied. Please check that you own this list and your account is properly configured.';
         } else if (err.message.includes('authenticated')) {
           errorMessage = 'You must be logged in to add places to lists. Please refresh the page and try again.';
@@ -241,6 +271,7 @@ export default function SearchContent() {
       
       setError(errorMessage);
     } finally {
+      console.log('🏁 Clearing loading state for:', place.place_id);
       // Clear loading state for this place
       setAddingToList(prev => ({ ...prev, [place.place_id]: false }));
     }
