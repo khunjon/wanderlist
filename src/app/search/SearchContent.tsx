@@ -30,13 +30,13 @@ export default function SearchContent() {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
-  const [userLists, setUserLists] = useState<List[]>([]);
+  const [selectedList, setSelectedList] = useState<List | null>(null);
   const [selectedListCity, setSelectedListCity] = useState<string | undefined>();
   const [loadingLists, setLoadingLists] = useState(true);
   const [addingToList, setAddingToList] = useState<Record<string, boolean>>({});
+  const [addedToList, setAddedToList] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [listIdFromUrl, setListIdFromUrl] = useState<string | null>(null);
   
@@ -49,11 +49,10 @@ export default function SearchContent() {
   }, []);
 
   // Memoized debounced search function
-  const performDebouncedSearch = useCallback(async (searchQuery: string, city?: string) => {
+  const performSearch = useCallback(async (searchQuery: string, city?: string) => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       setSearchPerformed(false);
-      setIsTyping(false);
       return;
     }
 
@@ -68,7 +67,6 @@ export default function SearchContent() {
     setLoading(true);
     setError(null);
     setSearchPerformed(true);
-    setIsTyping(false);
     
     try {
       const results = await searchPlaces(searchQuery, city);
@@ -91,12 +89,12 @@ export default function SearchContent() {
     }
   }, []);
 
-  // Create memoized debounced version of the search function
+  // Create memoized debounced version of the search function - removed for manual search only
   const debouncedSearch = useMemo(
     () => debounce((searchQuery: string, city?: string) => {
-      performDebouncedSearch(searchQuery, city);
+      performSearch(searchQuery, city);
     }, 300),
-    [performDebouncedSearch]
+    [performSearch]
   );
 
   // Cleanup function to cancel debounced calls
@@ -116,46 +114,34 @@ export default function SearchContent() {
       return;
     }
 
-    // Fetch user's lists
-    const fetchUserLists = async () => {
-      if (!user) return;
+    // Fetch list details if listId is provided
+    const fetchListDetails = async () => {
+      if (!user || !listIdFromUrl) return;
       
       try {
         setLoadingLists(true);
-        const lists = await getUserLists(user.uid);
-        setUserLists(lists);
         
-        // If listId is provided in URL, set it as selected list
-        if (listIdFromUrl) {
+        // Get the specific list details
+        const listDetails = await getList(listIdFromUrl);
+        if (listDetails) {
+          setSelectedList(listDetails);
           setSelectedListId(listIdFromUrl);
-          
-          // Get the city for the selected list
-          const selectedList = lists.find(list => list.id === listIdFromUrl);
-          if (selectedList && selectedList.city) {
-            setSelectedListCity(selectedList.city);
-          } else if (listIdFromUrl) {
-            // If list not found in user lists, fetch it directly
-            const listDetails = await getList(listIdFromUrl);
-            if (listDetails && listDetails.city) {
-              setSelectedListCity(listDetails.city);
-            }
+          if (listDetails.city) {
+            setSelectedListCity(listDetails.city);
           }
-        } else if (lists.length > 0) {
-          setSelectedListId(lists[0].id);
-          if (lists[0].city) {
-            setSelectedListCity(lists[0].city);
-          }
+        } else {
+          setError('List not found. Please go back and try again.');
         }
       } catch (err) {
-        console.error('Error fetching user lists:', err);
-        setError('Failed to load your lists. Please try again.');
+        console.error('Error fetching list details:', err);
+        setError('Failed to load list details. Please try again.');
       } finally {
         setLoadingLists(false);
       }
     };
 
     if (user) {
-      fetchUserLists();
+      fetchListDetails();
     }
   }, [user, authLoading, router, listIdFromUrl]);
 
@@ -174,48 +160,25 @@ export default function SearchContent() {
     }
 
     // Perform immediate search for form submission
-    setIsTyping(false);
-    await performDebouncedSearch(query, selectedListCity);
-  }, [query, selectedListCity, debouncedSearch, performDebouncedSearch]);
+    await performSearch(query, selectedListCity);
+  }, [query, selectedListCity, debouncedSearch, performSearch]);
 
-  // Handle input change with debounced search
+  // Handle input change - removed auto-search
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
     
-    if (newQuery.trim()) {
-      setIsTyping(true);
-      debouncedSearch(newQuery, selectedListCity);
-    } else {
-      setIsTyping(false);
-      debouncedSearch.cancel();
+    // Clear results if query is empty
+    if (!newQuery.trim()) {
       setSearchResults([]);
       setSearchPerformed(false);
     }
-  }, [selectedListCity, debouncedSearch]);
-
-  const handleListChange = useCallback(async (listId: string) => {
-    setSelectedListId(listId);
-    
-    // Update the city when list changes
-    const selectedList = userLists.find(list => list.id === listId);
-    const newCity = selectedList?.city;
-    
-    if (newCity !== selectedListCity) {
-      setSelectedListCity(newCity);
-      
-      // If there's an active search query, re-run the search with the new city
-      if (query.trim()) {
-        setIsTyping(true);
-        debouncedSearch(query, newCity);
-      }
-    }
-  }, [userLists, selectedListCity, query, debouncedSearch]);
+  }, []);
 
   // Memoized add to list handler
   const handleAddToList = useCallback(async (place: GooglePlace) => {
     if (!selectedListId || !user) {
-      setError('Please select a list and make sure you are logged in.');
+      setError('Please make sure you are logged in and have a valid list selected.');
       return;
     }
     
@@ -245,8 +208,13 @@ export default function SearchContent() {
       // Then add it to the selected list
       const listPlaceId = await addPlaceToList(selectedListId, placeId);
       
-      // Show success feedback
-      alert(`Added ${place.name} to your list!`);
+      // Mark as added and show success feedback
+      setAddedToList(prev => ({ ...prev, [place.place_id]: true }));
+      
+      // Clear the added state after 3 seconds
+      setTimeout(() => {
+        setAddedToList(prev => ({ ...prev, [place.place_id]: false }));
+      }, 3000);
     } catch (err) {
       console.error('Error adding place to list:', err);
       
@@ -303,13 +271,28 @@ export default function SearchContent() {
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold tracking-tight text-white">Search Places</h1>
-            <Link
-              href="/lists"
-              className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
-            >
-              Back to My Lists
-            </Link>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              {selectedList ? `Add Places to "${selectedList.name}"` : 'Add Places to List'}
+            </h1>
+            <div className="flex space-x-3">
+              {selectedList && (
+                <Link
+                  href={`/lists/${selectedList.id}`}
+                  className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to List
+                </Link>
+              )}
+              <Link
+                href="/lists"
+                className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
+              >
+                My Lists
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -355,39 +338,15 @@ export default function SearchContent() {
                       placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search for restaurants, cafes, attractions..."}
                       value={query}
                       onChange={handleInputChange}
-                      disabled={loading && !isTyping}
+                      disabled={loading}
                     />
-                    {isTyping && (
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <svg
-                          className="animate-spin h-4 w-4 text-blue-400"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                      </div>
-                    )}
                   </div>
                   <button
                     type="submit"
                     disabled={loading || !query.trim()}
                     className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
                   >
-                    {loading && !isTyping ? 'Searching...' : 'Search'}
+                    {loading ? 'Searching...' : 'Search'}
                   </button>
                 </div>
                 {selectedListCity && (
@@ -396,42 +355,10 @@ export default function SearchContent() {
                   </p>
                 )}
               </div>
-
-              <div>
-                <label htmlFor="list" className="block text-sm font-medium text-white">
-                  Select list to add places to
-                </label>
-                <select
-                  id="list"
-                  name="list"
-                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm h-10"
-                  value={selectedListId || ''}
-                  onChange={(e) => handleListChange(e.target.value)}
-                  disabled={userLists.length === 0}
-                >
-                  {userLists.length > 0 ? (
-                    userLists.map((list) => (
-                      <option key={list.id} value={list.id}>
-                        {list.name}{list.city ? ` (${list.city})` : ''}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">No lists available</option>
-                  )}
-                </select>
-                {userLists.length === 0 && (
-                  <p className="mt-2 text-sm text-red-400">
-                    You need to create a list first.{' '}
-                    <Link href="/lists/new" className="font-medium text-blue-400 hover:text-blue-300">
-                      Create a list
-                    </Link>
-                  </p>
-                )}
-              </div>
             </form>
 
             {/* Search Results */}
-            {loading && !isTyping && (
+            {loading && (
               <div className="mt-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
                 <p className="mt-2 text-white">Searching...</p>
@@ -503,10 +430,15 @@ export default function SearchContent() {
                             onClick={() => handleAddToList(place)}
                             disabled={
                               addingToList[place.place_id] ||
+                              addedToList[place.place_id] ||
                               !selectedListId ||
-                              userLists.length === 0
+                              !selectedList
                             }
-                            className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
+                            className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                              addedToList[place.place_id]
+                                ? 'text-white bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                                : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300'
+                            }`}
                           >
                             {addingToList[place.place_id] ? (
                               <>
@@ -531,6 +463,23 @@ export default function SearchContent() {
                                   ></path>
                                 </svg>
                                 Adding...
+                              </>
+                            ) : addedToList[place.place_id] ? (
+                              <>
+                                <svg
+                                  className="-ml-1 mr-2 h-5 w-5"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Added to List!
                               </>
                             ) : (
                               <>

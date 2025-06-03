@@ -532,7 +532,7 @@ export default function ListContent({ id }: ListContentProps) {
             <div className="mb-6">
               <Link
                 href={`/search?listId=${list.id}`}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="w-full sm:w-auto inline-flex justify-center items-center px-6 py-4 border border-transparent text-lg font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <svg
                   className="-ml-1 mr-3 h-6 w-6"

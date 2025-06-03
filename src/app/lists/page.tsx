@@ -155,36 +155,39 @@ export default function ListsPage() {
     <div className="min-h-screen bg-background">
       <header className="bg-gray-900 shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-            <h1 className="text-3xl font-bold tracking-tight text-white">My Lists</h1>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center relative">
-                <input
-                  type="text"
-                  placeholder="Search my lists..."
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="w-full md:w-64 px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={handleClearSearch}
-                    className="absolute right-3 text-gray-400 hover:text-white"
-                    aria-label="Clear search"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
+          <div className="flex flex-col space-y-4">
+            {/* Header row with title and New List button */}
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold tracking-tight text-white">My Lists</h1>
               <Link
                 href="/lists/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 New List
               </Link>
+            </div>
+            
+            {/* Search bar - full width */}
+            <div className="flex items-center relative">
+              <input
+                type="text"
+                placeholder="Search my lists..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-3 text-gray-400 hover:text-white"
+                  aria-label="Clear search"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
