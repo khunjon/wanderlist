@@ -26,6 +26,8 @@ function SearchParamsHandler({
 }
 
 export default function SearchContent() {
+  console.log('🚨 SearchContent component is loading!');
+  
   const { user, loading: authLoading } = useAuth();
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([]);
@@ -39,6 +41,13 @@ export default function SearchContent() {
   const [addedToList, setAddedToList] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [listIdFromUrl, setListIdFromUrl] = useState<string | null>(null);
+  
+  console.log('🔧 SearchContent state initialized:', {
+    user: !!user,
+    authLoading,
+    selectedListId,
+    listIdFromUrl
+  });
   
   const router = useRouter();
   const abortControllerRef = useRef<AbortController | null>(null);
