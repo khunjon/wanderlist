@@ -177,12 +177,6 @@ export default function DiscoverPage() {
                   </button>
                 )}
               </div>
-              <Link
-                href="/lists/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Create New List
-              </Link>
             </div>
           </div>
         </div>
@@ -226,27 +220,9 @@ export default function DiscoverPage() {
                       <p className="text-sm text-gray-300 line-clamp-2 mb-4 min-h-[2.5rem]">
                         {list.description || 'No description'}
                       </p>
-                      {list.tags && list.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-4">
-                          {list.tags.slice(0, 3).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-700 text-gray-300"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {list.tags.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-600 text-gray-400">
-                              +{list.tags.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <div className="flex flex-col space-y-1">
-                          <span>Created: {list.createdAt.toLocaleDateString()}</span>
-                          <span>Updated: {list.updatedAt.toLocaleDateString()}</span>
+                          <span>Last updated: {list.updatedAt.toLocaleDateString()}</span>
                         </div>
                         {list.viewCount !== undefined && (
                           <div className="flex items-center">
@@ -281,27 +257,6 @@ export default function DiscoverPage() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-white">No public lists</h3>
               <p className="mt-1 text-sm text-gray-300">Be the first to create a public list!</p>
-              <div className="mt-6">
-                <Link
-                  href="/lists/new"
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <svg
-                    className="-ml-1 mr-2 h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Create New List
-                </Link>
-              </div>
             </div>
           )}
         </div>

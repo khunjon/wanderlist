@@ -161,7 +161,7 @@ export default function ListsPage() {
               <div className="flex items-center relative">
                 <input
                   type="text"
-                  placeholder="Search lists..."
+                  placeholder="Search my lists..."
                   value={searchQuery}
                   onChange={handleSearchChange}
                   className="w-full md:w-64 px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -183,7 +183,7 @@ export default function ListsPage() {
                 href="/lists/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Create New List
+                New List
               </Link>
             </div>
           </div>
@@ -236,27 +236,9 @@ export default function ListsPage() {
                       <p className="text-sm text-gray-300 line-clamp-2 mb-4 min-h-[2.5rem]">
                         {list.description || 'No description'}
                       </p>
-                      {list.tags && list.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-4">
-                          {list.tags.slice(0, 3).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-700 text-gray-300"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {list.tags.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-600 text-gray-400">
-                              +{list.tags.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <div className="flex flex-col space-y-1">
-                          <span>Created: {list.createdAt.toLocaleDateString()}</span>
-                          <span>Updated: {list.updatedAt.toLocaleDateString()}</span>
+                          <span>Last updated: {list.updatedAt.toLocaleDateString()}</span>
                         </div>
                         {list.viewCount !== undefined && (
                           <div className="flex items-center">
@@ -309,7 +291,7 @@ export default function ListsPage() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Create New List
+                  New List
                 </Link>
               </div>
             </div>
