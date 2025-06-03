@@ -17,6 +17,9 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !authLoading) {
+      // Clear any error states when user is successfully authenticated
+      setError(null);
+      setLoading(false);
       router.push('/lists');
     }
   }, [user, authLoading, router]);
@@ -29,6 +32,7 @@ export default function LoginPage() {
     try {
       await signInWithEmail(email, password);
       // Don't redirect here - let the auth state change handle it
+      // Don't set loading to false here - let the useEffect handle it
     } catch (err) {
       console.error('Login error:', err);
       setError('Invalid email or password. Please try again.');
@@ -43,6 +47,7 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       // Don't redirect here - let the auth state change handle it
+      // Don't set loading to false here - let the useEffect handle it
     } catch (err) {
       console.error('Google login error:', err);
       setError('Error signing in with Google. Please try again.');

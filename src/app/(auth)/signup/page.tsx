@@ -19,6 +19,9 @@ export default function SignupPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !authLoading) {
+      // Clear any error states when user is successfully authenticated
+      setError(null);
+      setLoading(false);
       router.push('/lists');
     }
   }, [user, authLoading, router]);
@@ -43,6 +46,7 @@ export default function SignupPage() {
     try {
       await registerWithEmailAndPassword(email, password, name);
       // Don't redirect here - let the auth state change handle it
+      // Don't set loading to false here - let the useEffect handle it
     } catch (err: any) {
       console.error('Signup error:', err);
       if (err.code === 'auth/email-already-in-use') {
@@ -61,6 +65,7 @@ export default function SignupPage() {
     try {
       await signInWithGoogle();
       // Don't redirect here - let the auth state change handle it
+      // Don't set loading to false here - let the useEffect handle it
     } catch (err) {
       console.error('Google signup error:', err);
       setError('Error signing up with Google. Please try again.');
