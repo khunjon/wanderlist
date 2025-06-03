@@ -198,14 +198,12 @@ export default function ListsPage() {
             </div>
           ) : sortedLists.length > 0 ? (
             <>
-              <div className="flex justify-between items-center mb-6">
-                <p className="text-sm text-gray-300">
-                  {sortedLists.length} {sortedLists.length === 1 ? 'list' : 'lists'}
-                </p>
+              <div className="mb-6">
                 <SortControl
                   options={sortOptions}
                   currentSort={sortState}
                   onSortChange={handleSortChange}
+                  className="w-full sm:w-auto"
                 />
               </div>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -253,6 +251,11 @@ export default function ListsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="mt-8 text-center">
+                <p className="text-sm text-gray-300">
+                  {sortedLists.length} {sortedLists.length === 1 ? 'list' : 'lists'}
+                </p>
               </div>
             </>
           ) : (

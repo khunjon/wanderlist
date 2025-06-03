@@ -553,61 +553,71 @@ export default function ListContent({ id }: ListContentProps) {
           
           {places.length > 0 ? (
             <>
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
-                  {viewMode === 'grid' && (
-                    <div className="w-full sm:w-auto">
-                      <SortControl
-                        options={placeSortOptions}
-                        currentSort={placeSortState}
-                        onSortChange={handlePlaceSortChange}
-                        className="w-full sm:w-auto"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="inline-flex rounded-md shadow-sm" role="group">
+              {/* View Mode Selection */}
+              <div className="mb-4">
+                <div className="flex w-full sm:w-auto rounded-md shadow-sm" role="group">
                   <button
                     type="button"
                     onClick={handleSetGridView}
-                    className={`px-4 py-2 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    className={`flex-1 sm:flex-none px-6 py-3 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                       viewMode === 'grid'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-800 text-white hover:bg-gray-700'
                     }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                      <span className="hidden sm:inline">Grid</span>
+                    </div>
                   </button>
                   <button
                     type="button"
                     onClick={handleSetSwipeView}
-                    className={`px-4 py-2 text-sm font-medium focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    className={`flex-1 sm:flex-none px-6 py-3 text-sm font-medium focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                       viewMode === 'swipe'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-800 text-white hover:bg-gray-700'
                     }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                    </svg>
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span className="hidden sm:inline">Swipe</span>
+                    </div>
                   </button>
                   <button
                     type="button"
                     onClick={handleSetMapView}
-                    className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    className={`flex-1 sm:flex-none px-6 py-3 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                       viewMode === 'map'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-800 text-white hover:bg-gray-700'
                     }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
-                    </svg>
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
+                      </svg>
+                      <span className="hidden sm:inline">Map</span>
+                    </div>
                   </button>
                 </div>
               </div>
+
+              {/* Sort Control - only show for grid view */}
+              {viewMode === 'grid' && (
+                <div className="mb-6">
+                  <SortControl
+                    options={placeSortOptions}
+                    currentSort={placeSortState}
+                    onSortChange={handlePlaceSortChange}
+                    className="w-full sm:w-auto"
+                  />
+                </div>
+              )}
               
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
