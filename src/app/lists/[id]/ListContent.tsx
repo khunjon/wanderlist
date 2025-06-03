@@ -11,6 +11,7 @@ import { getUserProfile } from '@/lib/firebase/user';
 import MapView from '@/components/maps/MapView';
 import { trackListView } from '@/lib/analytics/gtag';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
+import SwipeView from '@/components/SwipeView';
 
 const placeSortOptions: SortOption[] = [
   { value: 'addedAt', label: 'Date Added' },
@@ -28,7 +29,7 @@ export default function ListContent({ id }: ListContentProps) {
   const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'swipe'>('grid');
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState('');
@@ -40,6 +41,8 @@ export default function ListContent({ id }: ListContentProps) {
   const [editingNotes, setEditingNotes] = useState('');
   const [deletingPlaceId, setDeletingPlaceId] = useState<string | null>(null);
   const [placeSortState, setPlaceSortState] = useState<SortState>({ field: 'addedAt', direction: 'desc' });
+  const [currentSwipeIndex, setCurrentSwipeIndex] = useState(0);
+  const [showNotes, setShowNotes] = useState(false);
   const router = useRouter();
 
   // Memoized sort function for places
@@ -264,6 +267,40 @@ export default function ListContent({ id }: ListContentProps) {
   // Memoized view mode handlers
   const handleSetGridView = useCallback(() => setViewMode('grid'), []);
   const handleSetMapView = useCallback(() => setViewMode('map'), []);
+  const handleSetSwipeView = useCallback(() => {
+    setViewMode('swipe');
+    setCurrentSwipeIndex(0);
+  }, []);
+
+  // Swipe navigation handlers
+  const handleNextPlace = useCallback(() => {
+    setCurrentSwipeIndex(prev => (prev + 1) % sortedPlaces.length);
+    setShowNotes(false);
+  }, [sortedPlaces.length]);
+
+  const handlePrevPlace = useCallback(() => {
+    setCurrentSwipeIndex(prev => prev === 0 ? sortedPlaces.length - 1 : prev - 1);
+    setShowNotes(false);
+  }, [sortedPlaces.length]);
+
+  const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    if (viewMode !== 'swipe') return;
+    
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      handleNextPlace();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      handlePrevPlace();
+    } else if (e.key === 'Escape') {
+      setViewMode('grid');
+    }
+  }, [viewMode, handleNextPlace, handlePrevPlace]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [handleKeyPress]);
 
   if (authLoading || loading) {
     return (
@@ -545,6 +582,19 @@ export default function ListContent({ id }: ListContentProps) {
                   </button>
                   <button
                     type="button"
+                    onClick={handleSetSwipeView}
+                    className={`px-4 py-2 text-sm font-medium focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                      viewMode === 'swipe'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleSetMapView}
                     className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                       viewMode === 'map'
@@ -699,6 +749,23 @@ export default function ListContent({ id }: ListContentProps) {
                     );
                   })}
                 </div>
+              ) : viewMode === 'swipe' ? (
+                <SwipeView 
+                  places={sortedPlaces}
+                  currentIndex={currentSwipeIndex}
+                  onNext={handleNextPlace}
+                  onPrev={handlePrevPlace}
+                  onClose={() => setViewMode('grid')}
+                  isOwner={isOwner}
+                  onEditNotes={handleEditPlaceNotes}
+                  onDeletePlace={handleDeletePlace}
+                  editingPlaceId={editingPlaceId}
+                  editingNotes={editingNotes}
+                  setEditingNotes={setEditingNotes}
+                  onSaveNotes={handleSavePlaceNotes}
+                  onCancelEdit={handleCancelEditNotes}
+                  deletingPlaceId={deletingPlaceId}
+                />
               ) : (
                 <div className="bg-gray-800 rounded-lg shadow overflow-hidden">
                   <div className="h-[600px] w-full flex items-center justify-center">
