@@ -30,6 +30,9 @@ ChartJS.register(
 
 interface AdminStats {
   totalUsers: number;
+  totalLists: number;
+  publicLists: number;
+  privateLists: number;
   topLists: Array<{
     id: string;
     name: string;
@@ -77,6 +80,7 @@ export default function AdminPage() {
 
       // Get top lists by view count (handle case where viewCount might not exist)
       let topLists = [];
+      let allListsData = [];
       try {
         const topListsQuery = query(
           collection(db, 'lists'),
@@ -94,10 +98,21 @@ export default function AdminPage() {
             createdAt: data.createdAt?.toDate?.() || new Date(),
           };
         });
+        
+        // Also get all lists for total count and public/private breakdown
+        const allListsSnapshot = await getDocs(collection(db, 'lists'));
+        allListsData = allListsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            isPublic: data.isPublic || false,
+            userId: data.userId || 'Unknown',
+          };
+        });
       } catch (orderError) {
         console.log('ViewCount field might not exist, fetching all lists...');
         const allListsSnapshot = await getDocs(collection(db, 'lists'));
-        const allLists = allListsSnapshot.docs.map(doc => {
+        allListsData = allListsSnapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -105,11 +120,12 @@ export default function AdminPage() {
             viewCount: data.viewCount || 0,
             userId: data.userId || 'Unknown',
             createdAt: data.createdAt?.toDate?.() || new Date(),
+            isPublic: data.isPublic || false,
           };
         });
         
         // Sort by viewCount and take top 10
-        topLists = allLists
+        topLists = allListsData
           .sort((a, b) => b.viewCount - a.viewCount)
           .slice(0, 10);
       }
@@ -189,6 +205,9 @@ export default function AdminPage() {
 
       const statsData = {
         totalUsers,
+        totalLists: allListsData.length,
+        publicLists: allListsData.filter(list => list.isPublic === true).length,
+        privateLists: allListsData.filter(list => list.isPublic === false).length,
         topLists,
         chartData,
       };
@@ -319,55 +338,112 @@ export default function AdminPage() {
         ) : stats ? (
           <div className="space-y-8">
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-900 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                      </svg>
+            <div className="space-y-6">
+              {/* Row 1: Total Users, New Users (30d) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-blue-900 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Total Users</p>
+                      <p className="text-2xl font-semibold text-white">{stats.totalUsers.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-400">Total Users</p>
-                    <p className="text-2xl font-semibold text-white">{stats.totalUsers.toLocaleString()}</p>
+                </div>
+
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-green-900 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">New Users (30d)</p>
+                      <p className="text-2xl font-semibold text-white">
+                        {stats.chartData.reduce((sum, item) => sum + item.newUsers, 0).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-900 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
+              {/* Row 2: Total Lists, New Lists */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-purple-900 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Total Lists</p>
+                      <p className="text-2xl font-semibold text-white">{stats.totalLists.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-400">New Users (30d)</p>
-                    <p className="text-2xl font-semibold text-white">
-                      {stats.chartData.reduce((sum, item) => sum + item.newUsers, 0).toLocaleString()}
-                    </p>
+                </div>
+
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-indigo-900 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">New Lists (30d)</p>
+                      <p className="text-2xl font-semibold text-white">
+                        {stats.chartData.reduce((sum, item) => sum + item.newLists, 0).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-purple-900 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
+              {/* Row 3: Public Lists, Private Lists */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-emerald-900 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Public Lists</p>
+                      <p className="text-2xl font-semibold text-white">{stats.publicLists.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-400">New Lists (30d)</p>
-                    <p className="text-2xl font-semibold text-white">
-                      {stats.chartData.reduce((sum, item) => sum + item.newLists, 0).toLocaleString()}
-                    </p>
+                </div>
+
+                <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-gray-600 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Private Lists</p>
+                      <p className="text-2xl font-semibold text-white">{stats.privateLists.toLocaleString()}</p>
+                    </div>
                   </div>
                 </div>
               </div>
