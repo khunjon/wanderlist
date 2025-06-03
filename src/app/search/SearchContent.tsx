@@ -10,8 +10,6 @@ import { GooglePlace, List } from '@/types';
 import { debounce } from 'lodash';
 
 export default function SearchContent() {
-  console.log('🚨 SearchContent component is loading!');
-  
   const { user, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
@@ -28,13 +26,6 @@ export default function SearchContent() {
   
   // Get listId directly from search params
   const listIdFromUrl = searchParams.get('listId');
-  
-  console.log('🔧 SearchContent state initialized:', {
-    user: !!user,
-    authLoading,
-    selectedListId,
-    listIdFromUrl
-  });
   
   const router = useRouter();
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -104,32 +95,23 @@ export default function SearchContent() {
   }, [debouncedSearch]);
 
   useEffect(() => {
-    console.log('🔄 Main useEffect triggered:', { authLoading, user: !!user, listIdFromUrl });
-    console.log('🔍 Direct search params check:', Object.fromEntries(searchParams.entries()));
-    
     // Redirect if not authenticated
     if (!authLoading && !user) {
-      console.log('🚫 User not authenticated, redirecting to login');
       router.push('/login');
       return;
     }
 
     // Fetch list details if listId is provided
     const fetchListDetails = async () => {
-      console.log('📋 fetchListDetails called with:', { user: !!user, listIdFromUrl });
-      
       if (!user || !listIdFromUrl) {
-        console.log('❌ Missing requirements for fetchListDetails:', { user: !!user, listIdFromUrl });
         return;
       }
       
       try {
-        console.log('⏳ Starting to fetch list details for:', listIdFromUrl);
         setLoadingLists(true);
         
         // Get the specific list details
         const listDetails = await getList(listIdFromUrl);
-        console.log('📄 Got list details:', listDetails);
         
         if (listDetails) {
           setSelectedList(listDetails);
@@ -138,17 +120,14 @@ export default function SearchContent() {
           if (listDetails.city) {
             setSelectedListCity(listDetails.city);
           }
-          console.log('✅ List details set successfully');
         } else {
-          console.log('❌ List not found');
           setError('List not found. Please go back and try again.');
         }
       } catch (err) {
-        console.error('💥 Error fetching list details:', err);
+        console.error('Error fetching list details:', err);
         setError('Failed to load list details. Please try again.');
       } finally {
         setLoadingLists(false);
-        console.log('🏁 fetchListDetails completed');
       }
     };
 
@@ -189,23 +168,17 @@ export default function SearchContent() {
 
   // Memoized add to list handler
   const handleAddToList = useCallback(async (place: GooglePlace) => {
-    console.log('🚀 Starting handleAddToList for:', place.name);
-    console.log('📋 Initial state:', { selectedListId, user: !!user, userId: user?.uid });
-    
     if (!selectedListId || !user) {
-      console.log('❌ Missing requirements:', { selectedListId, user: !!user });
       setError('Please make sure you are logged in and have a valid list selected.');
       return;
     }
     
-    console.log('⏳ Setting loading state for place:', place.place_id);
     // Set loading state for this specific place
     setAddingToList(prev => ({ ...prev, [place.place_id]: true }));
     
     try {
       // Clear any previous errors
       setError(null);
-      console.log('🧹 Cleared errors');
       
       // First create or get place in our database
       const placeData = {
@@ -221,8 +194,6 @@ export default function SearchContent() {
         placeTypes: place.types || [],
       };
       
-      console.log('📍 About to call createPlace with data:', placeData);
-      
       // Add a timeout to detect hanging calls
       const createPlacePromise = createPlace(placeData);
       const timeoutPromise = new Promise((_, reject) => 
@@ -230,38 +201,30 @@ export default function SearchContent() {
       );
       
       const placeId = await Promise.race([createPlacePromise, timeoutPromise]) as string;
-      console.log('✅ createPlace completed, got placeId:', placeId);
       
       // Then add it to the selected list
-      console.log('📝 About to call addPlaceToList with:', { selectedListId, placeId });
-      
       const addToListPromise = addPlaceToList(selectedListId, placeId);
       const timeoutPromise2 = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('addPlaceToList timeout after 10 seconds')), 10000)
       );
       
       const listPlaceId = await Promise.race([addToListPromise, timeoutPromise2]) as string;
-      console.log('✅ addPlaceToList completed, got listPlaceId:', listPlaceId);
       
       // Mark as added and show success feedback
-      console.log('🎉 Setting success state');
       setAddedToList(prev => ({ ...prev, [place.place_id]: true }));
       
       // Clear the added state after 3 seconds
       setTimeout(() => {
         setAddedToList(prev => ({ ...prev, [place.place_id]: false }));
-        console.log('🔄 Cleared success state for:', place.place_id);
       }, 3000);
       
-      console.log('✨ handleAddToList completed successfully');
     } catch (err) {
-      console.error('💥 Error in handleAddToList:', err);
+      console.error('Error adding place to list:', err);
       
       // Show specific error message
       let errorMessage = 'Failed to add place to list. Please try again.';
       
       if (err instanceof Error) {
-        console.log('📝 Error details:', err.message);
         if (err.message.includes('timeout')) {
           errorMessage = 'Request timed out. Please check your internet connection and try again.';
         } else if (err.message.includes('permission')) {
@@ -279,7 +242,6 @@ export default function SearchContent() {
       
       setError(errorMessage);
     } finally {
-      console.log('🏁 Clearing loading state for:', place.place_id);
       // Clear loading state for this place
       setAddingToList(prev => ({ ...prev, [place.place_id]: false }));
     }
@@ -415,16 +377,6 @@ export default function SearchContent() {
                 <h3 className="text-lg font-medium text-white mb-4">
                   Search Results ({processedSearchResults.length})
                 </h3>
-                {(() => {
-                  console.log('🔍 Rendering search results:', {
-                    resultsCount: processedSearchResults.length,
-                    selectedListId,
-                    user: !!user,
-                    addingToListState: addingToList,
-                    addedToListState: addedToList
-                  });
-                  return null;
-                })()}
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {processedSearchResults.map((place) => (
                     <div
@@ -477,16 +429,6 @@ export default function SearchContent() {
                         <div className="mt-5">
                           <button
                             onClick={(e) => {
-                              console.log('🔘 Button clicked!', {
-                                placeName: place.name,
-                                placeId: place.place_id,
-                                buttonDisabled: e.currentTarget.disabled,
-                                addingToList: addingToList[place.place_id],
-                                addedToList: addedToList[place.place_id],
-                                selectedListId,
-                                user: !!user,
-                                event: e
-                              });
                               handleAddToList(place);
                             }}
                             disabled={
@@ -501,16 +443,6 @@ export default function SearchContent() {
                                 : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300'
                             }`}
                           >
-                            {(() => {
-                              console.log('🔍 Button render state for', place.name, {
-                                addingToList: addingToList[place.place_id],
-                                addedToList: addedToList[place.place_id],
-                                selectedListId,
-                                user: !!user,
-                                disabled: addingToList[place.place_id] || addedToList[place.place_id] || !selectedListId || !user
-                              });
-                              return null;
-                            })()}
                             {addingToList[place.place_id] ? (
                               <>
                                 <svg

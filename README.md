@@ -9,6 +9,7 @@ A better way to save and organize places from Google Maps.
 - **Enhanced User Profiles**: Users can create a private bio (up to 500 characters) and add their Instagram and TikTok usernames for future use
 - Search for places using Google Places API
 - Create and manage custom lists of places
+- **Improved Add Places Flow**: Enhanced search experience with contextual titles, manual search (no auto-search), better mobile UX, and comprehensive user feedback including loading states, success indicators, and detailed error messages
 - Add places to lists with one click
 - Organize lists with tags for easy categorization
 - Edit and delete your lists
