@@ -400,9 +400,48 @@ export default function ListContent({ id }: ListContentProps) {
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0 pr-4">
                 <h1 className="text-3xl font-bold tracking-tight text-white">{list.name}</h1>
-                <p className="mt-1 text-sm text-gray-300">{list.description}</p>
-                {list.city && <p className="text-sm text-blue-300">Location: {list.city}</p>}
-                <div className="mt-2 flex flex-wrap gap-2">
+                
+                {/* Location */}
+                {list.city && <p className="mt-2 text-sm text-blue-300">📍 {list.city}</p>}
+                
+                {/* Description */}
+                {list.description && <p className="mt-2 text-sm text-gray-300">{list.description}</p>}
+                
+                {/* Author */}
+                <div className="mt-3 flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-700">
+                      {author?.photoURL ? (
+                        <Image
+                          src={author.photoURL}
+                          alt={author.displayName || 'Author'}
+                          className="h-full w-full object-cover"
+                          width={24}
+                          height={24}
+                        />
+                      ) : (
+                        <svg
+                          className="h-full w-full text-gray-500"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ml-2 text-sm text-gray-300">
+                    Created by {author?.displayName || 'Unknown User'}
+                  </div>
+                </div>
+                
+                {/* Last Edit Date */}
+                <p className="mt-2 text-xs text-gray-400">
+                  Last updated: {list.updatedAt.toLocaleDateString()}
+                </p>
+                
+                {/* Tags and Public/Private Status */}
+                <div className="mt-3 flex flex-wrap gap-2">
                   <span 
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
                       list.isPublic 
@@ -430,34 +469,6 @@ export default function ListContent({ id }: ListContentProps) {
                     ))
                   )}
                 </div>
-                {!isEditing && (
-                  <div className="mt-2 flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-700">
-                        {author?.photoURL ? (
-                          <Image
-                            src={author.photoURL}
-                            alt={author.displayName || 'Author'}
-                            className="h-full w-full object-cover"
-                            width={32}
-                            height={32}
-                          />
-                        ) : (
-                          <svg
-                            className="h-full w-full text-gray-500"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-2 text-sm text-gray-300">
-                      Created by {author?.displayName || 'Unknown User'}
-                    </div>
-                  </div>
-                )}
               </div>
               <div className="flex-shrink-0">
                 {isOwner && (
@@ -479,63 +490,72 @@ export default function ListContent({ id }: ListContentProps) {
       </header>
       <main>
         <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+          {/* Add Places button - only show in edit mode */}
+          {isEditing && isOwner && (
+            <div className="mb-6">
+              <Link
+                href={`/search?listId=${list.id}`}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <svg
+                  className="-ml-1 mr-3 h-6 w-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Add Places to List
+              </Link>
+            </div>
+          )}
+          
           {places.length > 0 ? (
             <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <Link
-                  href={`/search?listId=${list.id}`}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <svg
-                    className="-ml-1 mr-2 h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Add Places
-                </Link>
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
                   {viewMode === 'grid' && (
-                    <SortControl
-                      options={placeSortOptions}
-                      currentSort={placeSortState}
-                      onSortChange={handlePlaceSortChange}
-                    />
+                    <div className="w-full sm:w-auto">
+                      <SortControl
+                        options={placeSortOptions}
+                        currentSort={placeSortState}
+                        onSortChange={handlePlaceSortChange}
+                        className="w-full sm:w-auto"
+                      />
+                    </div>
                   )}
-                  <div className="inline-flex rounded-md shadow-sm" role="group">
-                    <button
-                      type="button"
-                      onClick={handleSetGridView}
-                      className={`px-4 py-2 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                        viewMode === 'grid'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-800 text-white hover:bg-gray-700'
-                      }`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSetMapView}
-                      className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                        viewMode === 'map'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-800 text-white hover:bg-gray-700'
-                      }`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </div>
+                </div>
+                <div className="inline-flex rounded-md shadow-sm" role="group">
+                  <button
+                    type="button"
+                    onClick={handleSetGridView}
+                    className={`px-4 py-2 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                      viewMode === 'grid'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSetMapView}
+                    className={`px-4 py-2 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                      viewMode === 'map'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               
