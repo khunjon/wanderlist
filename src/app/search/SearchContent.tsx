@@ -411,6 +411,16 @@ export default function SearchContent() {
                 <h3 className="text-lg font-medium text-white mb-4">
                   Search Results ({processedSearchResults.length})
                 </h3>
+                {(() => {
+                  console.log('🔍 Rendering search results:', {
+                    resultsCount: processedSearchResults.length,
+                    selectedListId,
+                    user: !!user,
+                    addingToListState: addingToList,
+                    addedToListState: addedToList
+                  });
+                  return null;
+                })()}
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {processedSearchResults.map((place) => (
                     <div
@@ -462,7 +472,19 @@ export default function SearchContent() {
                         )}
                         <div className="mt-5">
                           <button
-                            onClick={() => handleAddToList(place)}
+                            onClick={(e) => {
+                              console.log('🔘 Button clicked!', {
+                                placeName: place.name,
+                                placeId: place.place_id,
+                                buttonDisabled: e.currentTarget.disabled,
+                                addingToList: addingToList[place.place_id],
+                                addedToList: addedToList[place.place_id],
+                                selectedListId,
+                                user: !!user,
+                                event: e
+                              });
+                              handleAddToList(place);
+                            }}
                             disabled={
                               addingToList[place.place_id] ||
                               addedToList[place.place_id] ||
@@ -475,6 +497,16 @@ export default function SearchContent() {
                                 : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300'
                             }`}
                           >
+                            {(() => {
+                              console.log('🔍 Button render state for', place.name, {
+                                addingToList: addingToList[place.place_id],
+                                addedToList: addedToList[place.place_id],
+                                selectedListId,
+                                user: !!user,
+                                disabled: addingToList[place.place_id] || addedToList[place.place_id] || !selectedListId || !user
+                              });
+                              return null;
+                            })()}
                             {addingToList[place.place_id] ? (
                               <>
                                 <svg
