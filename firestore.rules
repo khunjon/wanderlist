@@ -31,7 +31,7 @@ service cloud.firestore {
     
     // Places can be read by anyone (they're public data)
     match /places/{placeId} {
-      allow read: if request.auth != null;
+      allow read: if true; // Allow reading places without authentication (needed for public lists)
       allow create: if request.auth != null;
     }
     
