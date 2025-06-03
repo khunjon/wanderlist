@@ -6,6 +6,9 @@ export interface User {
   createdAt: Date;
   photoURL?: string;
   isAdmin?: boolean;
+  bio?: string;
+  instagram?: string;
+  tiktok?: string;
 }
 
 // List type

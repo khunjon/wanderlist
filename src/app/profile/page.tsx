@@ -12,6 +12,9 @@ export default function ProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [tiktok, setTiktok] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +37,9 @@ export default function ProfilePage() {
         if (profile) {
           setUser(profile);
           setDisplayName(profile.displayName);
+          setBio(profile.bio || '');
+          setInstagram(profile.instagram || '');
+          setTiktok(profile.tiktok || '');
           if (profile.photoURL) {
             setPreviewUrl(profile.photoURL);
           }
@@ -95,10 +101,52 @@ export default function ProfilePage() {
 
     if (!authUser) return;
 
+    // Validate bio length
+    if (bio.length > 500) {
+      setError('Bio must be 500 characters or less');
+      setLoading(false);
+      return;
+    }
+
+    // Validate social media handles (remove @ if present and validate format)
+    const cleanInstagram = instagram.replace('@', '').trim();
+    const cleanTiktok = tiktok.replace('@', '').trim();
+    
+    if (cleanInstagram && !/^[a-zA-Z0-9._]{1,30}$/.test(cleanInstagram)) {
+      setError('Instagram username can only contain letters, numbers, periods, and underscores (max 30 characters)');
+      setLoading(false);
+      return;
+    }
+    
+    if (cleanTiktok && !/^[a-zA-Z0-9._]{1,24}$/.test(cleanTiktok)) {
+      setError('TikTok username can only contain letters, numbers, periods, and underscores (max 24 characters)');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Update display name
+      // Prepare update data
+      const updateData: Partial<User> = {};
+      
       if (displayName !== user?.displayName) {
-        await updateUserProfile(authUser.uid, { displayName });
+        updateData.displayName = displayName;
+      }
+      
+      if (bio !== user?.bio) {
+        updateData.bio = bio;
+      }
+      
+      if (cleanInstagram !== user?.instagram) {
+        updateData.instagram = cleanInstagram || undefined;
+      }
+      
+      if (cleanTiktok !== user?.tiktok) {
+        updateData.tiktok = cleanTiktok || undefined;
+      }
+
+      // Update profile data if there are changes
+      if (Object.keys(updateData).length > 0) {
+        await updateUserProfile(authUser.uid, updateData);
       }
 
       // Upload photo if selected
@@ -228,6 +276,64 @@ export default function ProfilePage() {
                       onChange={(e) => setDisplayName(e.target.value)}
                       disabled={loading}
                       required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="bio" className="block text-sm font-medium text-white">
+                    Bio
+                  </label>
+                  <div className="mt-1">
+                    <textarea
+                      id="bio"
+                      name="bio"
+                      rows={3}
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-3"
+                      placeholder="Tell us about yourself (up to 500 characters)"
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      disabled={loading}
+                      maxLength={500}
+                    />
+                    <p className="mt-1 text-xs text-gray-400">
+                      {bio.length}/500 characters
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="instagram" className="block text-sm font-medium text-white">
+                    Instagram Username
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      name="instagram"
+                      id="instagram"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
+                      placeholder="@username (optional)"
+                      value={instagram}
+                      onChange={(e) => setInstagram(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="tiktok" className="block text-sm font-medium text-white">
+                    TikTok Username
+                  </label>
+                  <div className="mt-1">
+                    <input
+                      type="text"
+                      name="tiktok"
+                      id="tiktok"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
+                      placeholder="@username (optional)"
+                      value={tiktok}
+                      onChange={(e) => setTiktok(e.target.value)}
+                      disabled={loading}
                     />
                   </div>
                 </div>

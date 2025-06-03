@@ -139,6 +139,9 @@ export const convertFirebaseUserToUser = (firebaseUser: FirebaseUser): User => {
     photoURL: firebaseUser.photoURL || '',
     createdAt: new Date(),
     isAdmin: false, // Default to false, will be updated by getUserWithAdminStatus
+    bio: '',
+    instagram: '',
+    tiktok: '',
   };
 };
 
@@ -155,6 +158,9 @@ export const getUserWithAdminStatus = async (firebaseUser: FirebaseUser): Promis
       photoURL: firebaseUser.photoURL || '',
       createdAt: userData.createdAt?.toDate() || new Date(),
       isAdmin: userData.isAdmin || false,
+      bio: userData.bio || '',
+      instagram: userData.instagram || '',
+      tiktok: userData.tiktok || '',
     };
   } catch (error) {
     console.error('Error getting user admin status:', error);

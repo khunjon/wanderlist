@@ -19,6 +19,9 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         photoURL: data.photoURL || '',
         createdAt: data.createdAt?.toDate() || new Date(),
         isAdmin: data.isAdmin || false,
+        bio: data.bio || '',
+        instagram: data.instagram || '',
+        tiktok: data.tiktok || '',
       };
     }
     return null;

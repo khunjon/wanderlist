@@ -6,6 +6,7 @@ A better way to save and organize places from Google Maps.
 
 ### Core Functionality
 - User authentication (Firebase Auth)
+- **Enhanced User Profiles**: Users can create a private bio (up to 500 characters) and add their Instagram and TikTok usernames for future use
 - Search for places using Google Places API
 - Create and manage custom lists of places
 - Add places to lists with one click
@@ -30,7 +31,7 @@ A better way to save and organize places from Google Maps.
 ### Discovery Features
 - **Discover Page**: Browse public lists created by other users
 - **List Analytics**: View counts and engagement metrics
-- **Author Profiles**: See who created each list with profile photos
+- **Author Profiles**: See who created each list with profile photos and display names
 
 ## Tech Stack
 
@@ -63,9 +64,15 @@ A better way to save and organize places from Google Maps.
 Lists now show information in a logical hierarchy:
 1. **Location** (with location pin emoji)
 2. **Description** 
-3. **Author** (with profile photo)
+3. **Author** (with profile photo and display name)
 4. **Last Updated Date**
 5. **Tags and Privacy Status**
+
+### Profile Management
+- **Personal Bio**: Add a personal bio up to 500 characters (currently private)
+- **Social Media Integration**: Connect your Instagram and TikTok accounts to your profile (for future use)
+- **Profile Photo Upload**: Upload and manage your profile picture
+- **Privacy Controls**: All profile information is currently kept private
 
 ## Getting Started
 
