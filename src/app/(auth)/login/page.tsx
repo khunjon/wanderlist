@@ -5,7 +5,6 @@ import { signInWithEmail, signInWithGoogle } from '@/lib/firebase/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import WebViewWarning from '@/components/auth/WebViewWarning';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -77,8 +76,6 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-
-        <WebViewWarning showForAuth={true} />
 
         {error && (
           <div className="bg-red-900 border-l-4 border-red-600 p-4 mb-4">
