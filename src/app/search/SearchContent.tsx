@@ -116,16 +116,20 @@ export default function SearchContent() {
 
     // Fetch list details if listId is provided
     const fetchListDetails = async () => {
-      if (!user || !listIdFromUrl) return;
+      if (!user || !listIdFromUrl) {
+        return;
+      }
       
       try {
         setLoadingLists(true);
         
         // Get the specific list details
         const listDetails = await getList(listIdFromUrl);
+        
         if (listDetails) {
           setSelectedList(listDetails);
           setSelectedListId(listIdFromUrl);
+          
           if (listDetails.city) {
             setSelectedListCity(listDetails.city);
           }
@@ -432,7 +436,7 @@ export default function SearchContent() {
                               addingToList[place.place_id] ||
                               addedToList[place.place_id] ||
                               !selectedListId ||
-                              !selectedList
+                              !user
                             }
                             className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
                               addedToList[place.place_id]
