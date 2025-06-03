@@ -11,6 +11,7 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { auth, db } from './config';
 import { User } from '@/types';
+import { isInWebView, getWebViewType } from '@/utils/webview';
 
 // Register a new user with email and password
 export const registerWithEmailAndPassword = async (
@@ -58,6 +59,16 @@ export const signInWithEmail = async (
 // Sign in with Google
 export const signInWithGoogle = async (): Promise<UserCredential> => {
   try {
+    // Check if user is in a webview before attempting authentication
+    if (isInWebView()) {
+      const webViewType = getWebViewType();
+      const errorMessage = webViewType 
+        ? `Google sign-in is not supported in ${webViewType}. Please open this page in your browser app.`
+        : 'Google sign-in is not supported in app browsers. Please open this page in your browser app.';
+      
+      throw new Error(errorMessage);
+    }
+
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
     const user = userCredential.user;
@@ -73,8 +84,26 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     }
 
     return userCredential;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in with Google:', error);
+    
+    // Enhanced error handling for webview-related issues
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('Pop-up was blocked. Please allow pop-ups for this site or open in your browser app.');
+    } else if (error.code === 'auth/cancelled-popup-request') {
+      throw new Error('Sign-in was cancelled. Please try again.');
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Sign-in window was closed. Please try again.');
+    } else if (error.code === 'auth/unauthorized-domain') {
+      throw new Error('This domain is not authorized for Google sign-in. Please contact support.');
+    } else if (error.message && error.message.includes('webview')) {
+      // Custom webview error from our check above
+      throw error;
+    } else if (error.message && error.message.includes('browser')) {
+      // Custom browser error from our check above
+      throw error;
+    }
+    
     throw error;
   }
 };

@@ -5,6 +5,7 @@ import { registerWithEmailAndPassword, signInWithGoogle } from '@/lib/firebase/a
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import WebViewWarning from '@/components/auth/WebViewWarning';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -94,6 +95,8 @@ export default function SignupPage() {
             </Link>
           </p>
         </div>
+
+        <WebViewWarning showForAuth={true} />
 
         {error && (
           <div className="bg-red-900 border-l-4 border-red-600 p-4 mb-4">
