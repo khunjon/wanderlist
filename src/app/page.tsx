@@ -61,59 +61,56 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Problem/Solution Section */}
+      {/* Features Section */}
       <div className="w-full py-12 md:py-16 lg:py-20 bg-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
-            <div className="space-y-4">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-6 w-6"
-                >
-                  <path d="M9.879 14.121L12 12"></path>
-                  <path d="M21.071 13.172a3 3 0 0 0-.415-4.243L15.414 3.686a1 1 0 0 0-1.414 0l-2.829 2.829a1 1 0 0 0-.293.707v5.172a3 3 0 0 0 3 3h5.172a.997.997 0 0 0 .707-.293l1.414-1.414"></path>
-                  <path d="M7.757 16.243l-1.414 1.414a1 1 0 0 1-1.414 0l-2.829-2.829a1 1 0 0 1 0-1.414l5.243-5.243a1 1 0 0 1 1.414 0l2.829 2.829a1 1 0 0 1 0 1.414l-3.829 3.829"></path>
-                  <path d="M6 16v2a4 4 0 0 0 4 4h8"></path>
-                </svg>
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              Finally, a place for all your places 🗺️
+            </h2>
+            <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+              Stop losing track of amazing spots. Whether it's that perfect brunch place or your secret hiking trail.
+            </p>
+          </div>
+          
+          <div className="grid gap-8 md:grid-cols-3 lg:gap-12">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-2xl">
+                📍
               </div>
-              <h3 className="text-2xl font-bold text-white">The Problem</h3>
-              <p className="text-gray-300 text-lg">
-                We all save places when we're out exploring, but finding them later? That's the hard part. 
-                Buried in apps, scattered across platforms, with no real way to organize what matters to you.
+              <h3 className="text-xl font-bold text-white">Save Anywhere</h3>
+              <p className="text-gray-300">
+                Found an amazing coffee shop? Save it instantly. No more screenshots or forgotten bookmarks.
               </p>
             </div>
-            <div className="space-y-4">
-              <div className="inline-flex items-center justify-center rounded-md bg-blue-900 p-2 text-blue-200">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-6 w-6"
-                >
-                  <path d="M12 2v20"></path>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
+            
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl flex items-center justify-center text-2xl">
+                📝
               </div>
-              <h3 className="text-2xl font-bold text-white">The Solution</h3>
-              <p className="text-gray-300 text-lg">
-                Placemarks gives you the simple, organized place management you've always wanted. 
-                Create custom lists, add personal notes, and actually find what you're looking for.
+              <h3 className="text-xl font-bold text-white">Organize Your Way</h3>
+              <p className="text-gray-300">
+                Create lists that make sense to you. "Date Night Spots", "Weekend Adventures", "Must Try Food" - whatever works.
               </p>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center text-2xl">
+                🎯
+              </div>
+              <h3 className="text-xl font-bold text-white">Actually Find Them</h3>
+              <p className="text-gray-300">
+                When you're ready to explore, your places are right there. No digging through apps or trying to remember where you saved something.
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-16 text-center">
+            <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl p-8 max-w-3xl mx-auto">
+              <h3 className="text-xl font-bold text-white mb-4">
+                "I used to screenshot everything and never find it again. Now I actually visit the places I save!" 
+              </h3>
+              <p className="text-blue-300">— Sarah, early user</p>
             </div>
           </div>
         </div>

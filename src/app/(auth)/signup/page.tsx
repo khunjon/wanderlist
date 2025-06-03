@@ -86,9 +86,9 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-6 px-4 sm:py-12 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
+    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <div className="text-center mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Create your account
           </h2>
@@ -101,7 +101,7 @@ export default function SignupPage() {
         </div>
 
         {error && (
-          <div className="bg-red-900 border-l-4 border-red-600 p-4">
+          <div className="bg-red-900 border-l-4 border-red-600 p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
@@ -208,7 +208,7 @@ export default function SignupPage() {
           </div>
         </form>
 
-        <div className="mt-4">
+        <div className="mt-6">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-600" />
