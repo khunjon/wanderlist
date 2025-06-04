@@ -184,70 +184,32 @@ export default function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
-        <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-          {user && (
-            <Link
-              href="/lists"
-              className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-gray-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              My Lists
-            </Link>
-          )}
-          <Link
-            href="/discover"
-            className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+      {isMenuOpen && (
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity duration-200 ease-in-out"
             onClick={() => setIsMenuOpen(false)}
-          >
-            Discover
-          </Link>
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="block rounded-md px-3 py-2 text-base font-medium text-yellow-300 hover:bg-gray-700 hover:text-yellow-200"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Admin
-            </Link>
-          )}
-        </div>
-        {user ? (
-          <div className="border-t border-gray-700 pb-3 pt-4">
-            <div className="flex items-center px-5">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-700">
-                  {user.photoURL ? (
-                    <Image
-                      src={user.photoURL}
-                      alt={user.displayName || 'User'}
-                      className="h-full w-full object-cover"
-                      width={40}
-                      height={40}
-                    />
-                  ) : (
-                    <svg
-                      className="h-full w-full text-gray-500"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  )}
-                </div>
-              </div>
-              <div className="ml-3">
-                <div className="text-base font-medium text-white">{user.displayName || 'User'}</div>
-                <div className="text-sm font-medium text-gray-400">{user.email}</div>
-              </div>
-            </div>
-            <div className="mt-3 space-y-1 px-2">
+          />
+          
+          {/* Mobile menu content */}
+          <div className="relative z-50 md:hidden bg-gray-800 border-t border-gray-600 shadow-lg transform transition-all duration-200 ease-in-out">
+            <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
+              {user && (
+                <Link
+                  href="/lists"
+                  className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Lists
+                </Link>
+              )}
               <Link
-                href="/profile"
+                href="/discover"
                 className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Your Profile
+                Discover
               </Link>
               {isAdmin && (
                 <Link
@@ -255,32 +217,81 @@ export default function Navbar() {
                   className="block rounded-md px-3 py-2 text-base font-medium text-yellow-300 hover:bg-gray-700 hover:text-yellow-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Admin Panel
+                  Admin
                 </Link>
               )}
             </div>
+            {user ? (
+              <div className="border-t border-gray-700 pb-3 pt-4">
+                <div className="flex items-center px-5">
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-700">
+                      {user.photoURL ? (
+                        <Image
+                          src={user.photoURL}
+                          alt={user.displayName || 'User'}
+                          className="h-full w-full object-cover"
+                          width={40}
+                          height={40}
+                        />
+                      ) : (
+                        <svg
+                          className="h-full w-full text-gray-500"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-base font-medium text-white">{user.displayName || 'User'}</div>
+                    <div className="text-sm font-medium text-gray-400">{user.email}</div>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 px-2">
+                  <Link
+                    href="/profile"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Your Profile
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="block rounded-md px-3 py-2 text-base font-medium text-yellow-300 hover:bg-gray-700 hover:text-yellow-200"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="border-t border-gray-700 pb-3 pt-4">
+                <div className="space-y-1 px-2">
+                  <Link
+                    href="/login"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="block rounded-md bg-blue-600 px-3 py-2 text-base font-medium text-white hover:bg-blue-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Get Started Free
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="border-t border-gray-700 pb-3 pt-4">
-            <div className="space-y-1 px-2">
-              <Link
-                href="/login"
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                className="block rounded-md bg-blue-600 px-3 py-2 text-base font-medium text-white hover:bg-blue-500"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Get Started Free
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </nav>
   );
 } 
