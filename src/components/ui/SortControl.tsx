@@ -97,8 +97,7 @@ export default function SortControl({ options, currentSort, onSortChange, classN
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
           </svg>
-          <span className="hidden sm:inline truncate">Sort by {currentOption?.label}</span>
-          <span className="sm:hidden truncate">Sort</span>
+          <span className="truncate">{currentOption?.label || 'Sort'}</span>
           <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 transition-transform ${currentSort.direction === 'asc' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
