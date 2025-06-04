@@ -6,15 +6,23 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { signOut } from '@/lib/firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function Navbar() {
   const { user } = useAuth();
   const { isAdmin } = useAdmin();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   
   const closeMenu = () => setIsMenuOpen(false);
+
+  // Hide navbar on specific pages for focused experience
+  const hideNavbar = pathname === '/lists/new';
+  
+  if (hideNavbar) {
+    return null;
+  }
 
   const handleSignOut = async () => {
     try {

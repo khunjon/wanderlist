@@ -70,13 +70,25 @@ export default function NewListPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Simplified header without main navbar */}
       <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Create New List</h1>
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center">
+            <Link
+              href="/lists"
+              className="inline-flex items-center text-gray-300 hover:text-white mr-4"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="text-sm">Back</span>
+            </Link>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Create New List</h1>
+          </div>
         </div>
       </header>
       <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl py-4 px-4 sm:py-6 sm:px-6 lg:px-8">
           <div className="bg-gray-800 px-4 py-5 shadow sm:rounded-lg sm:p-6">
             {error && (
               <div className="mb-4 bg-red-900 border-l-4 border-red-600 p-4">
