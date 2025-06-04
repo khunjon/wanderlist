@@ -210,9 +210,17 @@ export default function DiscoverPage() {
                           Public
                         </span>
                       </div>
+                      
+                      {/* Description - prominently displayed */}
                       <p className="text-sm text-gray-300 line-clamp-2 mb-3 sm:mb-4 min-h-[2.5rem]">
                         {list.description || 'No description'}
                       </p>
+                      
+                      {/* Location if available */}
+                      {list.city && (
+                        <p className="text-sm text-blue-300 mb-2">📍 {list.city}</p>
+                      )}
+                      
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <div className="flex flex-col space-y-1">
                           <span>Last updated: {list.updatedAt.toLocaleDateString()}</span>

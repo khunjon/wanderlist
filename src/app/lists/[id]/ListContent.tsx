@@ -485,11 +485,20 @@ export default function ListContent({ id }: ListContentProps) {
                 </div>
               </div>
               
-              {/* Location */}
-              {list.city && <p className="text-sm text-blue-300">📍 {list.city}</p>}
-              
               {/* Description */}
               {list.description && <p className="text-sm text-gray-300">{list.description}</p>}
+            </div>
+          )}
+        </div>
+      </header>
+      
+      {/* Scrollable content area */}
+      {!isEditing && (
+        <div className="bg-gray-900 border-b border-gray-700">
+          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+            <div className="space-y-3">
+              {/* Location */}
+              {list.city && <p className="text-sm text-blue-300">📍 {list.city}</p>}
               
               {/* Author */}
               <div className="flex items-center">
@@ -519,7 +528,7 @@ export default function ListContent({ id }: ListContentProps) {
                 </div>
               </div>
               
-              {/* Tags and Public/Private Status */}
+              {/* Public/Private Status */}
               <div className="flex flex-wrap gap-2">
                 <span 
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
@@ -537,16 +546,6 @@ export default function ListContent({ id }: ListContentProps) {
                   </svg>
                   {list.isPublic ? 'Public' : 'Private'}
                 </span>
-                {list.tags && list.tags.length > 0 && (
-                  list.tags.map((tag) => (
-                    <span 
-                      key={tag} 
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-900 text-blue-200"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                )}
               </div>
 
               {/* Edit Button - positioned after all the list info */}
@@ -565,9 +564,9 @@ export default function ListContent({ id }: ListContentProps) {
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </header>
+      )}
       <main>
         <div className={`mx-auto max-w-7xl ${isEditing ? 'py-3 px-4 sm:py-4' : 'py-3 sm:py-6'} sm:px-6 lg:px-8`}>
           {/* Add Places button - only show in edit mode */}
@@ -824,6 +823,22 @@ export default function ListContent({ id }: ListContentProps) {
                   Last updated: {list.updatedAt.toLocaleDateString()}
                 </p>
               </div>
+
+              {/* Tags at bottom - less prominent */}
+              {list.tags && list.tags.length > 0 && (
+                <div className="mt-4 text-center">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {list.tags.map((tag) => (
+                      <span 
+                        key={tag} 
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-900 text-blue-200"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-16 bg-gray-800 shadow rounded-lg">
