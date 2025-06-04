@@ -18,7 +18,8 @@ export default function Navbar() {
   const closeMenu = () => setIsMenuOpen(false);
 
   // Hide navbar on specific pages for focused experience
-  const hideNavbar = pathname === '/lists/new';
+  const hideNavbar = pathname === '/lists/new' || 
+                     (pathname?.startsWith('/lists/') && pathname !== '/lists');
   
   if (hideNavbar) {
     return null;

@@ -361,17 +361,17 @@ export default function ListContent({ id }: ListContentProps) {
         <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
           {isEditing && isOwner ? (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white">Edit List</h2>
+              <div className="flex items-center">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="inline-flex items-center p-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600"
+                  className="inline-flex items-center text-gray-300 hover:text-white mr-4"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  <span className="ml-1 hidden sm:inline">Cancel</span>
+                  <span className="text-sm">Cancel</span>
                 </button>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">Edit List</h2>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg">
                 <form onSubmit={handleEditList} className="space-y-4">
@@ -558,7 +558,7 @@ export default function ListContent({ id }: ListContentProps) {
         </div>
       </header>
       <main>
-        <div className="mx-auto max-w-7xl py-3 sm:py-6 sm:px-6 lg:px-8">
+        <div className={`mx-auto max-w-7xl ${isEditing ? 'py-3 px-4 sm:py-4' : 'py-3 sm:py-6'} sm:px-6 lg:px-8`}>
           {/* Add Places button - only show in edit mode */}
           {isEditing && isOwner && (
             <div className="mb-6">
