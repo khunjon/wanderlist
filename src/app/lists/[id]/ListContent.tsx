@@ -826,30 +826,24 @@ export default function ListContent({ id }: ListContentProps) {
               </div>
             </>
           ) : (
-            <div className="text-center py-12 bg-gray-800 shadow rounded-lg">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-white">No places</h3>
-              <p className="mt-1 text-sm text-gray-300">Get started by adding places to your list.</p>
-              <div className="mt-6">
+            <div className="text-center py-16 bg-gray-800 shadow rounded-lg">
+              <div className="max-w-sm mx-auto">
+                <div className="mx-auto h-24 w-24 text-gray-400 mb-6">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-full h-full">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">No places yet</h3>
+                <p className="text-gray-300 mb-6 text-sm leading-relaxed">
+                  Start building your list by adding your favorite places. Search for restaurants, cafes, attractions, and more.
+                </p>
                 <Link
                   href={`/search?listId=${list.id}`}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-lg"
                 >
                   <svg
-                    className="-ml-1 mr-2 h-5 w-5"
+                    className="-ml-1 mr-3 h-5 w-5"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -860,10 +854,32 @@ export default function ListContent({ id }: ListContentProps) {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Add Places
+                  Add Your First Place
                 </Link>
               </div>
             </div>
+          )}
+
+          {/* Floating Action Button - only show for list owners when not editing */}
+          {isOwner && !isEditing && places.length > 0 && (
+            <Link
+              href={`/search?listId=${list.id}`}
+              className="fixed bottom-6 right-6 z-20 inline-flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              title="Add places to list"
+            >
+              <svg
+                className="w-6 h-6"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </Link>
           )}
         </div>
       </main>
