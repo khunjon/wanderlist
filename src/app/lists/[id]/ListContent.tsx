@@ -483,6 +483,25 @@ export default function ListContent({ id }: ListContentProps) {
                 <div className="flex-1 min-w-0">
                   <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{list.name}</h1>
                 </div>
+                {/* Public/Private Icon in upper right */}
+                <div className="ml-4">
+                  <div 
+                    className={`inline-flex items-center p-2 rounded-full ${
+                      list.isPublic 
+                        ? 'bg-green-900 text-green-200' 
+                        : 'bg-purple-900 text-purple-200'
+                    }`}
+                    title={list.isPublic ? 'Public List' : 'Private List'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {list.isPublic ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      )}
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               {/* Description */}
@@ -523,9 +542,22 @@ export default function ListContent({ id }: ListContentProps) {
                     )}
                   </div>
                 </div>
-                <div className="ml-2 text-sm text-gray-300">
+                <div className="ml-2 text-sm text-gray-300 flex-1">
                   Created by {author?.displayName || 'Unknown User'}
                 </div>
+                {/* Edit Button - positioned inline with author */}
+                {isOwner && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="ml-4 inline-flex items-center px-3 py-1.5 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    title="Edit list"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
+                )}
               </div>
               
               {/* Public/Private Status */}
