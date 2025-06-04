@@ -357,7 +357,7 @@ export default function ListContent({ id }: ListContentProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-gray-900 shadow">
+      <header className="bg-gray-900 shadow sticky top-0 z-30">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
           {isEditing && isOwner ? (
             <div className="space-y-4">
