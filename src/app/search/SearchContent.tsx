@@ -270,35 +270,28 @@ export default function SearchContent() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               {selectedList ? `Add Places to "${selectedList.name}"` : 'Add Places to List'}
             </h1>
-            <div className="flex space-x-3">
-              {selectedList && (
-                <Link
-                  href={`/lists/${selectedList.id}`}
-                  className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  Back to List
-                </Link>
-              )}
+            {selectedList && (
               <Link
-                href="/lists"
-                className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
+                href={`/lists/${selectedList.id}`}
+                className="self-start inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
               >
-                My Lists
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="sm:hidden">Back</span>
+                <span className="hidden sm:inline">Back to List</span>
               </Link>
-            </div>
+            )}
           </div>
         </div>
       </header>
       <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl py-3 sm:py-6 sm:px-6 lg:px-8">
           <div className="bg-gray-800 px-4 py-5 shadow sm:rounded-lg sm:p-6">
             {error && (
               <div className="mb-4 bg-red-900 border-l-4 border-red-600 p-4">

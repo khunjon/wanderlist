@@ -358,170 +358,197 @@ export default function ListContent({ id }: ListContentProps) {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          {isEditing ? (
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
+          {isEditing && isOwner ? (
             <div className="space-y-4">
-              <div>
-                <label htmlFor="listName" className="block text-sm font-medium text-white">
-                  List Name
-                </label>
-                <input
-                  type="text"
-                  id="listName"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
-                  disabled={updateLoading}
-                />
-              </div>
-              <div>
-                <label htmlFor="listTags" className="block text-sm font-medium text-white">
-                  Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  id="listTags"
-                  value={editTags}
-                  onChange={(e) => setEditTags(e.target.value)}
-                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
-                  placeholder="food, travel, shopping"
-                  disabled={updateLoading}
-                />
-              </div>
-              <div className="flex items-start">
-                <div className="flex h-5 items-center">
-                  <input
-                    id="isPublic"
-                    name="isPublic"
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
-                    checked={editIsPublic}
-                    onChange={(e) => setEditIsPublic(e.target.checked)}
-                    disabled={updateLoading}
-                  />
-                </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="isPublic" className="font-medium text-white">
-                    Public List
-                  </label>
-                  <p className="text-gray-300">
-                    If checked, this list will be discoverable by other users.
-                  </p>
-                </div>
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleEditList}
-                  disabled={updateLoading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
-                >
-                  {updateLoading ? 'Saving...' : 'Save Changes'}
-                </button>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">Edit List</h2>
                 <button
                   onClick={() => setIsEditing(false)}
-                  disabled={updateLoading}
-                  className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  className="inline-flex items-center p-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteList}
-                  disabled={isDeleting || updateLoading}
-                  className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  {isDeleting ? 'Deleting...' : 'Delete List'}
+                  <span className="ml-1 hidden sm:inline">Cancel</span>
                 </button>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg">
+                <form onSubmit={handleEditList} className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-white">
+                      List Name
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-white">
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      rows={3}
+                      value={list.description}
+                      onChange={(e) => setList({ ...list, description: e.target.value })}
+                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-white">
+                      City/Location
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      value={list.city}
+                      onChange={(e) => setList({ ...list, city: e.target.value })}
+                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="tags" className="block text-sm font-medium text-white">
+                      Tags (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      id="tags"
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="food, travel, favorites"
+                    />
+                  </div>
+                  <div className="flex items-start">
+                    <div className="flex h-5 items-center">
+                      <input
+                        id="isPublic"
+                        type="checkbox"
+                        checked={editIsPublic}
+                        onChange={(e) => setEditIsPublic(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="ml-3 text-sm">
+                      <label htmlFor="isPublic" className="font-medium text-white">
+                        Public List
+                      </label>
+                      <p className="text-gray-300">
+                        If checked, this list will be discoverable by other users.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="submit"
+                      disabled={updateLoading}
+                      className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
+                    >
+                      {updateLoading ? 'Updating...' : 'Update List'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteList}
+                      disabled={isDeleting}
+                      className="inline-flex justify-center items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      {isDeleting ? 'Deleting...' : 'Delete List'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           ) : (
-            <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0 pr-4">
-                <h1 className="text-3xl font-bold tracking-tight text-white">{list.name}</h1>
-                
-                {/* Location */}
-                {list.city && <p className="mt-2 text-sm text-blue-300">📍 {list.city}</p>}
-                
-                {/* Description */}
-                {list.description && <p className="mt-2 text-sm text-gray-300">{list.description}</p>}
-                
-                {/* Author */}
-                <div className="mt-3 flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-700">
-                      {author?.photoURL ? (
-                        <Image
-                          src={author.photoURL}
-                          alt={author.displayName || 'Author'}
-                          className="h-full w-full object-cover"
-                          width={24}
-                          height={24}
-                        />
-                      ) : (
-                        <svg
-                          className="h-full w-full text-gray-500"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                  <div className="ml-2 text-sm text-gray-300">
-                    Created by {author?.displayName || 'Unknown User'}
-                  </div>
+            <div className="space-y-3">
+              {/* Title and Edit Button */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-3 sm:space-y-0">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{list.name}</h1>
                 </div>
-                
-                {/* Last Edit Date */}
-                <p className="mt-2 text-xs text-gray-400">
-                  Last updated: {list.updatedAt.toLocaleDateString()}
-                </p>
-                
-                {/* Tags and Public/Private Status */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span 
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
-                      list.isPublic 
-                        ? 'bg-green-900 text-green-200' 
-                        : 'bg-purple-900 text-purple-200'
-                    }`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      {list.isPublic ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      )}
-                    </svg>
-                    {list.isPublic ? 'Public' : 'Private'}
-                  </span>
-                  {list.tags && list.tags.length > 0 && (
-                    list.tags.map((tag) => (
-                      <span 
-                        key={tag} 
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-900 text-blue-200"
-                      >
-                        {tag}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-              <div className="flex-shrink-0">
                 {isOwner && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="inline-flex items-center p-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    className="self-start inline-flex items-center px-3 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                     title="Edit list"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    <span className="ml-1 hidden sm:inline">Edit</span>
+                    Edit
                   </button>
+                )}
+              </div>
+              
+              {/* Location */}
+              {list.city && <p className="text-sm text-blue-300">📍 {list.city}</p>}
+              
+              {/* Description */}
+              {list.description && <p className="text-sm text-gray-300">{list.description}</p>}
+              
+              {/* Author */}
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-700">
+                    {author?.photoURL ? (
+                      <Image
+                        src={author.photoURL}
+                        alt={author.displayName || 'Author'}
+                        className="h-full w-full object-cover"
+                        width={24}
+                        height={24}
+                      />
+                    ) : (
+                      <svg
+                        className="h-full w-full text-gray-500"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="ml-2 text-sm text-gray-300">
+                  Created by {author?.displayName || 'Unknown User'}
+                </div>
+              </div>
+              
+              {/* Tags and Public/Private Status */}
+              <div className="flex flex-wrap gap-2">
+                <span 
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                    list.isPublic 
+                      ? 'bg-green-900 text-green-200' 
+                      : 'bg-purple-900 text-purple-200'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {list.isPublic ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    )}
+                  </svg>
+                  {list.isPublic ? 'Public' : 'Private'}
+                </span>
+                {list.tags && list.tags.length > 0 && (
+                  list.tags.map((tag) => (
+                    <span 
+                      key={tag} 
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-900 text-blue-200"
+                    >
+                      {tag}
+                    </span>
+                  ))
                 )}
               </div>
             </div>
@@ -529,7 +556,7 @@ export default function ListContent({ id }: ListContentProps) {
         </div>
       </header>
       <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl py-3 sm:py-6 sm:px-6 lg:px-8">
           {/* Add Places button - only show in edit mode */}
           {isEditing && isOwner && (
             <div className="mb-6">
@@ -557,7 +584,7 @@ export default function ListContent({ id }: ListContentProps) {
           {places.length > 0 ? (
             <>
               {/* View Mode Selection */}
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <div className="flex w-full sm:w-auto rounded-md shadow-sm" role="group">
                   <button
                     type="button"
@@ -612,7 +639,7 @@ export default function ListContent({ id }: ListContentProps) {
 
               {/* Sort Control - only show for grid view */}
               {viewMode === 'grid' && (
-                <div className="mb-6">
+                <div className="mb-3 sm:mb-6">
                   <SortControl
                     options={placeSortOptions}
                     currentSort={placeSortState}
@@ -623,7 +650,7 @@ export default function ListContent({ id }: ListContentProps) {
               )}
               
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {sortedPlaces.map((place) => {
                     const isEditingThisPlace = editingPlaceId === place.listPlaceId;
                     const isDeletingThisPlace = deletingPlaceId === place.listPlaceId;
@@ -634,7 +661,7 @@ export default function ListContent({ id }: ListContentProps) {
                         className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300"
                       >
                         {place.photoUrl && (
-                          <div className="relative h-48 w-full">
+                          <div className="relative h-32 sm:h-48 w-full">
                             <Image
                               src={place.photoUrl}
                               alt={place.name}
@@ -643,9 +670,9 @@ export default function ListContent({ id }: ListContentProps) {
                             />
                           </div>
                         )}
-                        <div className="px-4 py-5 sm:p-6">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-lg font-medium text-white truncate flex-1">{place.name}</h3>
+                        <div className="px-3 py-3 sm:px-4 sm:py-5">
+                          <div className="flex justify-between items-start mb-1 sm:mb-2">
+                            <h3 className="text-base sm:text-lg font-medium text-white truncate flex-1">{place.name}</h3>
                             {isOwner && (
                               <div className="flex space-x-1 ml-2">
                                 <button
@@ -678,16 +705,16 @@ export default function ListContent({ id }: ListContentProps) {
                             )}
                           </div>
                           
-                          <p className="mt-1 text-sm text-gray-300 line-clamp-2">{place.address}</p>
+                          <p className="text-xs sm:text-sm text-gray-300 line-clamp-2 mb-2">{place.address}</p>
                           
                           {place.rating > 0 && (
-                            <div className="mt-2 flex items-center">
+                            <div className="mb-2 flex items-center">
                               <span className="text-sm font-medium text-white">{place.rating.toFixed(1)}</span>
                               <div className="ml-1 flex">
                                 {Array.from({ length: 5 }, (_, i) => (
                                   <svg
                                     key={i}
-                                    className={`h-5 w-5 ${
+                                    className={`h-4 w-4 ${
                                       i < Math.floor(place.rating)
                                         ? 'text-yellow-400'
                                         : i < Math.ceil(place.rating) && i >= Math.floor(place.rating)
@@ -711,7 +738,7 @@ export default function ListContent({ id }: ListContentProps) {
                           )}
                           
                           {/* Notes section */}
-                          <div className="mt-4">
+                          <div className="mt-3">
                             {isEditingThisPlace ? (
                               <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-300">
@@ -742,14 +769,14 @@ export default function ListContent({ id }: ListContentProps) {
                             ) : (
                               <>
                                 {place.notes && (
-                                  <div className="bg-gray-700 rounded-md p-3">
-                                    <p className="text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
+                                  <div className="bg-gray-700 rounded-md p-2 sm:p-3">
+                                    <p className="text-xs sm:text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
                                   </div>
                                 )}
                                 {!place.notes && isOwner && (
                                   <button
                                     onClick={() => handleEditPlaceNotes(place)}
-                                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                                    className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
                                   >
                                     + Add notes
                                   </button>
@@ -786,6 +813,13 @@ export default function ListContent({ id }: ListContentProps) {
                   </div>
                 </div>
               )}
+
+              {/* Last updated date at bottom */}
+              <div className="mt-6 text-center">
+                <p className="text-xs text-gray-400">
+                  Last updated: {list.updatedAt.toLocaleDateString()}
+                </p>
+              </div>
             </>
           ) : (
             <div className="text-center py-12 bg-gray-800 shadow rounded-lg">

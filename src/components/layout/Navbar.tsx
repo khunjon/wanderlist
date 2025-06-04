@@ -97,35 +97,30 @@ export default function Navbar() {
                       <div className="px-4 py-2 text-sm text-gray-300">
                         {user.displayName || user.email}
                       </div>
-                      <Link
-                        href="/profile"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Your Profile
-                      </Link>
-                      <Link
-                        href="/lists/new"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Create New List
-                      </Link>
-                      {isAdmin && (
+                      <div className="py-1">
                         <Link
-                          href="/admin"
-                          className="block px-4 py-2 text-sm text-yellow-300 hover:bg-gray-700"
+                          href="/profile"
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          Admin Panel
+                          Your Profile
                         </Link>
-                      )}
-                      <button
-                        onClick={handleSignOut}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-                      >
-                        Sign Out
-                      </button>
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            className="block px-4 py-2 text-sm text-yellow-300 hover:bg-gray-700"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            Admin Panel
+                          </Link>
+                        )}
+                        <button
+                          onClick={handleSignOut}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -254,13 +249,6 @@ export default function Navbar() {
               >
                 Your Profile
               </Link>
-              <Link
-                href="/lists/new"
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Create New List
-              </Link>
               {isAdmin && (
                 <Link
                   href="/admin"
@@ -270,12 +258,6 @@ export default function Navbar() {
                   Admin Panel
                 </Link>
               )}
-              <button
-                onClick={handleSignOut}
-                className="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-              >
-                Sign Out
-              </button>
             </div>
           </div>
         ) : (
