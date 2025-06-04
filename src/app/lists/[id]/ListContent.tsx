@@ -469,9 +469,20 @@ export default function ListContent({ id }: ListContentProps) {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Title */}
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{list.name}</h1>
+              {/* Navigation and Title */}
+              <div className="flex items-center">
+                <Link
+                  href="/lists"
+                  className="inline-flex items-center text-gray-300 hover:text-white mr-4"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  <span className="text-sm">My Lists</span>
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{list.name}</h1>
+                </div>
               </div>
               
               {/* Location */}
