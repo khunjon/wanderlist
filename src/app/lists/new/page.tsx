@@ -136,8 +136,26 @@ export default function NewListPage() {
                 </div>
 
                 <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-white">
+                    Description
+                  </label>
+                  <div className="mt-1">
+                    <textarea
+                      id="description"
+                      name="description"
+                      rows={3}
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
+                      placeholder="A collection of my favorite places to eat around town."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div>
                   <label htmlFor="city" className="block text-sm font-medium text-white">
-                    City
+                    City (to help narrow down place searches)
                   </label>
                   <div className="mt-1">
                     <input
@@ -151,9 +169,6 @@ export default function NewListPage() {
                       disabled={loading}
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-300">
-                    Specify a city or area to limit your place searches.
-                  </p>
                 </div>
 
                 <div>
@@ -174,28 +189,7 @@ export default function NewListPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-white">
-                    Description
-                  </label>
-                  <div className="mt-1">
-                    <textarea
-                      id="description"
-                      name="description"
-                      rows={3}
-                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-                      placeholder="A collection of my favorite places to eat around town."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label htmlFor="isPublic" className="text-sm font-medium text-white">
-                    Visibility
-                  </label>
+                <div className="flex items-center justify-end">
                   <div className="flex items-center space-x-3">
                     <span className={`text-sm ${!isPublic ? 'text-white' : 'text-gray-400'}`}>
                       Private

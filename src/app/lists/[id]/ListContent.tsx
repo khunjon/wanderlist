@@ -402,7 +402,7 @@ export default function ListContent({ id }: ListContentProps) {
                   </div>
                   <div>
                     <label htmlFor="city" className="block text-sm font-medium text-white">
-                      City/Location
+                      City (to help narrow down place searches)
                     </label>
                     <input
                       type="text"
