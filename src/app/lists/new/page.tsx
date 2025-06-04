@@ -71,16 +71,8 @@ export default function NewListPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold tracking-tight text-white">Create New List</h1>
-            <Link
-              href="/lists"
-              className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-700"
-            >
-              Back to My Lists
-            </Link>
-          </div>
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Create New List</h1>
         </div>
       </header>
       <main>
@@ -219,9 +211,9 @@ export default function NewListPage() {
                 <div className="flex justify-end">
                   <Link
                     href="/lists"
-                    className="rounded-md border border-gray-600 bg-gray-800 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md border border-gray-600 bg-transparent py-2 px-4 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                   >
-                    Back to My Lists
+                    Cancel
                   </Link>
                   <button
                     type="submit"
