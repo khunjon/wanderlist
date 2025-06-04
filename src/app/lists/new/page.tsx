@@ -160,9 +160,6 @@ export default function NewListPage() {
                       disabled={loading}
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-300">
-                    Comma-separated tags to categorize your list.
-                  </p>
                 </div>
 
                 <div>
@@ -181,30 +178,33 @@ export default function NewListPage() {
                       disabled={loading}
                     />
                   </div>
-                  <p className="mt-2 text-sm text-gray-300">
-                    Brief description of what this list is about.
-                  </p>
                 </div>
 
-                <div className="flex items-start">
-                  <div className="flex h-5 items-center">
-                    <input
-                      id="isPublic"
-                      name="isPublic"
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
-                      checked={isPublic}
-                      onChange={(e) => setIsPublic(e.target.checked)}
+                <div className="flex items-center justify-between">
+                  <label htmlFor="isPublic" className="text-sm font-medium text-white">
+                    Visibility
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <span className={`text-sm ${!isPublic ? 'text-white' : 'text-gray-400'}`}>
+                      Private
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublic(!isPublic)}
                       disabled={loading}
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="isPublic" className="font-medium text-white">
-                      Public List
-                    </label>
-                    <p className="text-gray-300">
-                      If checked, this list will be discoverable by other users.
-                    </p>
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        isPublic ? 'bg-blue-600' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isPublic ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-sm ${isPublic ? 'text-white' : 'text-gray-400'}`}>
+                      Public
+                    </span>
                   </div>
                 </div>
 
