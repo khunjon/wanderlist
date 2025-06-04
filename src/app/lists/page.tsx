@@ -154,7 +154,7 @@ export default function ListsPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col space-y-4">
             {/* Header row with title and New List button */}
             <div className="flex justify-between items-center">
@@ -193,7 +193,7 @@ export default function ListsPage() {
         </div>
       </header>
       <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl py-3 sm:py-6 sm:px-6 lg:px-8">
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
@@ -201,7 +201,7 @@ export default function ListsPage() {
             </div>
           ) : sortedLists.length > 0 ? (
             <>
-              <div className="mb-6">
+              <div className="mb-3 sm:mb-6">
                 <SortControl
                   options={sortOptions}
                   currentSort={sortState}
@@ -209,16 +209,16 @@ export default function ListsPage() {
                   className="w-full sm:w-auto"
                 />
               </div>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {sortedLists.map((list) => (
                   <div
                     key={list.id}
                     onClick={() => handleListClick(list)}
                     className="bg-gray-800 overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-105 border border-gray-700 hover:border-gray-600"
                   >
-                    <div className="px-6 py-6">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-xl font-semibold text-white truncate pr-2">{list.name}</h3>
+                    <div className="px-4 py-4 sm:px-6 sm:py-6">
+                      <div className="flex justify-between items-start mb-2 sm:mb-3">
+                        <h3 className="text-lg sm:text-xl font-semibold text-white truncate pr-2">{list.name}</h3>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
                           list.isPublic 
                             ? 'bg-green-900 text-green-200' 
@@ -234,7 +234,7 @@ export default function ListsPage() {
                           {list.isPublic ? 'Public' : 'Private'}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-300 line-clamp-2 mb-4 min-h-[2.5rem]">
+                      <p className="text-sm text-gray-300 line-clamp-2 mb-3 sm:mb-4 min-h-[2.5rem]">
                         {list.description || 'No description'}
                       </p>
                       <div className="flex justify-between items-center text-xs text-gray-400">
