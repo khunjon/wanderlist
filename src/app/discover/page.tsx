@@ -217,7 +217,6 @@ export default function DiscoverPage() {
                       
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <div className="flex flex-col space-y-1">
-                          <span>Last updated: {list.updatedAt.toLocaleDateString()}</span>
                         </div>
                         {list.viewCount !== undefined && (
                           <div className="flex items-center">
