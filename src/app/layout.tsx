@@ -5,12 +5,14 @@ import AuthWrapper from "@/components/auth/AuthWrapper";
 import Footer from "@/components/layout/Footer";
 import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
 import Navbar from "@/components/layout/Navbar";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Placemarks - Organize Your Places",
   description: "A better way to save and organize places from Google Maps",
+  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 export default function RootLayout({
@@ -24,10 +26,11 @@ export default function RootLayout({
         <AuthWrapper>
           <AnalyticsProvider>
             <Navbar />
-            <div className="flex-grow">
+            <div className="flex-grow pb-16 md:pb-0">
               {children}
             </div>
             <Footer />
+            <MobileBottomNav />
           </AnalyticsProvider>
         </AuthWrapper>
       </body>
