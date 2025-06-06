@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { searchPlaces } from '@/lib/google/places';
 import { createPlace, addPlaceToList } from '@/lib/firebase/firestore';
@@ -27,10 +28,17 @@ export default function FloatingActionButton({
   const [addingToList, setAddingToList] = useState<Record<string, boolean>>({});
   const [addedToList, setAddedToList] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   const router = useRouter();
   const lastScrollY = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Set mounted state for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Handle scroll visibility
   useEffect(() => {
@@ -220,6 +228,31 @@ export default function FloatingActionButton({
     }
   }, []);
 
+  // Focus input when modal opens
+  useEffect(() => {
+    if (showModal && inputRef.current) {
+      // Small delay to ensure modal is fully rendered
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showModal]);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showModal) {
+        closeModal();
+      }
+    };
+
+    if (showModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showModal, closeModal]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -235,7 +268,7 @@ export default function FloatingActionButton({
       {/* Floating Action Button */}
       <button
         onClick={handleFABClick}
-        className={`fixed bottom-6 right-6 z-50 inline-flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+        className={`fixed bottom-6 right-6 z-40 inline-flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
         }`}
         title="Add places"
@@ -256,15 +289,15 @@ export default function FloatingActionButton({
       </button>
 
       {/* Mobile Search Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+      {showModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
             <div 
               className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
               onClick={closeModal}
             />
             
-            <div className="relative transform overflow-hidden rounded-lg bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 w-full max-w-sm">
+            <div className="relative transform overflow-hidden rounded-lg bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 w-full max-w-sm z-[70]">
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-white">
@@ -309,12 +342,14 @@ export default function FloatingActionButton({
               <form onSubmit={handleSearch} className="mb-4">
                 <div className="flex rounded-md shadow-sm">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={query}
                     onChange={handleInputChange}
                     placeholder={listCity ? `Search in ${listCity}...` : "Search for places..."}
-                    className="block w-full rounded-l-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3"
+                    className="block w-full rounded-l-md bg-gray-700 border border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none sm:text-sm h-10 px-3"
                     disabled={loading}
+                    autoFocus
                   />
                   <button
                     type="submit"
@@ -457,7 +492,8 @@ export default function FloatingActionButton({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
