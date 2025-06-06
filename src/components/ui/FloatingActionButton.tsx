@@ -174,7 +174,7 @@ export default function FloatingActionButton({
       setAddedToList(prev => ({ ...prev, [place.place_id]: true }));
       
       // Trigger haptic feedback
-      if (navigator.vibrate) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(50);
       }
       
@@ -200,12 +200,12 @@ export default function FloatingActionButton({
   // Handle FAB click
   const handleFABClick = useCallback(() => {
     // Trigger haptic feedback
-    if (navigator.vibrate) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
     }
 
     // If we have a listId, show modal for mobile, otherwise navigate to search
-    if (listId && window.innerWidth < 768) {
+    if (listId && typeof window !== 'undefined' && window.innerWidth < 768) {
       setShowModal(true);
     } else {
       // Navigate to search page
@@ -289,7 +289,7 @@ export default function FloatingActionButton({
       </button>
 
       {/* Mobile Search Modal */}
-      {showModal && mounted && createPortal(
+      {showModal && mounted && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[60] overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
             <div 
