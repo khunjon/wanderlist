@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { List, Search, Compass, User } from 'lucide-react';
+import { List, MapPin, Compass, User } from 'lucide-react';
 
 interface TabItem {
   name: string;
@@ -20,9 +20,9 @@ const tabs: TabItem[] = [
     requiresAuth: true,
   },
   {
-    name: 'Search',
-    href: '/search',
-    icon: Search,
+    name: 'Near Me',
+    href: '/near-me',
+    icon: MapPin,
     requiresAuth: true,
   },
   {
@@ -68,7 +68,7 @@ export default function MobileBottomNav() {
             {visibleTabs.map((tab) => {
               const isActive = pathname === tab.href || 
                 (tab.href === '/lists' && pathname?.startsWith('/lists') && pathname !== '/lists/new') ||
-                (tab.href === '/search' && pathname?.startsWith('/search')) ||
+                (tab.href === '/near-me' && pathname?.startsWith('/near-me')) ||
                 (tab.href === '/discover' && pathname?.startsWith('/discover')) ||
                 (tab.href === '/profile' && pathname?.startsWith('/profile'));
 
