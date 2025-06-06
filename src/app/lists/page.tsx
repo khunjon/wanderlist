@@ -8,6 +8,7 @@ import { List } from '@/types';
 import { useRouter } from 'next/navigation';
 import { trackListView } from '@/lib/analytics/gtag';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
+import FloatingActionButton from '@/components/ui/FloatingActionButton';
 
 const sortOptions: SortOption[] = [
   { value: 'updatedAt', label: 'Last Edited' },
@@ -304,6 +305,11 @@ export default function ListsPage() {
           )}
         </div>
       </main>
+      
+      {/* Floating Action Button - only show when user has lists */}
+      {sortedLists.length > 0 && (
+        <FloatingActionButton />
+      )}
     </div>
   );
 } 

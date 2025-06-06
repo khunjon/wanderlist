@@ -12,6 +12,7 @@ import MapView from '@/components/maps/MapView';
 import { trackListView } from '@/lib/analytics/gtag';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import SwipeView from '@/components/SwipeView';
+import FloatingActionButton from '@/components/ui/FloatingActionButton';
 
 const placeSortOptions: SortOption[] = [
   { value: 'addedAt', label: 'Date Added' },
@@ -87,6 +88,17 @@ export default function ListContent({ id }: ListContentProps) {
   const isOwner = useMemo(() => {
     return user?.uid === list?.userId;
   }, [user?.uid, list?.userId]);
+
+  // Callback to refresh places when a new place is added
+  const handlePlaceAdded = useCallback(async () => {
+    if (!id) return;
+    try {
+      const placesData = await getPlacesInList(id);
+      setPlaces(placesData);
+    } catch (err) {
+      console.error('Error refreshing places:', err);
+    }
+  }, [id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -873,24 +885,11 @@ export default function ListContent({ id }: ListContentProps) {
 
           {/* Floating Action Button - only show for list owners when not editing */}
           {isOwner && !isEditing && places.length > 0 && (
-            <Link
-              href={`/search?listId=${list.id}`}
-              className="fixed bottom-6 right-6 z-20 inline-flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              title="Add places to list"
-            >
-              <svg
-                className="w-6 h-6"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </Link>
+            <FloatingActionButton 
+              listId={list.id}
+              listCity={list.city}
+              onPlaceAdded={handlePlaceAdded}
+            />
           )}
         </div>
       </main>
