@@ -1,10 +1,11 @@
+// src/hooks/useAuth.tsx - Updated to handle redirect results
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, Suspense } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { User } from '@/types';
-import { convertFirebaseUserToUser, getUserWithAdminStatus } from '@/lib/firebase/auth';
+import { convertFirebaseUserToUser, getUserWithAdminStatus, handleRedirectResult } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -25,7 +26,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    setLoading(true); // Set loading to true before auth state changes
+    setLoading(true);
+    
+    // Check for redirect result first (in case user was redirected back from Google)
+    const checkRedirectResult = async () => {
+      try {
+        const result = await handleRedirectResult();
+        if (result) {
+          console.log('Redirect result handled successfully:', result.user.email);
+        }
+      } catch (error) {
+        console.error('Error handling redirect result:', error);
+        // Don't set this as a critical error, just log it
+      }
+    };
+    
+    // Check redirect result on mount
+    checkRedirectResult();
     
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -97,4 +114,4 @@ export function useRequireAuth(redirectUrl = '/login') {
       </Suspense>
     )
   };
-} 
+}

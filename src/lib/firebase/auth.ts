@@ -4,6 +4,8 @@ import {
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   updateProfile,
   UserCredential,
   User as FirebaseUser,
@@ -59,7 +61,32 @@ export const signInWithEmail = async (
 export const signInWithGoogle = async (): Promise<UserCredential> => {
   try {
     const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
+    
+    // Add additional scopes if needed
+    provider.addScope('email');
+    provider.addScope('profile');
+    
+    // For mobile devices or if popup is blocked, you might want to use redirect
+    // But popup is generally more reliable for web apps
+    let userCredential: UserCredential;
+    
+    try {
+      // Try popup first
+      userCredential = await signInWithPopup(auth, provider);
+    } catch (popupError: any) {
+      // If popup fails (blocked, etc.), fall back to redirect
+      if (popupError.code === 'auth/popup-blocked' || 
+          popupError.code === 'auth/popup-closed-by-user') {
+        console.log('Popup blocked, using redirect method');
+        await signInWithRedirect(auth, provider);
+        
+        // Note: After redirect, you need to handle the result in your app initialization
+        // The redirect will take the user away from the current page
+        return Promise.reject(new Error('Redirect initiated'));
+      }
+      throw popupError;
+    }
+    
     const user = userCredential.user;
 
     // Create a user document in Firestore if it doesn't exist
@@ -68,13 +95,48 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || '',
+        photoURL: user.photoURL || '',
         createdAt: new Date(),
+        bio: '',
+        instagram: '',
+        tiktok: '',
       });
     }
 
     return userCredential;
   } catch (error) {
     console.error('Error signing in with Google:', error);
+    throw error;
+  }
+};
+
+export const handleRedirectResult = async (): Promise<UserCredential | null> => {
+  try {
+    const result = await getRedirectResult(auth);
+    
+    if (result) {
+      const user = result.user;
+      
+      // Create a user document in Firestore if it doesn't exist
+      if (user) {
+        await createUserDocument(user.uid, {
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || '',
+          photoURL: user.photoURL || '',
+          createdAt: new Date(),
+          bio: '',
+          instagram: '',
+          tiktok: '',
+        });
+      }
+      
+      return result;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error handling redirect result:', error);
     throw error;
   }
 };
