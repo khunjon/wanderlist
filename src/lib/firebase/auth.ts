@@ -4,8 +4,6 @@ import {
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   updateProfile,
   UserCredential,
   User as FirebaseUser,
@@ -66,23 +64,9 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     provider.addScope('email');
     provider.addScope('profile');
     
-    // Use redirect method instead of popup to avoid auth handler issues
-    console.log('Using redirect method for Google sign-in');
-    await signInWithRedirect(auth, provider);
-    
-    // Note: After redirect, the user will be redirected back and the result
-    // will be handled by handleRedirectResult in the auth hook
-    // The user creation will happen in handleRedirectResult
-    return Promise.reject(new Error('Redirect initiated'));
-  } catch (error) {
-    console.error('Error signing in with Google:', error);
-    throw error;
-  }
-};
-
-export const handleRedirectResult = async (): Promise<UserCredential | null> => {
-  try {
-    const result = await getRedirectResult(auth);
+    // Use popup method instead of redirect to avoid auth handler issues
+    console.log('Using popup method for Google sign-in');
+    const result = await signInWithPopup(auth, provider);
     
     if (result) {
       const user = result.user;
@@ -100,13 +84,11 @@ export const handleRedirectResult = async (): Promise<UserCredential | null> => 
           tiktok: '',
         });
       }
-      
-      return result;
     }
     
-    return null;
+    return result;
   } catch (error) {
-    console.error('Error handling redirect result:', error);
+    console.error('Error signing in with Google:', error);
     throw error;
   }
 };

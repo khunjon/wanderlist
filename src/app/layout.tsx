@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
 import Navbar from "@/components/layout/Navbar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import FirebaseDebug from "@/components/FirebaseDebug";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,6 +32,7 @@ export default function RootLayout({
             </div>
             <Footer />
             <MobileBottomNav />
+            <FirebaseDebug />
           </AnalyticsProvider>
         </AuthWrapper>
       </body>
