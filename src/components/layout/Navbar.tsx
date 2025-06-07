@@ -2,7 +2,6 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 import { signOut } from '@/lib/firebase/auth';
@@ -88,16 +87,20 @@ export default function Navbar() {
                       className="flex max-w-xs items-center rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                     >
                       <span className="sr-only">Open user menu</span>
-                      <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-700">
+                      <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-700 relative">
                         {user.photoURL ? (
-                          <Image
+                          <img
                             src={user.photoURL}
                             alt={user.displayName || 'User'}
                             className="h-full w-full object-cover"
-                            width={32}
-                            height={32}
+                            onError={(e) => {
+                              // Hide broken image and show fallback
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
                           />
-                        ) : (
+                        ) : null}
+                        {/* Default avatar - always present as fallback */}
+                        <div className={`absolute inset-0 flex items-center justify-center ${user.photoURL ? 'hidden' : ''}`}>
                           <svg
                             className="h-full w-full text-gray-500"
                             fill="currentColor"
@@ -105,7 +108,7 @@ export default function Navbar() {
                           >
                             <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                           </svg>
-                        )}
+                        </div>
                       </div>
                     </button>
                   </div>
@@ -242,16 +245,20 @@ export default function Navbar() {
               <div className="border-t border-gray-700 pb-3 pt-4">
                 <div className="flex items-center px-5">
                   <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-700">
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-700 relative">
                       {user.photoURL ? (
-                        <Image
+                        <img
                           src={user.photoURL}
                           alt={user.displayName || 'User'}
                           className="h-full w-full object-cover"
-                          width={40}
-                          height={40}
+                          onError={(e) => {
+                            // Hide broken image and show fallback
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
-                      ) : (
+                      ) : null}
+                      {/* Default avatar - always present as fallback */}
+                      <div className={`absolute inset-0 flex items-center justify-center ${user.photoURL ? 'hidden' : ''}`}>
                         <svg
                           className="h-full w-full text-gray-500"
                           fill="currentColor"
@@ -259,7 +266,7 @@ export default function Navbar() {
                         >
                           <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                      )}
+                      </div>
                     </div>
                   </div>
                   <div className="ml-3">

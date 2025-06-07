@@ -6,7 +6,6 @@ import { getList, getPlacesInList, deleteList, updateList, updatePlaceNotes, rem
 import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { getUserProfile } from '@/lib/firebase/user';
 import MapView from '@/components/maps/MapView';
 import { trackListView } from '@/lib/analytics/gtag';
@@ -160,6 +159,22 @@ export default function ListContent({ id }: ListContentProps) {
       fetchData();
     }
   }, [id, user, authLoading]);
+
+  // Refresh author profile when current user changes (in case they updated their own profile)
+  useEffect(() => {
+    const refreshAuthorProfile = async () => {
+      if (list && user && list.userId === user.uid) {
+        try {
+          const updatedAuthorProfile = await getUserProfile(list.userId);
+          setAuthor(updatedAuthorProfile);
+        } catch (err) {
+          console.error('Error refreshing author profile:', err);
+        }
+      }
+    };
+
+    refreshAuthorProfile();
+  }, [user?.photoURL, user?.displayName, list?.userId]); // Re-run when user's photo or name changes
 
   // Memoized place sort change handler
   const handlePlaceSortChange = useCallback((newSort: SortState) => {
@@ -518,14 +533,18 @@ export default function ListContent({ id }: ListContentProps) {
                 <div className="flex-shrink-0">
                   <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-700">
                     {author?.photoURL ? (
-                      <Image
+                      <img
                         src={author.photoURL}
                         alt={author.displayName || 'Author'}
                         className="h-full w-full object-cover"
-                        width={24}
-                        height={24}
+                        onError={(e) => {
+                          // Hide broken image and show fallback
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
+                    ) : null}
+                    {/* Default avatar - always present as fallback */}
+                    <div className={`absolute inset-0 flex items-center justify-center ${author?.photoURL ? 'hidden' : ''}`}>
                       <svg
                         className="h-full w-full text-gray-500"
                         fill="currentColor"
@@ -533,7 +552,7 @@ export default function ListContent({ id }: ListContentProps) {
                       >
                         <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                    )}
+                    </div>
                   </div>
                 </div>
                 <div className="ml-2 text-sm text-gray-300 flex-1">
@@ -688,11 +707,14 @@ export default function ListContent({ id }: ListContentProps) {
                         <div className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
                         {place.photoUrl && (
                           <div className="relative h-32 sm:h-48 w-full">
-                            <Image
+                            <img
                               src={place.photoUrl}
                               alt={place.name}
-                              fill
-                              className="object-cover"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Hide broken image
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
                             />
                           </div>
                         )}
