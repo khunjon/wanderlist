@@ -194,7 +194,8 @@ export default function ProfilePage() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Navigation is handled in auth.ts with window.location.href
+      // Navigate to home page after successful logout
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
       setError('Failed to sign out. Please try again.');

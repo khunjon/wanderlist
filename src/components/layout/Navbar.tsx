@@ -9,7 +9,7 @@ import { signOut } from '@/lib/firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { isAdmin } = useAdmin();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
@@ -19,10 +19,10 @@ export default function Navbar() {
 
   // Redirect logged-in users from home page to their lists
   useEffect(() => {
-    if (user && pathname === '/') {
+    if (!loading && user && pathname === '/') {
       router.push('/lists');
     }
-  }, [user, pathname, router]);
+  }, [user, loading, pathname, router]);
 
   // Hide navbar on specific pages for focused experience
   const hideNavbar = pathname === '/lists/new' || 
@@ -36,7 +36,8 @@ export default function Navbar() {
     try {
       setIsMenuOpen(false);
       await signOut();
-      // Navigation is handled in auth.ts with window.location.href
+      // Navigate to home page after successful logout
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }
