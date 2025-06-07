@@ -57,6 +57,13 @@ const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8
   });
 };
 
+// Add cache busting to Firebase Storage URLs
+const addCacheBuster = (url: string): string => {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}t=${Date.now()}`;
+};
+
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
   const [user, setUser] = useState<User | null>(null);
@@ -66,6 +73,9 @@ export default function ProfilePage() {
   const [tiktok, setTiktok] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,8 +100,11 @@ export default function ProfilePage() {
           setBio(profile.bio || '');
           setInstagram(profile.instagram || '');
           setTiktok(profile.tiktok || '');
+          
+          // Set profile photo URL with cache busting
           if (profile.photoURL) {
-            setPreviewUrl(profile.photoURL);
+            setProfilePhotoUrl(addCacheBuster(profile.photoURL));
+            setPreviewUrl(null); // Clear any local preview
           }
         }
       } catch (err) {
@@ -121,6 +134,7 @@ export default function ProfilePage() {
 
     setError(null);
     setUploadingPhoto(true);
+    setImageError(false);
 
     try {
       let processedFile = file;
@@ -139,10 +153,11 @@ export default function ProfilePage() {
 
       setSelectedFile(processedFile);
 
-      // Create preview URL
+      // Create preview URL for immediate feedback
       const reader = new FileReader();
       reader.onload = () => {
         setPreviewUrl(reader.result as string);
+        setProfilePhotoUrl(null); // Clear the old photo URL
         setUploadingPhoto(false);
       };
       reader.readAsDataURL(processedFile);
@@ -214,8 +229,13 @@ export default function ProfilePage() {
       if (selectedFile) {
         try {
           setSuccessMessage('Uploading photo... Please wait.');
-          await uploadProfilePhoto(authUser.uid, selectedFile);
-          setSelectedFile(null); // Clear selected file after successful upload
+          const newPhotoURL = await uploadProfilePhoto(authUser.uid, selectedFile);
+          
+          // Update the profile photo URL with cache busting
+          setProfilePhotoUrl(addCacheBuster(newPhotoURL));
+          setPreviewUrl(null); // Clear preview URL
+          setSelectedFile(null); // Clear selected file
+          setImageError(false); // Reset any image errors
         } catch (photoError) {
           console.error('Error uploading photo:', photoError);
           setError('Failed to upload profile photo. Please try again with a different image.');
@@ -231,12 +251,13 @@ export default function ProfilePage() {
 
       setSuccessMessage('Profile updated successfully!');
       
-      // Refresh user data
+      // Refresh user data to ensure consistency
       const updatedProfile = await getUserProfile(authUser.uid);
       if (updatedProfile) {
         setUser(updatedProfile);
-        if (updatedProfile.photoURL) {
-          setPreviewUrl(updatedProfile.photoURL);
+        // Only update photo URL if we didn't just upload a new one
+        if (!selectedFile && updatedProfile.photoURL) {
+          setProfilePhotoUrl(addCacheBuster(updatedProfile.photoURL));
         }
       }
     } catch (err) {
@@ -258,7 +279,24 @@ export default function ProfilePage() {
     }
   };
 
+  // Handle image load error
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
 
+  // Handle image load success
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  // Get the current image URL to display
+  const getCurrentImageUrl = () => {
+    if (previewUrl) return previewUrl; // Show preview if available
+    if (profilePhotoUrl) return profilePhotoUrl; // Show stored photo with cache busting
+    return null;
+  };
 
   if (authLoading || loading) {
     return (
@@ -339,14 +377,26 @@ export default function ProfilePage() {
                   <div className="text-center">
                     <div className="relative inline-block">
                       <div className="relative h-32 w-32 mx-auto rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600">
-                        {previewUrl ? (
-                          <Image
-                            src={previewUrl}
-                            alt="Profile"
-                            className="h-full w-full object-cover"
-                            width={128}
-                            height={128}
-                          />
+                        {getCurrentImageUrl() && !imageError ? (
+                          <>
+                            {imageLoading && (
+                              <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                              </div>
+                            )}
+                            <Image
+                              src={getCurrentImageUrl()!}
+                              alt="Profile"
+                              className="h-full w-full object-cover"
+                              width={128}
+                              height={128}
+                              onLoad={handleImageLoad}
+                              onError={handleImageError}
+                              onLoadStart={() => setImageLoading(true)}
+                              priority
+                              unoptimized={previewUrl ? true : false} // Don't optimize preview URLs
+                            />
+                          </>
                         ) : (
                           <svg
                             className="h-full w-full text-gray-500"
@@ -402,13 +452,18 @@ export default function ProfilePage() {
                             <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            Change Photo
+                            {getCurrentImageUrl() ? 'Change Photo' : 'Add Photo'}
                           </>
                         )}
                       </button>
                       <p className="mt-2 text-xs text-gray-400">
                         JPG, PNG, GIF, or WebP. Images will be automatically optimized.
                       </p>
+                      {imageError && (
+                        <p className="mt-1 text-xs text-red-400">
+                          Failed to load image. Please try uploading again.
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -524,21 +579,21 @@ export default function ProfilePage() {
                 </div>
               </form>
 
-                             {/* Account Actions Section */}
-               <div className="mt-12 pt-8 border-t border-gray-700">
-                 <h3 className="text-lg font-medium text-white mb-6">Account Actions</h3>
-                 <div className="flex justify-start">
-                   <button
-                     onClick={handleSignOut}
-                     className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-800 transition-colors"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                     </svg>
-                     Sign Out
-                   </button>
-                 </div>
-               </div>
+              {/* Account Actions Section */}
+              <div className="mt-12 pt-8 border-t border-gray-700">
+                <h3 className="text-lg font-medium text-white mb-6">Account Actions</h3>
+                <div className="flex justify-start">
+                  <button
+                    onClick={handleSignOut}
+                    className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-800 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

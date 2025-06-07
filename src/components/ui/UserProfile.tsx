@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { useState } from 'react';
 import { User } from '@/types';
 
 interface UserProfileProps {
@@ -9,6 +10,13 @@ interface UserProfileProps {
   className?: string;
 }
 
+// Add cache busting to Firebase Storage URLs
+const addCacheBuster = (url: string): string => {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}t=${Date.now()}`;
+};
+
 export default function UserProfile({ 
   user, 
   showBio = false, 
@@ -16,6 +24,9 @@ export default function UserProfile({
   size = 'md',
   className = '' 
 }: UserProfileProps) {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+
   const sizeClasses = {
     sm: 'h-6 w-6',
     md: 'h-8 w-8',
@@ -28,17 +39,37 @@ export default function UserProfile({
     lg: 'text-lg'
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
   return (
     <div className={`flex items-start space-x-3 ${className}`}>
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-700 flex-shrink-0`}>
-        {user.photoURL ? (
-          <Image
-            src={user.photoURL}
-            alt={user.displayName || 'User'}
-            className="h-full w-full object-cover"
-            width={size === 'sm' ? 24 : size === 'md' ? 32 : 48}
-            height={size === 'sm' ? 24 : size === 'md' ? 32 : 48}
-          />
+      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-700 flex-shrink-0 relative`}>
+        {user.photoURL && !imageError ? (
+          <>
+            {imageLoading && (
+              <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-3 w-3 border border-gray-500 border-t-transparent"></div>
+              </div>
+            )}
+            <Image
+              src={addCacheBuster(user.photoURL)}
+              alt={user.displayName || 'User'}
+              className="h-full w-full object-cover"
+              width={size === 'sm' ? 24 : size === 'md' ? 32 : 48}
+              height={size === 'sm' ? 24 : size === 'md' ? 32 : 48}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              onLoadStart={() => setImageLoading(true)}
+            />
+          </>
         ) : (
           <svg
             className="h-full w-full text-gray-500"
