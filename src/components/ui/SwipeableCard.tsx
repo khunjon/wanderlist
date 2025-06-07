@@ -54,6 +54,12 @@ export default function SwipeableCard({
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!isOwner || isDeleting) return;
     
+    // Don't interfere with form elements
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') {
+      return;
+    }
+    
     const touch = e.touches[0];
     startXRef.current = touch.clientX;
     currentXRef.current = touch.clientX;
@@ -117,6 +123,12 @@ export default function SwipeableCard({
   // Handle mouse events for desktop
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!isOwner || isDeleting) return;
+    
+    // Don't interfere with form elements
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') {
+      return;
+    }
     
     startXRef.current = e.clientX;
     currentXRef.current = e.clientX;

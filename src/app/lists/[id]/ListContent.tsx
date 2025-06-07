@@ -746,6 +746,7 @@ export default function ListContent({ id }: ListContentProps) {
                                   className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   placeholder="Add your notes about this place..."
                                   rows={3}
+                                  autoFocus
                                 />
                                 <div className="flex space-x-2">
                                   <button
@@ -764,7 +765,15 @@ export default function ListContent({ id }: ListContentProps) {
                               </div>
                             ) : (
                               <>
-                                {place.notes && (
+                                {place.notes && isOwner && (
+                                  <div 
+                                    className="bg-gray-700 rounded-md p-2 sm:p-3 cursor-pointer hover:bg-gray-600 transition-colors"
+                                    onClick={() => handleEditPlaceNotes(place)}
+                                  >
+                                    <p className="text-xs sm:text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
+                                  </div>
+                                )}
+                                {place.notes && !isOwner && (
                                   <div className="bg-gray-700 rounded-md p-2 sm:p-3">
                                     <p className="text-xs sm:text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
                                   </div>
