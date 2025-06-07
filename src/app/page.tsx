@@ -48,13 +48,13 @@ export default function Home() {
                 href="/signup"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
               >
-                Start Here
+                Get Started
               </Link>
               <Link
                 href="/discover"
                 className="text-sm text-blue-400 hover:text-blue-300 underline"
               >
-                Discover Public Lists
+                Browse public lists
               </Link>
             </div>
           </div>
@@ -133,18 +133,18 @@ export default function Home() {
                 href="/signup"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700 w-full md:w-auto"
               >
-                Get Started Free
+                Get Started
               </Link>
               <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
                 <p className="text-sm text-gray-400">
-                  No credit card required. Works with any device.
+                  No credit card required • Works on any device
                 </p>
                 <span className="text-gray-500 hidden sm:inline">•</span>
                 <Link
                   href="/discover"
                   className="text-sm text-blue-400 hover:text-blue-300 underline"
                 >
-                  Browse public lists first
+                  Browse public lists
                 </Link>
               </div>
             </div>

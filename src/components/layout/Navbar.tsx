@@ -139,13 +139,13 @@ export default function Navbar() {
                     href="/login"
                     className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
                   >
-                    Login
+                    Log In
                   </Link>
                   <Link
                     href="/signup"
                     className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
                   >
-                    Get Started Free
+                    Sign Up
                   </Link>
                 </div>
               )}
@@ -286,14 +286,14 @@ export default function Navbar() {
                     className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Login
+                    Log In
                   </Link>
                   <Link
                     href="/signup"
                     className="block rounded-md bg-blue-600 px-3 py-2 text-base font-medium text-white hover:bg-blue-500"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Get Started Free
+                    Sign Up
                   </Link>
                 </div>
               </div>
