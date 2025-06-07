@@ -4,6 +4,8 @@ import { updateProfile } from 'firebase/auth';
 import { db, storage, auth } from './config';
 import { User } from '@/types';
 
+
+
 // Get user profile from Firestore
 export const getUserProfile = async (userId: string): Promise<User | null> => {
   try {
@@ -53,24 +55,59 @@ export const updateUserProfile = async (
   }
 };
 
-// Upload profile photo with retry logic and better error handling
+// Upload profile photo with enhanced error handling and debugging
 export const uploadProfilePhoto = async (
   userId: string,
   file: File
 ): Promise<string> => {
+  console.log('Starting photo upload process...', {
+    userId,
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+    storageApp: storage.app.name,
+    authUser: auth.currentUser?.uid
+  });
+
+  // Validate inputs
+  if (!userId) {
+    throw new Error('User ID is required for photo upload');
+  }
+  
+  if (!file) {
+    throw new Error('File is required for photo upload');
+  }
+
+  if (!auth.currentUser) {
+    throw new Error('User must be authenticated to upload photos');
+  }
+
+  if (auth.currentUser.uid !== userId) {
+    throw new Error('User can only upload photos to their own profile');
+  }
+
+  // Validate file size (10MB max)
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    throw new Error(`File size (${Math.round(file.size / 1024 / 1024)}MB) exceeds maximum allowed size (10MB)`);
+  }
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type.toLowerCase())) {
+    throw new Error(`File type "${file.type}" is not supported. Please use JPG, PNG, GIF, or WebP.`);
+  }
+
   const maxRetries = 3;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Upload attempt ${attempt}/${maxRetries} for file:`, {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
+      console.log(`Upload attempt ${attempt}/${maxRetries}`);
 
       // Create a reference to the storage location
       const fileRef = ref(storage, `profile-photos/${userId}`);
+      console.log('Storage reference created:', fileRef.fullPath);
       
       // Upload the file with metadata
       const metadata = {
@@ -78,35 +115,48 @@ export const uploadProfilePhoto = async (
         customMetadata: {
           uploadedAt: new Date().toISOString(),
           originalName: file.name,
+          uploadedBy: userId,
         }
       };
 
+      console.log('Starting file upload...');
+      
       // Upload with a reasonable timeout
       const uploadPromise = uploadBytes(fileRef, file, metadata);
       const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error(`Upload timed out after 60 seconds (attempt ${attempt})`)), 60000)
       );
       
-      await Promise.race([uploadPromise, timeoutPromise]);
-      console.log(`Upload successful on attempt ${attempt}`);
+      const uploadResult = await Promise.race([uploadPromise, timeoutPromise]);
+      console.log(`Upload successful on attempt ${attempt}:`, {
+        bytesTransferred: uploadResult.metadata.size,
+        contentType: uploadResult.metadata.contentType
+      });
       
       // Get the download URL
+      console.log('Getting download URL...');
       const downloadURLPromise = getDownloadURL(fileRef);
       const urlTimeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => reject(new Error(`Getting download URL timed out after 30 seconds (attempt ${attempt})`)), 30000)
       );
       
       const photoURL = await Promise.race<string>([downloadURLPromise, urlTimeoutPromise]);
-      console.log('Download URL obtained successfully');
+      console.log('Download URL obtained successfully:', photoURL);
       
       // Update user profile with new photo URL
+      console.log('Updating user profile with new photo URL...');
       await updateUserProfile(userId, { photoURL });
-      console.log('Profile updated with new photo URL');
+      console.log('Profile updated successfully');
       
       return photoURL;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error occurred');
-      console.error(`Upload attempt ${attempt} failed:`, lastError.message);
+      console.error(`Upload attempt ${attempt} failed:`, {
+        error: lastError.message,
+        stack: lastError.stack,
+        code: (error as any)?.code,
+        serverResponse: (error as any)?.serverResponse
+      });
       
       // If this isn't the last attempt, wait before retrying
       if (attempt < maxRetries) {
@@ -120,18 +170,34 @@ export const uploadProfilePhoto = async (
   // If we get here, all attempts failed
   console.error('All upload attempts failed. Last error:', lastError);
   
-  // Provide more specific error messages based on the error type
-  if (lastError?.message.includes('timeout')) {
-    throw new Error('Upload timed out. Please check your internet connection and try again with a smaller image.');
-  } else if (lastError?.message.includes('storage/unauthorized')) {
-    throw new Error('You do not have permission to upload files. Please try signing out and back in.');
-  } else if (lastError?.message.includes('storage/canceled')) {
+  // Provide more specific error messages based on the error type and code
+  const errorMessage = lastError?.message || '';
+  const errorCode = (lastError as any)?.code || '';
+  
+  console.log('Error analysis:', { errorMessage, errorCode });
+  
+  if (errorMessage.includes('timeout') || errorCode.includes('timeout')) {
+    throw new Error('Upload timed out. Please check your internet connection and try again.');
+  } else if (errorCode === 'storage/unauthorized' || errorMessage.includes('unauthorized')) {
+    throw new Error('Permission denied. Please make sure you are signed in and try again.');
+  } else if (errorCode === 'storage/canceled' || errorMessage.includes('canceled')) {
     throw new Error('Upload was canceled. Please try again.');
-  } else if (lastError?.message.includes('storage/quota-exceeded')) {
+  } else if (errorCode === 'storage/quota-exceeded' || errorMessage.includes('quota')) {
     throw new Error('Storage quota exceeded. Please contact support.');
-  } else if (lastError?.message.includes('storage/invalid-format')) {
+  } else if (errorCode === 'storage/invalid-format' || errorMessage.includes('format')) {
     throw new Error('Invalid file format. Please use JPG, PNG, GIF, or WebP.');
+  } else if (errorCode === 'storage/object-not-found') {
+    throw new Error('Storage location not found. Please try again.');
+  } else if (errorCode === 'storage/bucket-not-found') {
+    throw new Error('Storage bucket not configured. Please contact support.');
+  } else if (errorCode === 'storage/project-not-found') {
+    throw new Error('Firebase project not found. Please contact support.');
+  } else if (errorCode === 'storage/retry-limit-exceeded') {
+    throw new Error('Too many retry attempts. Please try again later.');
+  } else if (errorMessage.includes('network') || errorCode.includes('network')) {
+    throw new Error('Network error. Please check your internet connection and try again.');
   } else {
-    throw new Error(`Failed to upload photo after ${maxRetries} attempts. Please try again later or use a different image.`);
+    // Include more details in the error for debugging
+    throw new Error(`Upload failed: ${errorMessage}${errorCode ? ` (${errorCode})` : ''}. Please try again or contact support if the problem persists.`);
   }
 }; 

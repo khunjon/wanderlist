@@ -258,6 +258,8 @@ export default function ProfilePage() {
     }
   };
 
+
+
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -522,21 +524,21 @@ export default function ProfilePage() {
                 </div>
               </form>
 
-              {/* Account Actions Section */}
-              <div className="mt-12 pt-8 border-t border-gray-700">
-                <h3 className="text-lg font-medium text-white mb-6">Account Actions</h3>
-                <div className="flex justify-start">
-                  <button
-                    onClick={handleSignOut}
-                    className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-800 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign Out
-                  </button>
-                </div>
-              </div>
+                             {/* Account Actions Section */}
+               <div className="mt-12 pt-8 border-t border-gray-700">
+                 <h3 className="text-lg font-medium text-white mb-6">Account Actions</h3>
+                 <div className="flex justify-start">
+                   <button
+                     onClick={handleSignOut}
+                     className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-800 transition-colors"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                     </svg>
+                     Sign Out
+                   </button>
+                 </div>
+               </div>
             </div>
           </div>
         </div>
