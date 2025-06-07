@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +16,13 @@ export default function Navbar() {
   const pathname = usePathname();
   
   const closeMenu = () => setIsMenuOpen(false);
+
+  // Redirect logged-in users from home page to their lists
+  useEffect(() => {
+    if (user && pathname === '/') {
+      router.push('/lists');
+    }
+  }, [user, pathname, router]);
 
   // Hide navbar on specific pages for focused experience
   const hideNavbar = pathname === '/lists/new' || 
