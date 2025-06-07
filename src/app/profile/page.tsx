@@ -6,7 +6,6 @@ import { getUserProfile, updateUserProfile, uploadProfilePhoto } from '@/lib/fir
 import { signOut } from '@/lib/firebase/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { User } from '@/types';
 
 // Image compression utility
@@ -57,19 +56,6 @@ const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8
   });
 };
 
-// Add cache busting only when needed (after upload)
-const addCacheBuster = (url: string, forceRefresh: boolean = false): string => {
-  if (!url) return url;
-  
-  // Only add cache buster for Firebase Storage URLs and when explicitly requested
-  if (forceRefresh && url.includes('firebasestorage.googleapis.com')) {
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}cb=${Date.now()}`;
-  }
-  
-  return url;
-};
-
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
   const [user, setUser] = useState<User | null>(null);
@@ -79,10 +65,7 @@ export default function ProfilePage() {
   const [tiktok, setTiktok] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [imageKey, setImageKey] = useState(0); // Force re-render when needed
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,13 +90,8 @@ export default function ProfilePage() {
           setBio(profile.bio || '');
           setInstagram(profile.instagram || '');
           setTiktok(profile.tiktok || '');
-          
-          // Set profile photo URL
-          if (profile.photoURL) {
-            setProfilePhotoUrl(profile.photoURL);
-            setPreviewUrl(null); // Clear any local preview
-            setImageError(false); // Reset any previous errors
-          }
+          setCurrentPhotoUrl(profile.photoURL || null);
+          setPreviewUrl(null); // Clear any preview
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);
@@ -142,7 +120,6 @@ export default function ProfilePage() {
 
     setError(null);
     setUploadingPhoto(true);
-    setImageError(false);
 
     try {
       let processedFile = file;
@@ -165,7 +142,6 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onload = () => {
         setPreviewUrl(reader.result as string);
-        setProfilePhotoUrl(null); // Clear the old photo URL
         setUploadingPhoto(false);
       };
       reader.readAsDataURL(processedFile);
@@ -214,7 +190,26 @@ export default function ProfilePage() {
     }
 
     try {
-      // Prepare update data
+      // Upload photo first if selected
+      if (selectedFile) {
+        try {
+          setSuccessMessage('Uploading photo... Please wait.');
+          const newPhotoURL = await uploadProfilePhoto(authUser.uid, selectedFile);
+          console.log('Photo uploaded successfully, new URL:', newPhotoURL);
+          
+          // Update the current photo URL immediately
+          setCurrentPhotoUrl(newPhotoURL);
+          setPreviewUrl(null); // Clear preview
+          setSelectedFile(null); // Clear selected file
+        } catch (photoError) {
+          console.error('Error uploading photo:', photoError);
+          setError('Failed to upload profile photo. Please try again with a different image.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Prepare update data for other fields
       const updateData: Partial<User> = {};
       
       if (displayName !== user?.displayName) {
@@ -233,26 +228,6 @@ export default function ProfilePage() {
         updateData.tiktok = cleanTiktok || undefined;
       }
 
-      // Upload photo first if selected
-      if (selectedFile) {
-        try {
-          setSuccessMessage('Uploading photo... Please wait.');
-          const newPhotoURL = await uploadProfilePhoto(authUser.uid, selectedFile);
-          
-          // Update the profile photo URL and force refresh
-          setProfilePhotoUrl(addCacheBuster(newPhotoURL, true));
-          setPreviewUrl(null); // Clear preview URL
-          setSelectedFile(null); // Clear selected file
-          setImageError(false); // Reset any image errors
-          setImageKey(prev => prev + 1); // Force re-render
-        } catch (photoError) {
-          console.error('Error uploading photo:', photoError);
-          setError('Failed to upload profile photo. Please try again with a different image.');
-          setLoading(false);
-          return;
-        }
-      }
-
       // Update profile data if there are changes
       if (Object.keys(updateData).length > 0) {
         await updateUserProfile(authUser.uid, updateData);
@@ -260,13 +235,13 @@ export default function ProfilePage() {
 
       setSuccessMessage('Profile updated successfully!');
       
-      // Refresh user data to ensure consistency
+      // Refresh user data
       const updatedProfile = await getUserProfile(authUser.uid);
       if (updatedProfile) {
         setUser(updatedProfile);
-        // Only update photo URL if we didn't just upload a new one
-        if (!selectedFile && updatedProfile.photoURL && updatedProfile.photoURL !== profilePhotoUrl) {
-          setProfilePhotoUrl(updatedProfile.photoURL);
+        // Only update photo URL if it's different from what we have
+        if (updatedProfile.photoURL && updatedProfile.photoURL !== currentPhotoUrl) {
+          setCurrentPhotoUrl(updatedProfile.photoURL);
         }
       }
     } catch (err) {
@@ -288,31 +263,9 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle image load error with retry
-  const handleImageError = () => {
-    console.error('Failed to load profile image:', getCurrentImageUrl());
-    setImageError(true);
-    setImageLoading(false);
-  };
-
-  // Retry loading the image
-  const retryImageLoad = () => {
-    setImageError(false);
-    setImageLoading(true);
-    setImageKey(prev => prev + 1); // Force re-render
-  };
-
-  // Handle image load success
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    setImageError(false);
-  };
-
-  // Get the current image URL to display
-  const getCurrentImageUrl = () => {
-    if (previewUrl) return previewUrl; // Show preview if available
-    if (profilePhotoUrl) return profilePhotoUrl; // Show stored photo with cache busting
-    return null;
+  // Get the image URL to display (preview takes priority)
+  const getDisplayImageUrl = () => {
+    return previewUrl || currentPhotoUrl;
   };
 
   if (authLoading || loading) {
@@ -390,40 +343,34 @@ export default function ProfilePage() {
 
               <form onSubmit={handleSubmit}>
                 <div className="space-y-8">
-                  {/* Profile Photo Section - Now at the top */}
+                  {/* Profile Photo Section */}
                   <div className="text-center">
                     <div className="relative inline-block">
                       <div className="relative h-32 w-32 mx-auto rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600">
-                        {getCurrentImageUrl() && !imageError ? (
-                          <>
-                            {imageLoading && (
-                              <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                              </div>
-                            )}
-                            <Image
-                              key={`profile-image-${imageKey}`} // Force re-render when key changes
-                              src={getCurrentImageUrl()!}
-                              alt="Profile"
-                              className="h-full w-full object-cover"
-                              width={128}
-                              height={128}
-                              onLoad={handleImageLoad}
-                              onError={handleImageError}
-                              onLoadStart={() => setImageLoading(true)}
-                              priority
-                              unoptimized={!!previewUrl} // Don't optimize preview URLs
-                            />
-                          </>
-                        ) : (
+                        {getDisplayImageUrl() ? (
+                          <img
+                            src={getDisplayImageUrl()!}
+                            alt="Profile"
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              console.error('Image failed to load:', getDisplayImageUrl());
+                              // Hide the broken image
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        
+                        {/* Default avatar - always present as fallback */}
+                        <div className={`absolute inset-0 flex items-center justify-center ${getDisplayImageUrl() ? 'hidden' : ''}`}>
                           <svg
-                            className="h-full w-full text-gray-500"
+                            className="h-16 w-16 text-gray-500"
                             fill="currentColor"
                             viewBox="0 0 24 24"
                           >
                             <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                           </svg>
-                        )}
+                        </div>
+
                         {uploadingPhoto && (
                           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
@@ -470,27 +417,13 @@ export default function ProfilePage() {
                             <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {getCurrentImageUrl() ? 'Change Photo' : 'Add Photo'}
+                            {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
                           </>
                         )}
                       </button>
                       <p className="mt-2 text-xs text-gray-400">
                         JPG, PNG, GIF, or WebP. Images will be automatically optimized.
                       </p>
-                      {imageError && (
-                        <div className="mt-2">
-                          <p className="text-xs text-red-400 mb-2">
-                            Failed to load image.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={retryImageLoad}
-                            className="text-xs text-blue-400 hover:text-blue-300 underline"
-                          >
-                            Try again
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
 
