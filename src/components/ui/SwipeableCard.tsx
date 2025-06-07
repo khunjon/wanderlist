@@ -229,12 +229,15 @@ export default function SwipeableCard({
         style={{ touchAction: 'pan-y' }} // Allow vertical scrolling but prevent horizontal
       >
         {/* Red background that shows during swipe */}
-        <div
+        <button
           className={`absolute inset-0 bg-red-600 flex items-center justify-end pr-4 transition-opacity duration-200 ${
             swipeOffset > 0 ? 'opacity-100' : 'opacity-0'
-          }`}
+          } ${swipeOffset >= SWIPE_THRESHOLD ? 'cursor-pointer hover:bg-red-700' : 'cursor-default'}`}
+          onClick={swipeOffset >= SWIPE_THRESHOLD ? () => setShowConfirmation(true) : undefined}
+          disabled={swipeOffset < SWIPE_THRESHOLD}
+          aria-label="Delete place"
         >
-          <div className="flex items-center space-x-2 text-white">
+          <div className="flex items-center space-x-2 text-white pointer-events-none">
             <svg
               className="h-6 w-6"
               fill="none"
@@ -250,7 +253,7 @@ export default function SwipeableCard({
             </svg>
             <span className="font-medium">Delete</span>
           </div>
-        </div>
+        </button>
 
         {/* Card content */}
         <div
@@ -264,28 +267,7 @@ export default function SwipeableCard({
           {children}
         </div>
 
-        {/* Delete button that appears after swipe */}
-        {showDeleteButton && swipeOffset >= SWIPE_THRESHOLD && (
-          <button
-            onClick={() => setShowConfirmation(true)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-10"
-            aria-label="Delete place"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
-        )}
+
       </div>
 
       {/* Confirmation Modal */}
