@@ -31,6 +31,21 @@ export default function SignupPage() {
     setError(null);
 
     // Validate form
+    if (!name.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter a password.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -44,16 +59,12 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      await registerWithEmailAndPassword(email, password, name);
+      await registerWithEmailAndPassword(email.trim(), password, name.trim());
       // Don't redirect here - let the auth state change handle it
       // Don't set loading to false here - let the useEffect handle it
     } catch (err: any) {
       console.error('Signup error:', err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('Email is already in use. Please log in or use a different email.');
-      } else {
-        setError('Error signing up. Please try again.');
-      }
+      setError(err.message || 'Account creation failed. Please try again.');
       setLoading(false);
     }
   };
@@ -66,9 +77,9 @@ export default function SignupPage() {
       await signInWithGoogle();
       // Don't redirect here - let the auth state change handle it
       // Don't set loading to false here - let the useEffect handle it
-    } catch (err) {
+    } catch (err: any) {
       console.error('Google signup error:', err);
-      setError('Error signing up with Google. Please try again.');
+      setError(err.message || 'Google sign-up failed. Please try again.');
       setLoading(false);
     }
   };
@@ -172,11 +183,14 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 required
                 className="relative block w-full rounded-md border-0 py-2.5 text-white bg-gray-800 ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6 px-3"
-                placeholder="Password"
+                placeholder="Password (min. 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
               />
+              <p className="mt-1 text-xs text-gray-400">
+                Password must be at least 6 characters long
+              </p>
             </div>
             <div>
               <label htmlFor="confirm-password" className="sr-only">

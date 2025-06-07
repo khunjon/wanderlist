@@ -36,9 +36,24 @@ export const registerWithEmailAndPassword = async (
     }
 
     return userCredential;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error registering user:', error);
-    throw error;
+    
+    // Provide more specific error messages based on Firebase error codes
+    switch (error.code) {
+      case 'auth/email-already-in-use':
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      case 'auth/invalid-email':
+        throw new Error('Please enter a valid email address.');
+      case 'auth/operation-not-allowed':
+        throw new Error('Email/password accounts are not enabled. Please contact support.');
+      case 'auth/weak-password':
+        throw new Error('Password is too weak. Please choose a stronger password.');
+      case 'auth/network-request-failed':
+        throw new Error('Network error. Please check your connection and try again.');
+      default:
+        throw new Error('Account creation failed. Please try again.');
+    }
   }
 };
 
@@ -49,9 +64,28 @@ export const signInWithEmail = async (
 ): Promise<UserCredential> => {
   try {
     return await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in:', error);
-    throw error;
+    
+    // Provide more specific error messages based on Firebase error codes
+    switch (error.code) {
+      case 'auth/user-not-found':
+        throw new Error('No account found with this email address.');
+      case 'auth/wrong-password':
+        throw new Error('Incorrect password. Please try again.');
+      case 'auth/invalid-email':
+        throw new Error('Please enter a valid email address.');
+      case 'auth/user-disabled':
+        throw new Error('This account has been disabled. Please contact support.');
+      case 'auth/too-many-requests':
+        throw new Error('Too many failed login attempts. Please try again later.');
+      case 'auth/network-request-failed':
+        throw new Error('Network error. Please check your connection and try again.');
+      case 'auth/invalid-credential':
+        throw new Error('Invalid email or password. Please check your credentials.');
+      default:
+        throw new Error('Login failed. Please try again.');
+    }
   }
 };
 
@@ -87,9 +121,28 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     }
     
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in with Google:', error);
-    throw error;
+    
+    // Provide more specific error messages based on Firebase error codes
+    switch (error.code) {
+      case 'auth/popup-closed-by-user':
+        throw new Error('Sign-in was cancelled. Please try again.');
+      case 'auth/popup-blocked':
+        throw new Error('Pop-up was blocked by your browser. Please allow pop-ups and try again.');
+      case 'auth/cancelled-popup-request':
+        throw new Error('Sign-in was cancelled. Please try again.');
+      case 'auth/account-exists-with-different-credential':
+        throw new Error('An account already exists with this email using a different sign-in method.');
+      case 'auth/auth-domain-config-required':
+        throw new Error('Authentication configuration error. Please contact support.');
+      case 'auth/operation-not-allowed':
+        throw new Error('Google sign-in is not enabled. Please contact support.');
+      case 'auth/network-request-failed':
+        throw new Error('Network error. Please check your connection and try again.');
+      default:
+        throw new Error('Google sign-in failed. Please try again.');
+    }
   }
 };
 

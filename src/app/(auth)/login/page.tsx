@@ -29,13 +29,26 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
+    // Basic client-side validation
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      setLoading(false);
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter your password.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await signInWithEmail(email, password);
+      await signInWithEmail(email.trim(), password);
       // Don't redirect here - let the auth state change handle it
       // Don't set loading to false here - let the useEffect handle it
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError('Invalid email or password. Please try again.');
+      setError(err.message || 'Login failed. Please try again.');
       setLoading(false);
     }
   };
@@ -48,9 +61,9 @@ export default function LoginPage() {
       await signInWithGoogle();
       // Don't redirect here - let the auth state change handle it
       // Don't set loading to false here - let the useEffect handle it
-    } catch (err) {
+    } catch (err: any) {
       console.error('Google login error:', err);
-      setError('Error signing in with Google. Please try again.');
+      setError(err.message || 'Google sign-in failed. Please try again.');
       setLoading(false);
     }
   };
@@ -145,23 +158,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
-                Remember me
-              </label>
-            </div>
-
+          <div className="flex items-center justify-end">
             <div className="text-sm">
-              <a href="#" className="font-medium text-blue-400 hover:text-blue-300">
-                Forgot your password?
-              </a>
+              <span className="text-gray-400">
+                Forgot your password? Contact support for assistance.
+              </span>
             </div>
           </div>
 
