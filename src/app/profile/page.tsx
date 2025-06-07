@@ -57,11 +57,17 @@ const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8
   });
 };
 
-// Add cache busting to Firebase Storage URLs
-const addCacheBuster = (url: string): string => {
+// Add cache busting only when needed (after upload)
+const addCacheBuster = (url: string, forceRefresh: boolean = false): string => {
   if (!url) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}t=${Date.now()}`;
+  
+  // Only add cache buster for Firebase Storage URLs and when explicitly requested
+  if (forceRefresh && url.includes('firebasestorage.googleapis.com')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}cb=${Date.now()}`;
+  }
+  
+  return url;
 };
 
 export default function ProfilePage() {
@@ -76,6 +82,7 @@ export default function ProfilePage() {
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageKey, setImageKey] = useState(0); // Force re-render when needed
   const [loading, setLoading] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,10 +108,11 @@ export default function ProfilePage() {
           setInstagram(profile.instagram || '');
           setTiktok(profile.tiktok || '');
           
-          // Set profile photo URL with cache busting
+          // Set profile photo URL
           if (profile.photoURL) {
-            setProfilePhotoUrl(addCacheBuster(profile.photoURL));
+            setProfilePhotoUrl(profile.photoURL);
             setPreviewUrl(null); // Clear any local preview
+            setImageError(false); // Reset any previous errors
           }
         }
       } catch (err) {
@@ -231,11 +239,12 @@ export default function ProfilePage() {
           setSuccessMessage('Uploading photo... Please wait.');
           const newPhotoURL = await uploadProfilePhoto(authUser.uid, selectedFile);
           
-          // Update the profile photo URL with cache busting
-          setProfilePhotoUrl(addCacheBuster(newPhotoURL));
+          // Update the profile photo URL and force refresh
+          setProfilePhotoUrl(addCacheBuster(newPhotoURL, true));
           setPreviewUrl(null); // Clear preview URL
           setSelectedFile(null); // Clear selected file
           setImageError(false); // Reset any image errors
+          setImageKey(prev => prev + 1); // Force re-render
         } catch (photoError) {
           console.error('Error uploading photo:', photoError);
           setError('Failed to upload profile photo. Please try again with a different image.');
@@ -256,8 +265,8 @@ export default function ProfilePage() {
       if (updatedProfile) {
         setUser(updatedProfile);
         // Only update photo URL if we didn't just upload a new one
-        if (!selectedFile && updatedProfile.photoURL) {
-          setProfilePhotoUrl(addCacheBuster(updatedProfile.photoURL));
+        if (!selectedFile && updatedProfile.photoURL && updatedProfile.photoURL !== profilePhotoUrl) {
+          setProfilePhotoUrl(updatedProfile.photoURL);
         }
       }
     } catch (err) {
@@ -279,10 +288,18 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle image load error
+  // Handle image load error with retry
   const handleImageError = () => {
+    console.error('Failed to load profile image:', getCurrentImageUrl());
     setImageError(true);
     setImageLoading(false);
+  };
+
+  // Retry loading the image
+  const retryImageLoad = () => {
+    setImageError(false);
+    setImageLoading(true);
+    setImageKey(prev => prev + 1); // Force re-render
   };
 
   // Handle image load success
@@ -385,6 +402,7 @@ export default function ProfilePage() {
                               </div>
                             )}
                             <Image
+                              key={`profile-image-${imageKey}`} // Force re-render when key changes
                               src={getCurrentImageUrl()!}
                               alt="Profile"
                               className="h-full w-full object-cover"
@@ -394,7 +412,7 @@ export default function ProfilePage() {
                               onError={handleImageError}
                               onLoadStart={() => setImageLoading(true)}
                               priority
-                              unoptimized={previewUrl ? true : false} // Don't optimize preview URLs
+                              unoptimized={!!previewUrl} // Don't optimize preview URLs
                             />
                           </>
                         ) : (
@@ -460,9 +478,18 @@ export default function ProfilePage() {
                         JPG, PNG, GIF, or WebP. Images will be automatically optimized.
                       </p>
                       {imageError && (
-                        <p className="mt-1 text-xs text-red-400">
-                          Failed to load image. Please try uploading again.
-                        </p>
+                        <div className="mt-2">
+                          <p className="text-xs text-red-400 mb-2">
+                            Failed to load image.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={retryImageLoad}
+                            className="text-xs text-blue-400 hover:text-blue-300 underline"
+                          >
+                            Try again
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
