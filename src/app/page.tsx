@@ -80,9 +80,9 @@ export default function Home() {
           <div className="mt-16 text-center">
             <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl p-8 max-w-3xl mx-auto">
               <h3 className="text-xl font-bold text-white mb-4">
-                "I used to screenshot everything and never find it again. Now I actually visit the places I save!" 
+                "I had so many starred places on Google Maps that I never knew how to find anything." 
               </h3>
-              <p className="text-blue-300">— Sarah, early user</p>
+              <p className="text-blue-300">— Jon, early user</p>
             </div>
           </div>
         </div>
