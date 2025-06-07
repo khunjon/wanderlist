@@ -98,8 +98,13 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     provider.addScope('email');
     provider.addScope('profile');
     
+    // Force account selection to bypass cached credentials
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    
     // Use popup method instead of redirect to avoid auth handler issues
-    console.log('Using popup method for Google sign-in');
+    console.log('Using popup method for Google sign-in with fresh auth');
     const result = await signInWithPopup(auth, provider);
     
     if (result) {
@@ -140,6 +145,8 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
         throw new Error('Google sign-in is not enabled. Please contact support.');
       case 'auth/network-request-failed':
         throw new Error('Network error. Please check your connection and try again.');
+      case 'auth/unauthorized-domain':
+        throw new Error('This domain is not authorized for Google sign-in. Please contact support.');
       default:
         throw new Error('Google sign-in failed. Please try again.');
     }
@@ -228,5 +235,41 @@ export const getUserWithAdminStatus = async (firebaseUser: FirebaseUser): Promis
     console.error('Error getting user admin status:', error);
     // Return user without admin status if there's an error
     return convertFirebaseUserToUser(firebaseUser);
+  }
+};
+
+// Clear Firebase auth cache and force fresh state
+export const clearAuthCache = async (): Promise<void> => {
+  try {
+    // Sign out to clear any cached auth state
+    await firebaseSignOut(auth);
+    
+    // Clear localStorage items related to Firebase
+    if (typeof window !== 'undefined') {
+      const firebaseKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('firebase:') || 
+        key.includes('firebaseLocalStorageDb') ||
+        key.includes('firebase-auth-user') ||
+        key.includes('firebase-heartbeat')
+      );
+      
+      firebaseKeys.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      // Clear sessionStorage as well
+      const sessionKeys = Object.keys(sessionStorage).filter(key => 
+        key.startsWith('firebase:') || 
+        key.includes('firebaseLocalStorageDb')
+      );
+      
+      sessionKeys.forEach(key => {
+        sessionStorage.removeItem(key);
+      });
+      
+      console.log('Firebase auth cache cleared');
+    }
+  } catch (error) {
+    console.error('Error clearing auth cache:', error);
   }
 }; 
