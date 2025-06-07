@@ -148,28 +148,14 @@ export default function ListContent({ id }: ListContentProps) {
         setPlaces(placesData);
       } catch (err) {
         console.error('Error fetching list:', err);
-        
-        // Provide more specific error messages based on the error type
-        if (err instanceof Error) {
-          if (err.message.includes('permission-denied')) {
-            setError('You do not have permission to view this list.');
-          } else if (err.message.includes('not-found')) {
-            setError('List not found.');
-          } else if (err.message.includes('unauthenticated')) {
-            setError('Please sign in to view this list.');
-          } else {
-            setError('Failed to load list. Please try again.');
-          }
-        } else {
-          setError('Failed to load list. Please try again.');
-        }
+        setError('Failed to load list. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    // Only fetch if we have the ID and auth loading is complete
-    if (id && !authLoading) {
+    // Only fetch if we have the ID and either no user requirement or user is loaded
+    if (id && (!authLoading || user)) {
       fetchData();
     }
   }, [id, user, authLoading]);

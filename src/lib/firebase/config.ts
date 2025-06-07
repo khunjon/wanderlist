@@ -24,6 +24,28 @@ if (!getApps().length) {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
+  
+  // Disable Firebase debug features in production
+  if (process.env.NODE_ENV === 'production') {
+    // Ensure no debug or emulator features are enabled in production
+    if (typeof window !== 'undefined') {
+      // Remove any Firebase debug UI elements that might be injected
+      const removeFirebaseDebugElements = () => {
+        const debugElements = document.querySelectorAll('[data-firebase-debug], .firebase-debug, #firebase-debug');
+        debugElements.forEach(element => element.remove());
+      };
+      
+      // Remove on load and periodically check
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', removeFirebaseDebugElements);
+      } else {
+        removeFirebaseDebugElements();
+      }
+      
+      // Check periodically for any debug elements that might be added dynamically
+      setInterval(removeFirebaseDebugElements, 1000);
+    }
+  }
 } else {
   app = getApps()[0];
   auth = getAuth(app);
