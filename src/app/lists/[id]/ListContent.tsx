@@ -665,6 +665,7 @@ export default function ListContent({ id }: ListContentProps) {
                     currentSort={placeSortState}
                     onSortChange={handlePlaceSortChange}
                     className="w-full sm:w-auto"
+                    listId={id}
                   />
                 </div>
               )}

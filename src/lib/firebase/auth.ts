@@ -66,44 +66,14 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     provider.addScope('email');
     provider.addScope('profile');
     
-    // For mobile devices or if popup is blocked, you might want to use redirect
-    // But popup is generally more reliable for web apps
-    let userCredential: UserCredential;
+    // Use redirect method instead of popup to avoid auth handler issues
+    console.log('Using redirect method for Google sign-in');
+    await signInWithRedirect(auth, provider);
     
-    try {
-      // Try popup first
-      userCredential = await signInWithPopup(auth, provider);
-    } catch (popupError: any) {
-      // If popup fails (blocked, etc.), fall back to redirect
-      if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user') {
-        console.log('Popup blocked, using redirect method');
-        await signInWithRedirect(auth, provider);
-        
-        // Note: After redirect, you need to handle the result in your app initialization
-        // The redirect will take the user away from the current page
-        return Promise.reject(new Error('Redirect initiated'));
-      }
-      throw popupError;
-    }
-    
-    const user = userCredential.user;
-
-    // Create a user document in Firestore if it doesn't exist
-    if (user) {
-      await createUserDocument(user.uid, {
-        uid: user.uid,
-        email: user.email || '',
-        displayName: user.displayName || '',
-        photoURL: user.photoURL || '',
-        createdAt: new Date(),
-        bio: '',
-        instagram: '',
-        tiktok: '',
-      });
-    }
-
-    return userCredential;
+    // Note: After redirect, the user will be redirected back and the result
+    // will be handled by handleRedirectResult in the auth hook
+    // The user creation will happen in handleRedirectResult
+    return Promise.reject(new Error('Redirect initiated'));
   } catch (error) {
     console.error('Error signing in with Google:', error);
     throw error;
