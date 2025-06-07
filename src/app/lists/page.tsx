@@ -110,7 +110,7 @@ export default function ListsPage() {
   useEffect(() => {
     // Redirect if not authenticated
     if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
 

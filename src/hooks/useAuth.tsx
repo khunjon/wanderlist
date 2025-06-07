@@ -81,7 +81,7 @@ function NavigationHandler({ redirectUrl, isAuthenticated }: { redirectUrl: stri
   return null;
 }
 
-export function useRequireAuth(redirectUrl = '/login') {
+export function useRequireAuth(redirectUrl = '/') {
   const { user, loading } = useAuth();
   
   const isAuthenticated = !loading && !!user;

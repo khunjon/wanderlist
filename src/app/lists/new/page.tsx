@@ -20,7 +20,7 @@ export default function NewListPage() {
 
   // Redirect if not authenticated
   if (!authLoading && !user) {
-    router.push('/login');
+    router.push('/');
     return null;
   }
 
