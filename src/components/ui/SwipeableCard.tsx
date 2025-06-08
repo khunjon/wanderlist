@@ -23,6 +23,55 @@ const triggerHapticFeedback = (type: 'light' | 'medium' | 'heavy' = 'light') => 
   }
 };
 
+// Helper function to check if an element or its parents are interactive
+const isInteractiveElement = (element: HTMLElement): boolean => {
+  // Check the element itself and traverse up the DOM tree
+  let currentElement: HTMLElement | null = element;
+  
+  while (currentElement) {
+    const tagName = currentElement.tagName.toLowerCase();
+    
+    // Check for form elements
+    if (['textarea', 'input', 'button', 'select', 'option'].includes(tagName)) {
+      return true;
+    }
+    
+    // Check for elements with contenteditable
+    if (currentElement.contentEditable === 'true') {
+      return true;
+    }
+    
+    // Check for clickable elements
+    if (currentElement.onclick || 
+        currentElement.getAttribute('role') === 'button' ||
+        currentElement.getAttribute('role') === 'textbox') {
+      return true;
+    }
+    
+    // Check for elements with cursor pointer (likely clickable)
+    const computedStyle = window.getComputedStyle(currentElement);
+    if (computedStyle.cursor === 'pointer' || computedStyle.cursor === 'text') {
+      return true;
+    }
+    
+    // Check for specific classes that indicate interactive content
+    const className = currentElement.className;
+    if (typeof className === 'string' && 
+        (className.includes('cursor-pointer') || 
+         className.includes('cursor-text') ||
+         className.includes('focus:') ||
+         className.includes('hover:bg-') ||
+         className.includes('transition-colors'))) {
+      return true;
+    }
+    
+    // Move up to parent element
+    currentElement = currentElement.parentElement;
+  }
+  
+  return false;
+};
+
 export default function SwipeableCard({ 
   children, 
   place, 
@@ -54,9 +103,9 @@ export default function SwipeableCard({
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!isOwner || isDeleting) return;
     
-    // Don't interfere with form elements
+    // Enhanced check for interactive elements
     const target = e.target as HTMLElement;
-    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') {
+    if (isInteractiveElement(target)) {
       return;
     }
     
@@ -124,9 +173,9 @@ export default function SwipeableCard({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!isOwner || isDeleting) return;
     
-    // Don't interfere with form elements
+    // Enhanced check for interactive elements
     const target = e.target as HTMLElement;
-    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'BUTTON') {
+    if (isInteractiveElement(target)) {
       return;
     }
     
