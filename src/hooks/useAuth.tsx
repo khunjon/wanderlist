@@ -73,7 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔍 Getting initial session...');
         
         console.log('📡 Calling supabase.auth.getSession()...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('getSession timeout')), 2000)
+          )
+        ]);
         console.log('📡 getSession() completed');
         
         if (error) {
@@ -107,7 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error('❌ Error getting initial session:', err);
-        setError(err as Error);
+        // Don't set error for timeout - let auth state change handle it
+        if (err instanceof Error && err.message === 'getSession timeout') {
+          console.log('⏰ getSession timed out, relying on auth state change listener');
+        } else {
+          setError(err as Error);
+        }
       } finally {
         console.log('✅ Initial session check complete, setting loading to false');
         setLoading(false);
@@ -132,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('🔄 Auth state change:', event, session?.user?.email || 'no user');
         setError(null);
+        setLoading(false); // Always set loading to false when auth state changes
         
         if (session?.user) {
           AuthPerformance.trackAuthRedirect();
