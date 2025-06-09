@@ -80,12 +80,50 @@ export async function signIn(email: string, password: string) {
   return data
 }
 
+// Get the correct redirect URL for OAuth
+function getRedirectUrl(): string {
+  // Try environment variable first
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  
+  // Try Next.js custom env
+  if (process.env.CUSTOM_APP_URL) {
+    return process.env.CUSTOM_APP_URL;
+  }
+  
+  // Dynamic detection based on current location
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    
+    // If we're not on localhost, use the current origin
+    if (!origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+      return origin;
+    }
+    
+    // Otherwise use localhost for development
+    return origin;
+  }
+  
+  // Server-side fallback
+  return 'http://localhost:3000';
+}
+
 // Sign in with Google OAuth
 export async function signInWithGoogle() {
+  const redirectUrl = getRedirectUrl();
+  const fullRedirectUrl = `${redirectUrl}/auth/callback`;
+  
+  console.log('Debug OAuth redirect:', {
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'undefined',
+    finalRedirectUrl: fullRedirectUrl
+  });
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`,
+      redirectTo: fullRedirectUrl,
     },
   })
 
