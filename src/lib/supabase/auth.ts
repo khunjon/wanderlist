@@ -113,12 +113,6 @@ function getRedirectUrl(): string {
 export async function signInWithGoogle() {
   const redirectUrl = getRedirectUrl();
   const fullRedirectUrl = `${redirectUrl}/auth/callback`;
-  
-  console.log('Debug OAuth redirect:', {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'undefined',
-    finalRedirectUrl: fullRedirectUrl
-  });
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

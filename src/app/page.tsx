@@ -1,21 +1,8 @@
 import Link from 'next/link';
 
 export default function Home() {
-  // Temporary debug info - remove after testing
-  const debugInfo = {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-    NODE_ENV: process.env.NODE_ENV,
-    windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'server-side'
-  };
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-between bg-background text-foreground">
-      {/* Temporary Debug Section - Remove after testing */}
-      <div className="bg-yellow-100 p-4 text-xs">
-        <strong>Debug Info:</strong>
-        <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-      </div>
-
       {/* Hero Section */}
       <div className="w-full py-12 md:py-20 lg:py-28 bg-gradient-to-b from-blue-950 to-gray-900">
         <div className="container px-4 md:px-6 mx-auto">
