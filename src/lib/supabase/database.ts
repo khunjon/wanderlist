@@ -268,16 +268,13 @@ export async function getListById(listId: string): Promise<List | null> {
         users!inner(display_name, photo_url)
       `)
       .eq('id', listId)
-      .single()
+      .limit(1)
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null
-      }
       handleDatabaseError(error, 'getListById')
     }
 
-    return data
+    return data && data.length > 0 ? data[0] : null
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getListById')
@@ -311,13 +308,15 @@ export async function createList(list: ListInsert): Promise<List> {
         last_activity_at: new Date().toISOString()
       })
       .select()
-      .single()
 
     if (error) {
       handleDatabaseError(error, 'createList')
     }
 
-    return data
+    if (!data || data.length === 0) {
+      throw new DatabaseError('No data returned from insert operation', 'INSERT_FAILED')
+    }
+    return data[0]
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'createList')
@@ -335,13 +334,15 @@ export async function updateList(listId: string, updates: ListUpdate): Promise<L
       })
       .eq('id', listId)
       .select()
-      .single()
 
     if (error) {
       handleDatabaseError(error, 'updateList')
     }
 
-    return data
+    if (!data || data.length === 0) {
+      throw new DatabaseError('No data returned from update operation', 'UPDATE_FAILED')
+    }
+    return data[0]
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'updateList')
@@ -428,13 +429,15 @@ export async function createPlace(place: PlaceInsert): Promise<Place> {
         updated_at: new Date().toISOString()
       })
       .select()
-      .single()
 
     if (error) {
       handleDatabaseError(error, 'createPlace')
     }
 
-    return data
+    if (!data || data.length === 0) {
+      throw new DatabaseError('No data returned from insert operation', 'INSERT_FAILED')
+    }
+    return data[0]
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'createPlace')
@@ -451,13 +454,15 @@ export async function updatePlace(placeId: string, updates: PlaceUpdate): Promis
       })
       .eq('id', placeId)
       .select()
-      .single()
 
     if (error) {
       handleDatabaseError(error, 'updatePlace')
     }
 
-    return data
+    if (!data || data.length === 0) {
+      throw new DatabaseError('No data returned from update operation', 'UPDATE_FAILED')
+    }
+    return data[0]
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'updatePlace')
@@ -465,23 +470,27 @@ export async function updatePlace(placeId: string, updates: PlaceUpdate): Promis
 }
 
 export async function upsertPlace(place: PlaceInsert): Promise<Place> {
-  // First try to find existing place by Google Place ID
-  const existingPlace = await getPlaceByGoogleId(place.google_place_id)
-  
-  if (existingPlace) {
-    // Update existing place with new data
-    return await updatePlace(existingPlace.id, {
-      name: place.name,
-      address: place.address,
-      latitude: place.latitude,
-      longitude: place.longitude,
-      rating: place.rating,
-      photo_url: place.photo_url,
-      place_types: place.place_types,
-    })
-  } else {
-    // Create new place
-    return await createPlace(place)
+  try {
+    // First try to find existing place by Google Place ID
+    const existingPlace = await getPlaceByGoogleId(place.google_place_id)
+    
+    if (existingPlace) {
+      // If place exists, just return it without updating
+      // This avoids potential issues with updating existing places
+      return existingPlace
+    } else {
+      // Create new place
+      return await createPlace(place)
+    }
+  } catch (error) {
+    // If there's an error (like duplicate key), try to get the existing place again
+    if (error instanceof Error && error.message.includes('duplicate')) {
+      const existingPlace = await getPlaceByGoogleId(place.google_place_id)
+      if (existingPlace) {
+        return existingPlace
+      }
+    }
+    throw error
   }
 }
 
@@ -597,13 +606,16 @@ export async function addPlaceToList(listPlace: ListPlaceInsert): Promise<ListPl
         updated_at: new Date().toISOString()
       })
       .select()
-      .single()
 
     if (error) {
       handleDatabaseError(error, 'addPlaceToList')
     }
 
-    return data
+    // Return the first inserted record
+    if (!data || data.length === 0) {
+      throw new DatabaseError('No data returned from insert operation', 'INSERT_FAILED')
+    }
+    return data[0]
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'addPlaceToList')
@@ -696,13 +708,15 @@ export async function updateListPlaceNotes(
       .eq('list_id', listId)
       .eq('place_id', placeId)
       .select()
-      .single()
 
     if (error) {
       handleDatabaseError(error, 'updateListPlaceNotes')
     }
 
-    return data
+    if (!data || data.length === 0) {
+      throw new DatabaseError('No data returned from update operation', 'UPDATE_FAILED')
+    }
+    return data[0]
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'updateListPlaceNotes')
@@ -739,7 +753,7 @@ export async function getListStats(listId: string) {
       .from('lists')
       .select('view_count')
       .eq('id', listId)
-      .single()
+      .limit(1)
 
     if (listError) {
       handleDatabaseError(listError, 'getListStats')
@@ -754,8 +768,10 @@ export async function getListStats(listId: string) {
       handleDatabaseError(countError, 'getListStats')
     }
 
+    const viewCount = listData && listData.length > 0 ? listData[0].view_count || 0 : 0
+
     return {
-      viewCount: listData.view_count || 0,
+      viewCount,
       placeCount: placeCount || 0,
     }
   } catch (error) {
@@ -839,16 +855,13 @@ export async function getUserProfile(userId: string): Promise<any> {
       .from('users')
       .select('*')
       .eq('id', userId)
-      .single()
+      .limit(1)
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null
-      }
       handleDatabaseError(error, 'getUserProfile')
     }
 
-    return data
+    return data && data.length > 0 ? data[0] : null
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getUserProfile')
