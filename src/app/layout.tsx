@@ -4,6 +4,7 @@ import "./globals.css";
 import AuthWrapper from "@/components/auth/AuthWrapper";
 import Footer from "@/components/layout/Footer";
 import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
+import MixpanelProvider from "@/components/analytics/MixpanelProvider";
 import Navbar from "@/components/layout/Navbar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 // Using Supabase for authentication and database
@@ -26,13 +27,15 @@ export default function RootLayout({
       <body className={`${inter.className} bg-background text-foreground flex flex-col min-h-screen`}>
         <AuthWrapper>
           <AnalyticsProvider>
-            <Navbar />
-            <div className="flex-grow pb-16 md:pb-0">
-              {children}
-            </div>
-            <Footer />
-            <MobileBottomNav />
-            {/* Using Supabase for all backend services */}
+            <MixpanelProvider>
+              <Navbar />
+              <div className="flex-grow pb-16 md:pb-0">
+                {children}
+              </div>
+              <Footer />
+              <MobileBottomNav />
+              {/* Using Supabase for all backend services */}
+            </MixpanelProvider>
           </AnalyticsProvider>
         </AuthWrapper>
       </body>
