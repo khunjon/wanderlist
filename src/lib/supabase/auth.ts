@@ -8,6 +8,7 @@ import type {
   SocialLinks,
   UserPreferences 
 } from '@/types/supabase'
+import { trackEvent } from '@/lib/mixpanelClient'
 
 // Auth state management
 export interface AuthState {
@@ -61,6 +62,15 @@ export async function signUp(email: string, password: string, displayName?: stri
 
   if (error) {
     throw error
+  }
+
+  // Track signup event
+  if (data.user) {
+    trackEvent('User Signed Up', {
+      provider: 'email',
+      user_id: data.user.id,
+      has_display_name: !!displayName
+    });
   }
 
   return data
@@ -132,6 +142,10 @@ export async function signInWithGoogle() {
   if (error) {
     throw error
   }
+
+  // Note: For OAuth, we can't track signup vs login here since the redirect happens
+  // The actual tracking will happen in the auth state change handler
+  // when we can determine if it's a new user or returning user
 
   return data
 }

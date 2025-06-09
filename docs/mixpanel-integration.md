@@ -126,17 +126,37 @@ const handleRemovePlace = (place: Place, listId: string) => {
 
 ## User Identification
 
-When a user logs in, identify them with Mixpanel:
+User identification is **automatically handled** when users log in or sign up! The integration automatically:
+
+- ✅ Identifies users with their Supabase user ID
+- ✅ Sets user properties (email, name, signup date, etc.)
+- ✅ Tracks login and logout events
+- ✅ Distinguishes between new signups and returning logins
+- ✅ Resets user data on logout
+
+### Automatic Events Tracked
+
+The following events are automatically tracked:
+
+- **User Signed Up** - When a new user creates an account (email or Google)
+- **User Logged In** - When a returning user signs in
+- **User Logged Out** - When a user signs out
+
+### Manual User Identification
+
+If you need to manually identify a user or update their properties:
 
 ```tsx
 // In your auth component
-const { identify } = useMixpanel();
+const { identify, setProperties } = useMixpanel();
 
-const handleSuccessfulLogin = (user: User) => {
-  identify(user.id, {
-    email: user.email,
-    created_at: user.created_at,
-    // Add other relevant user properties
+const handleUserProfileUpdate = (user: User) => {
+  // Update user properties
+  setProperties({
+    display_name: user.displayName,
+    bio: user.bio,
+    profile_completion: calculateCompletionPercentage(user),
+    last_active: new Date().toISOString()
   });
 };
 ```

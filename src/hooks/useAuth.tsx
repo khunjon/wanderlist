@@ -7,6 +7,7 @@ import { supabase, User as AppUser, syncUserProfile, onAuthStateChange } from '@
 import { User } from '@/types';
 import { convertToLegacyUser } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
+import { identifyUser, trackEvent, mixpanel } from '@/lib/mixpanelClient';
 
 interface AuthContextType {
   user: User | null;
@@ -93,6 +94,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           const appUser = convertToLegacyUser(session.user, userProfile);
           setUser(appUser);
+
+          // Identify user with Mixpanel
+          identifyUser(session.user.id, {
+            email: session.user.email,
+            name: appUser.displayName,
+            created_at: session.user.created_at,
+            provider: session.user.app_metadata?.provider,
+            is_admin: appUser.is_admin,
+            photo_url: appUser.photo_url
+          });
         }
       } catch (err) {
         console.error('Error getting initial session:', err);
@@ -136,9 +147,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           const appUser = convertToLegacyUser(session.user, userProfile);
           setUser(appUser);
+
+          // Identify user with Mixpanel
+          identifyUser(session.user.id, {
+            email: session.user.email,
+            name: appUser.displayName,
+            created_at: session.user.created_at,
+            provider: session.user.app_metadata?.provider,
+            is_admin: appUser.is_admin,
+            photo_url: appUser.photo_url
+          });
+
+          // Track login events (but not for new signups which are tracked separately)
+          if (event === 'SIGNED_IN') {
+            // Check if this is a new user by looking at created_at timestamp
+            const userCreatedAt = new Date(session.user.created_at);
+            const now = new Date();
+            const timeDiff = now.getTime() - userCreatedAt.getTime();
+            const isNewUser = timeDiff < 60000; // Less than 1 minute old = new signup
+
+            if (!isNewUser) {
+              // This is a returning user login
+              trackEvent('User Logged In', {
+                provider: session.user.app_metadata?.provider || 'email',
+                user_id: session.user.id
+              });
+            } else if (session.user.app_metadata?.provider === 'google') {
+              // This is a new Google OAuth signup
+              trackEvent('User Signed Up', {
+                provider: 'google',
+                user_id: session.user.id
+              });
+            }
+          } else if (event === 'TOKEN_REFRESHED') {
+            // Don't track token refresh as a login event
+          }
         } else {
           setSupabaseUser(null);
           setUser(null);
+          
+          // Track logout and reset Mixpanel user
+          if (event === 'SIGNED_OUT') {
+            trackEvent('User Logged Out');
+            if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
+              mixpanel.reset();
+            }
+          }
         }
       } catch (err) {
         console.error('Error handling auth state change:', err);
