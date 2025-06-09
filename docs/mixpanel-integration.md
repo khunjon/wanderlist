@@ -177,6 +177,25 @@ To test your Mixpanel integration:
 2. Perform some actions (click buttons, navigate pages, etc.)
 3. Check the Mixpanel Live View in your dashboard to see events coming in
 
+## Domain Tracking Fix
+
+The integration automatically handles custom domain tracking for Vercel deployments. It ensures that:
+
+- ✅ Your custom domain appears in Mixpanel (not the Vercel internal domain)
+- ✅ Page URLs are tracked with the correct domain
+- ✅ All events include proper domain information
+
+### Manual Domain Update
+
+If you need to manually update domain properties:
+
+```tsx
+import { updateDomainProperties } from '@/lib/mixpanelClient';
+
+// Call this if domain tracking seems incorrect
+updateDomainProperties();
+```
+
 ## Privacy Considerations
 
 - Only track events that provide value for analytics

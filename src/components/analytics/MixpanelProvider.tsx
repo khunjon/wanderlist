@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { initMixpanel, trackPageView } from '@/lib/mixpanelClient';
+import { initMixpanel, trackPageView, updateDomainProperties } from '@/lib/mixpanelClient';
 
 interface MixpanelProviderProps {
   children: React.ReactNode;
@@ -14,6 +14,11 @@ export default function MixpanelProvider({ children }: MixpanelProviderProps) {
   useEffect(() => {
     // Initialize Mixpanel on mount
     initMixpanel();
+    
+    // Update domain properties after initialization
+    setTimeout(() => {
+      updateDomainProperties();
+    }, 100);
   }, []);
 
   useEffect(() => {
