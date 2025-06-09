@@ -419,9 +419,9 @@ After setting up the database:
 
 ## 9. Migration Considerations
 
-- **Data Migration**: You'll need to export data from Firebase and import it into Supabase
-- **Authentication**: Users will need to re-register or you'll need to migrate auth data
-- **File Storage**: Profile photos will need to be migrated from Firebase Storage to Supabase Storage
+- **Fresh Start Setup**: This project uses a clean slate approach - no data migration required
+- **Authentication**: Users will create new accounts in Supabase (fresh start)
+- **File Storage**: Users will upload new profile photos to Supabase Storage
 - **API Changes**: Update all database calls to use Supabase client instead of Firebase
 
 ## 10. Backup and Rollback Plan

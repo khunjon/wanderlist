@@ -1,101 +1,282 @@
-# Cursor Rules
+# Cursor AI Rules for Wanderlist (Supabase + MCP)
 
-## General Principles
-- Prioritize **clarity**, **modularity**, and **separation of concerns**.
-- Suggest **more optimal solutions** if you're confident they improve performance, readability, or simplicity.
-- Avoid over-complication or unnecessary abstraction.
-- Only make **architectural changes** (e.g., reorganizing folders, splitting modules) after explaining pros/cons and confirming with me. 
-- Only introduce new concepts (e.g., hooks, services, helpers) when reuse or separation makes the code easier to understand.
-- Be proactive about simplifying logic and eliminating redundancy.
-- If any code becomes longer than **150 lines**, suggest breaking it down.
-- Do not add external libraries unless necessary and justified.
+## Project Overview
+Wanderlist is a Next.js 15 application for saving and organizing places from Google Maps, built with Supabase as the backend and enhanced with MCP (Model Context Protocol) for AI-assisted development.
 
-## Language & Stack
-- The project uses **Next.js 15**, **TypeScript**, **React**, **Tailwind CSS**, **Firebase (Firestore, Auth, Storage)**, and **Google Places API.**
-- Use **modern TypeScript features** like type inference, union types, and optional chaining where appropriate.
-- Prefer **functional components** with hooks over class-based components.
-- Follow **Next.js 15 conventions**: use app/ directory structure, separate server and client components appropriately.
-- Firebase queries should be clean, safe, and follow best practices — use proper error handling and type safety.
+## Tech Stack
+- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL with Row Level Security)
+- **Authentication**: Supabase Auth
+- **Maps**: Google Places API
+- **AI Integration**: Cursor MCP for database operations
+- **Deployment**: Vercel
 
-## Next.js 15 Specific
-- **Dynamic route segments** receive params as a Promise that must be awaited in server components.
-- **Client components** using hooks like useSearchParams must be wrapped in Suspense boundaries.
-- Properly separate **server and client components** for optimal performance.
-- Use **server actions** for form submissions when appropriate.
-- Leverage **streaming** and **partial prerendering** features where beneficial.
+## Supabase + MCP Development Patterns
 
+### Database Operations
+- **Always use MCP tools** for database schema changes, queries, and analysis
+- **Prefer database functions** over client-side logic for complex operations
+- **Use RLS policies** instead of client-side permission checks
+- **Leverage JSONB columns** for flexible data structures (user preferences, metadata)
 
-## Coding Style
-- Follow the **Airbnb JavaScript Style Guide**, but be flexible where simpler alternatives make sense.
-- Use:
-  - `const` by default, `let` only when reassignment is required.
-  - `camelCase` for variables and functions.
-  - `PascalCase` for component names.
-- Prefer **arrow functions** for all function expressions.
-- Limit line length to **100 characters**.
-- Add **inline comments** only when the code isn't self-explanatory.
+### MCP Usage Guidelines
+```typescript
+// Use MCP tools for:
+// - Schema analysis: mcp_supabase_list_tables, mcp_supabase_list_extensions
+// - Data operations: mcp_supabase_execute_sql, mcp_supabase_apply_migration
+// - Function management: Deploy and test database functions
+// - Performance analysis: Query optimization and index analysis
+```
 
-## Components & UI
-- Keep React components **small and focused** — ideally < 100 lines.
-- Use **Tailwind CSS** for all styling — avoid custom CSS unless absolutely necessary.
-- Ensure **mobile-first responsive design** with Tailwind's responsive utilities.
-- Maintain **accessibility standards** with proper ARIA labels and semantic HTML.
+### Database Function Patterns
+```sql
+-- Create optimized functions for complex operations
+CREATE OR REPLACE FUNCTION get_enhanced_user_lists(user_uuid UUID)
+RETURNS TABLE(...) AS $$
+BEGIN
+  -- Use CTEs for complex queries
+  -- Include proper error handling
+  -- Return structured data
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
 
-## Firebase Integration
-- Use proper type safety with Firebase operations.
-- Handle loading states and errors gracefully in all Firebase operations.
-- Follow established patterns for:
-  - Authentication state management
-  - Firestore queries with proper error handling
-  - Storage operations (especially profile photo uploads)
-- Respect **security rules** — don't attempt operations that violate Firestore rules.
-- Use **Firebase hooks** consistently for reactive data.
+### TypeScript Integration
+```typescript
+// Always use generated Supabase types
+import { Database } from '@/types/supabase'
+type List = Database['public']['Tables']['lists']['Row']
 
-## State Management
-- Use **React hooks** (useState, useEffect, useContext) for local state.
-- Leverage **custom hooks** for complex state logic that's reused across components.
-- Keep state as **local as possible** — only lift state up when necessary.
-- Use **Firebase's real-time capabilities** for data synchronization.
+// Use proper error handling
+import { DatabaseError } from '@/lib/supabase/database'
 
-## API Integration
-- **Google Places API** calls should be properly typed and handle errors.
-- Use **environment variables** for all API keys and sensitive configuration.
-- Implement proper **rate limiting** and **caching** strategies where appropriate.
-- Follow the established patterns for search functionality.
+try {
+  const result = await supabase.rpc('function_name', params)
+  if (result.error) throw new DatabaseError(result.error.message)
+} catch (error) {
+  // Handle specific error types
+}
+```
 
-## User Experience
-- Maintain **mobile-first design** principles.
-- Implement proper **loading states** and **error boundaries**.
-- Follow the established **view modes** pattern (Grid, Map, Swipe views).
-- Ensure **touch-friendly interactions** and **keyboard navigation**.
-- Provide **contextual feedback** for user actions (success/error messages).
+## Code Organization Patterns
 
-## AI Behavior
-- Be **proactive** in identifying areas for improvement, like:
-  - Simplifying logic
-  - Removing dead code
-  - Refactoring duplicated patterns
-  - Improving mobile responsiveness
-  - Enhancing accessibility
-- Always aim for **safe, deterministic edits**. If unsure about a change’s side effects, ask me first.
-- When suggesting large-scale refactors or new abstractions, include:
-  - Tradeoffs
-  - Time/complexity implications
-  - Alternatives I might consider
+### File Structure
+```
+src/
+├── lib/supabase/
+│   ├── client.ts          # Supabase client configuration
+│   ├── database.ts        # Database operations with error handling
+│   └── typeUtils.ts       # Type conversion utilities
+├── types/
+│   └── supabase.ts        # Auto-generated Supabase types
+└── hooks/
+    └── useAuth.ts         # Supabase auth integration
+```
 
-## Testing
-- No test framework is currently used.
-- Do not auto-generate test files.
-- If I ask for a test, keep it **minimal and logic-focused**, using plain functions unless told otherwise.
+### Component Patterns
+```typescript
+// Use Supabase real-time subscriptions
+const { data, error } = await supabase
+  .from('lists')
+  .select('*')
+  .eq('user_id', user.id)
+  .order('updated_at', { ascending: false })
 
-## Security & Privacy
-- Respect **user privacy** — follow the established patterns for profile information.
-- Ensure **proper authentication** checks before sensitive operations.
-- Don't expose sensitive data in client-side code.
-- Follow **Firebase security rules** and don't attempt to bypass them.
+// Handle loading and error states
+if (error) {
+  console.error('Database error:', error)
+  // Show user-friendly error message
+}
+```
 
-## Documentation
-- Write clean, minimal code. Only add comments when it improves understanding.
-- For complex functions, include a short docstring-style comment above explaining the **intent**.
-- Update type definitions when adding new features.
-- Document any breaking changes or migration steps when updating patterns.
+## Security Best Practices
+
+### Row Level Security (RLS)
+- **Always enable RLS** on all tables
+- **Create specific policies** for each operation (SELECT, INSERT, UPDATE, DELETE)
+- **Use helper functions** for complex permission logic
+- **Test policies thoroughly** with different user scenarios
+
+### Data Validation
+```sql
+-- Use check constraints for data validation
+ALTER TABLE lists ADD CONSTRAINT valid_difficulty 
+CHECK (difficulty_level >= 1 AND difficulty_level <= 5);
+
+-- Use JSONB schema validation
+ALTER TABLE users ADD CONSTRAINT valid_preferences 
+CHECK (jsonb_typeof(preferences) = 'object');
+```
+
+### Authentication Patterns
+```typescript
+// Use Supabase auth helpers
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+
+// Server-side auth check
+const supabase = createServerComponentClient({ cookies })
+const { data: { session } } = await supabase.auth.getSession()
+```
+
+## Performance Optimization
+
+### Database Optimization
+- **Use indexes strategically** for common query patterns
+- **Implement materialized views** for complex aggregations
+- **Use database functions** to reduce network round trips
+- **Leverage JSONB indexes** for flexible queries
+
+### Query Patterns
+```typescript
+// Prefer single queries with joins over multiple queries
+const { data } = await supabase
+  .from('lists')
+  .select(`
+    *,
+    users!inner(display_name, photo_url),
+    list_places(count)
+  `)
+  .eq('is_public', true)
+```
+
+## Error Handling
+
+### Database Errors
+```typescript
+class DatabaseError extends Error {
+  constructor(message: string, public code?: string, public details?: any) {
+    super(message)
+    this.name = 'DatabaseError'
+  }
+}
+
+// Handle specific Supabase error codes
+if (error.code === 'PGRST116') {
+  // Record not found
+} else if (error.code === '23505') {
+  // Unique constraint violation
+}
+```
+
+### User-Friendly Messages
+- **Map database errors** to user-friendly messages
+- **Provide actionable feedback** when possible
+- **Log detailed errors** for debugging while showing simple messages to users
+
+## Testing Patterns
+
+### Database Testing
+```typescript
+// Use MCP tools for testing database functions
+// Test RLS policies with different user contexts
+// Validate data constraints and triggers
+```
+
+### Integration Testing
+```typescript
+// Test complete user flows
+// Verify real-time subscriptions
+// Test error handling scenarios
+```
+
+## MCP Integration Best Practices
+
+### Development Workflow
+1. **Use MCP for schema analysis** before making changes
+2. **Test database functions** using MCP execute_sql
+3. **Generate TypeScript types** after schema changes
+4. **Validate performance** with MCP query analysis
+
+### Common MCP Commands
+```typescript
+// Schema exploration
+mcp_supabase_list_tables()
+mcp_supabase_list_extensions()
+
+// Function testing
+mcp_supabase_execute_sql("SELECT * FROM function_name(params)")
+
+// Migration application
+mcp_supabase_apply_migration(name, query)
+```
+
+## Deployment Considerations
+
+### Environment Variables
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# MCP Configuration
+SUPABASE_PERSONAL_ACCESS_TOKEN=
+```
+
+### Production Checklist
+- [ ] RLS policies enabled and tested
+- [ ] Database functions deployed
+- [ ] Indexes optimized for production queries
+- [ ] Error monitoring configured
+- [ ] Performance monitoring enabled
+
+## Common Patterns to Avoid
+
+### Anti-Patterns
+- ❌ Client-side permission checks instead of RLS
+- ❌ Multiple database calls when one would suffice
+- ❌ Storing sensitive data in client-accessible tables
+- ❌ Not handling database errors gracefully
+- ❌ Using raw SQL strings instead of parameterized queries
+
+### Migration from Firebase
+- ❌ Don't port Firebase security rules directly - use RLS instead
+- ❌ Don't use Firestore document patterns - leverage relational design
+- ❌ Don't ignore PostgreSQL features like JSONB, arrays, and functions
+
+## Documentation Standards
+
+### Code Comments
+```typescript
+/**
+ * Enhanced function using Supabase RPC for optimal performance
+ * @param userId - User UUID from Supabase auth
+ * @returns Promise<EnhancedUserList[]> - Lists with counts and metadata
+ */
+export async function getEnhancedUserLists(userId: string) {
+  // Implementation with proper error handling
+}
+```
+
+### Database Documentation
+```sql
+-- Function: get_enhanced_user_lists
+-- Purpose: Retrieve user lists with place counts and engagement metrics
+-- Performance: Uses indexes on user_id, is_public, updated_at
+-- Security: RLS enforced, function is SECURITY DEFINER
+```
+
+## AI Behavior for Documentation
+
+### Documentation-First Development
+- **Before suggesting solutions**: Reference `/docs/troubleshooting/` for known issues and proven solutions
+- **When asked about implementation decisions**: First check `/docs/lessons-learned/` and `/docs/architecture/` for context and rationale
+- **When planning new features**: Consult `/docs/roadmap/` for alignment with planned enhancements and avoid duplicating planned work
+- **For setup or configuration issues**: Direct users to appropriate guides in `/docs/setup/`
+- **When encountering migration-related questions**: Reference `/docs/migration/` for historical context and lessons learned
+
+### Documentation Maintenance
+- **Always suggest updating relevant documentation** when making significant changes to:
+  - Database schema or functions → Update `/docs/architecture/`
+  - New troubleshooting solutions → Add to `/docs/troubleshooting/`
+  - Performance optimizations → Document in `/docs/lessons-learned/`
+  - New setup requirements → Update `/docs/setup/`
+  - Feature implementations → Consider adding to `/docs/roadmap/` if extensible
+
+### Knowledge Preservation
+- **Capture institutional knowledge**: When solving complex problems, suggest documenting the solution and reasoning
+- **Reference existing patterns**: Before creating new patterns, check if similar solutions exist in the documentation
+- **Maintain consistency**: Ensure new implementations follow established patterns documented in `/docs/architecture/`
+- **Update cross-references**: When adding new documentation, update the main `/docs/README.md` index
+
+This file should be updated as the project evolves and new patterns emerge.

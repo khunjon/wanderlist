@@ -6,7 +6,7 @@ import Footer from "@/components/layout/Footer";
 import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
 import Navbar from "@/components/layout/Navbar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
-import FirebaseDebug from "@/components/FirebaseDebug";
+// Using Supabase for authentication and database
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,7 +32,7 @@ export default function RootLayout({
             </div>
             <Footer />
             <MobileBottomNav />
-            <FirebaseDebug />
+            {/* Using Supabase for all backend services */}
           </AnalyticsProvider>
         </AuthWrapper>
       </body>

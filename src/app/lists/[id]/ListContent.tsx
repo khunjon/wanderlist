@@ -2,17 +2,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getList, getPlacesInList, deleteList, updateList, updatePlaceNotes, removePlaceFromListById, incrementListViewCount } from '@/lib/firebase/firestore';
+import { getListById, getListPlaces, deleteList, updateList, updateListPlaceNotes, removePlaceFromList, incrementListViewCount } from '@/lib/supabase';
 import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getUserProfile } from '@/lib/firebase/user';
+import { getUserProfile } from '@/lib/supabase';
 import MapView from '@/components/maps/MapView';
 import { trackListView } from '@/lib/analytics/gtag';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import SwipeView from '@/components/SwipeView';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
-import SwipeableCard from '@/components/ui/SwipeableCard';
 
 const placeSortOptions: SortOption[] = [
   { value: 'addedAt', label: 'Date Added' },
@@ -28,22 +27,20 @@ export default function ListContent({ id }: ListContentProps) {
   const { user, loading: authLoading } = useAuth();
   const [list, setList] = useState<List | null>(null);
   const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
+  const [author, setAuthor] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'swipe'>('grid');
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editIsPublic, setEditIsPublic] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [author, setAuthor] = useState<User | null>(null);
-  const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
-  const [editingNotes, setEditingNotes] = useState('');
-  const [deletingPlaceId, setDeletingPlaceId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [placeSortState, setPlaceSortState] = useState<SortState>({ field: 'addedAt', direction: 'desc' });
-  const [currentSwipeIndex, setCurrentSwipeIndex] = useState(0);
-  const [showNotes, setShowNotes] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'swipe'>('grid');
+  const [editingNotes, setEditingNotes] = useState<Record<string, boolean>>({});
+  const [noteValues, setNoteValues] = useState<Record<string, string>>({});
+  const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
   // Memoized sort function for places
@@ -86,15 +83,32 @@ export default function ListContent({ id }: ListContentProps) {
 
   // Memoized check if user is owner
   const isOwner = useMemo(() => {
-    return user?.uid === list?.userId;
-  }, [user?.uid, list?.userId]);
+    return user?.id === list?.user_id;
+  }, [user?.id, list?.user_id]);
 
   // Callback to refresh places when a new place is added
   const handlePlaceAdded = useCallback(async () => {
     if (!id) return;
     try {
-      const placesData = await getPlacesInList(id);
-      setPlaces(placesData);
+      const placesData = await getListPlaces(id);
+      // Transform the data to match PlaceWithNotes interface
+      const transformedPlaces: PlaceWithNotes[] = placesData.map(item => ({
+        // Map Supabase place properties to expected interface
+        id: item.places.id,
+        googlePlaceId: item.places.google_place_id,
+        name: item.places.name,
+        address: item.places.address,
+        latitude: item.places.latitude,
+        longitude: item.places.longitude,
+        rating: item.places.rating || 0,
+        photoUrl: item.places.photo_url || '',
+        placeTypes: item.places.place_types || [],
+        // Map list place properties
+        listPlaceId: item.id,
+        addedAt: new Date(item.added_at || ''),
+        notes: item.notes || ''
+      }));
+      setPlaces(transformedPlaces);
     } catch (err) {
       console.error('Error refreshing places:', err);
     }
@@ -107,14 +121,14 @@ export default function ListContent({ id }: ListContentProps) {
         setError(null);
 
         // Fetch list data
-        const listData = await getList(id);
+        const listData = await getListById(id);
         if (!listData) {
           setError('List not found');
           return;
         }
 
         // Check if user has permission to view this list
-        if (!listData.isPublic && (!user || listData.userId !== user.uid)) {
+        if (!listData.is_public && (!user || listData.user_id !== user.id)) {
           setError('You do not have permission to view this list');
           return;
         }
@@ -125,7 +139,7 @@ export default function ListContent({ id }: ListContentProps) {
         if (user) {
           trackListView(listData.name, listData.id);
           // Only increment view count if user is not the owner
-          if (listData.userId !== user.uid) {
+          if (listData.user_id !== user.id) {
             await incrementListViewCount(id);
           }
         }
@@ -133,19 +147,52 @@ export default function ListContent({ id }: ListContentProps) {
         // Set edit form values
         setEditName(listData.name);
         setEditTags(listData.tags?.join(', ') || '');
-        setEditIsPublic(listData.isPublic);
+        setEditIsPublic(listData.is_public || false);
 
         // Fetch author profile
         try {
-          const authorProfile = await getUserProfile(listData.userId);
-          setAuthor(authorProfile);
+          const authorProfile = await getUserProfile(listData.user_id);
+          // Transform to match User interface
+          if (authorProfile) {
+            const transformedAuthor: User = {
+              id: authorProfile.id,
+              email: authorProfile.email,
+              displayName: authorProfile.display_name || '',
+              photo_url: authorProfile.photo_url || '',
+              createdAt: new Date(authorProfile.created_at || ''),
+              created_at: authorProfile.created_at,
+              updated_at: authorProfile.updated_at,
+              is_admin: authorProfile.is_admin || false,
+              bio: authorProfile.bio || '',
+              instagram: authorProfile.instagram || '',
+              tiktok: authorProfile.tiktok || ''
+            };
+            setAuthor(transformedAuthor);
+          }
         } catch (err) {
           console.error('Error fetching author profile:', err);
         }
 
         // Fetch places in the list
-        const placesData = await getPlacesInList(id);
-        setPlaces(placesData);
+        const placesData = await getListPlaces(id);
+        // Transform the data to match PlaceWithNotes interface
+        const transformedPlaces: PlaceWithNotes[] = placesData.map(item => ({
+          // Map Supabase place properties to expected interface
+          id: item.places.id,
+          googlePlaceId: item.places.google_place_id,
+          name: item.places.name,
+          address: item.places.address,
+          latitude: item.places.latitude,
+          longitude: item.places.longitude,
+          rating: item.places.rating || 0,
+          photoUrl: item.places.photo_url || '',
+          placeTypes: item.places.place_types || [],
+          // Map list place properties
+          listPlaceId: item.id,
+          addedAt: new Date(item.added_at || ''),
+          notes: item.notes || ''
+        }));
+        setPlaces(transformedPlaces);
       } catch (err) {
         console.error('Error fetching list:', err);
         setError('Failed to load list. Please try again.');
@@ -160,182 +207,125 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [id, user, authLoading]);
 
-  // Refresh author profile when current user changes (in case they updated their own profile)
-  useEffect(() => {
-    const refreshAuthorProfile = async () => {
-      if (list && user && list.userId === user.uid) {
-        try {
-          const updatedAuthorProfile = await getUserProfile(list.userId);
-          setAuthor(updatedAuthorProfile);
-        } catch (err) {
-          console.error('Error refreshing author profile:', err);
-        }
-      }
-    };
+  // Memoized save handler
+  const handleSave = useCallback(async () => {
+    if (!list || !user) return;
 
-    refreshAuthorProfile();
-  }, [user?.photoURL, user?.displayName, list?.userId]); // Re-run when user's photo or name changes
-
-  // Memoized place sort change handler
-  const handlePlaceSortChange = useCallback((newSort: SortState) => {
-    setPlaceSortState(newSort);
-  }, []);
-
-  // Memoized edit list handler
-  const handleEditList = useCallback(async () => {
-    if (!list || !user || user.uid !== list.userId) return;
-    
-    setUpdateLoading(true);
     try {
-      // Process tags
-      const tagArray = editTags
+      setSaving(true);
+      setError(null);
+
+      const tags = editTags
         .split(',')
-        .map(tag => tag.trim().toLowerCase())
+        .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
-      
-      await updateList(id, {
-        name: editName.trim(),
-        tags: tagArray,
-        isPublic: editIsPublic,
+
+      await updateList(list.id, {
+        name: editName,
+        tags,
+        is_public: editIsPublic,
       });
-      
+
       // Update local state
-      setList({
-        ...list,
-        name: editName.trim(),
-        tags: tagArray,
-        isPublic: editIsPublic,
-      });
-      
+      setList(prev => prev ? {
+        ...prev,
+        name: editName,
+        tags,
+        is_public: editIsPublic,
+      } : null);
+
       setIsEditing(false);
     } catch (err) {
       console.error('Error updating list:', err);
-      alert('Failed to update list. Please try again.');
+      setError('Failed to update list. Please try again.');
     } finally {
-      setUpdateLoading(false);
+      setSaving(false);
     }
-  }, [list, user, id, editName, editTags, editIsPublic]);
+  }, [list, user, editName, editTags, editIsPublic]);
 
-  // Memoized delete list handler
-  const handleDeleteList = useCallback(async () => {
-    if (!list || !user || user.uid !== list.userId) return;
-    
-    if (window.confirm('Are you sure you want to delete this list? This action cannot be undone.')) {
-      setIsDeleting(true);
-      try {
-        await deleteList(id);
-        // Make sure we set state before navigation
-        setIsDeleting(false);
-        // Navigate after the state update
-        setTimeout(() => {
-          router.push('/lists');
-        }, 100);
-      } catch (err) {
-        console.error('Error deleting list:', err);
-        setIsDeleting(false);
-        alert('Failed to delete list. Please try again.');
-      }
+  // Memoized delete handler
+  const handleDelete = useCallback(async () => {
+    if (!list || !user) return;
+
+    const confirmed = window.confirm('Are you sure you want to delete this list? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      setDeleting(true);
+      setError(null);
+
+      await deleteList(list.id);
+      router.push('/lists');
+    } catch (err) {
+      console.error('Error deleting list:', err);
+      setError('Failed to delete list. Please try again.');
+    } finally {
+      setDeleting(false);
     }
-  }, [list, user, id, router]);
+  }, [list, user, router]);
 
-  // Memoized edit place notes handler
-  const handleEditPlaceNotes = useCallback((place: PlaceWithNotes) => {
-    setEditingPlaceId(place.listPlaceId);
-    setEditingNotes(place.notes || '');
+  const handleSortChange = useCallback((newSort: SortState) => {
+    setPlaceSortState(newSort);
   }, []);
 
-  // Memoized save place notes handler
-  const handleSavePlaceNotes = useCallback(async () => {
-    if (!editingPlaceId) return;
-    
+  const handleEditNotes = useCallback((placeId: string, currentNotes: string) => {
+    setEditingNotes(prev => ({ ...prev, [placeId]: true }));
+    setNoteValues(prev => ({ ...prev, [placeId]: currentNotes }));
+  }, []);
+
+  const handleSaveNotes = useCallback(async (placeId: string) => {
+    if (!list) return;
+
     try {
-      await updatePlaceNotes(editingPlaceId, editingNotes);
+      setSavingNotes(prev => ({ ...prev, [placeId]: true }));
+      
+      const newNotes = noteValues[placeId] || '';
+      await updateListPlaceNotes(list.id, placeId, newNotes);
       
       // Update local state
-      setPlaces(places.map(place => 
-        place.listPlaceId === editingPlaceId 
-          ? { ...place, notes: editingNotes.trim() || undefined }
+      setPlaces(prev => prev.map(place => 
+        place.id === placeId 
+          ? { ...place, notes: newNotes }
           : place
       ));
       
-      setEditingPlaceId(null);
-      setEditingNotes('');
+      setEditingNotes(prev => ({ ...prev, [placeId]: false }));
     } catch (err) {
-      console.error('Error updating place notes:', err);
-      alert('Failed to update notes. Please try again.');
+      console.error('Error updating notes:', err);
+      setError('Failed to update notes. Please try again.');
+    } finally {
+      setSavingNotes(prev => ({ ...prev, [placeId]: false }));
     }
-  }, [editingPlaceId, editingNotes, places]);
+  }, [list, noteValues]);
 
-  // Memoized cancel edit notes handler
-  const handleCancelEditNotes = useCallback(() => {
-    setEditingPlaceId(null);
-    setEditingNotes('');
+  const handleCancelEditNotes = useCallback((placeId: string) => {
+    setEditingNotes(prev => ({ ...prev, [placeId]: false }));
+    setNoteValues(prev => ({ ...prev, [placeId]: '' }));
   }, []);
 
-  // Memoized delete place handler
-  const handleDeletePlace = useCallback(async (place: PlaceWithNotes) => {
-    if (!user || user.uid !== list?.userId) return;
-    
-    if (window.confirm(`Are you sure you want to remove "${place.name}" from this list?`)) {
-      setDeletingPlaceId(place.listPlaceId);
-      try {
-        await removePlaceFromListById(place.listPlaceId);
-        
-        // Update local state
-        setPlaces(places.filter(p => p.listPlaceId !== place.listPlaceId));
-      } catch (err) {
-        console.error('Error removing place from list:', err);
-        alert('Failed to remove place. Please try again.');
-      } finally {
-        setDeletingPlaceId(null);
-      }
+  const handleRemovePlace = useCallback(async (placeId: string) => {
+    if (!list) return;
+
+    const confirmed = window.confirm('Are you sure you want to remove this place from the list?');
+    if (!confirmed) return;
+
+    try {
+      await removePlaceFromList(list.id, placeId);
+      
+      // Update local state
+      setPlaces(prev => prev.filter(place => place.id !== placeId));
+    } catch (err) {
+      console.error('Error removing place:', err);
+      setError('Failed to remove place. Please try again.');
     }
-  }, [user, list?.userId, places]);
+  }, [list]);
 
-  // Memoized view mode handlers
-  const handleSetGridView = useCallback(() => setViewMode('grid'), []);
-  const handleSetMapView = useCallback(() => setViewMode('map'), []);
-  const handleSetSwipeView = useCallback(() => {
-    setViewMode('swipe');
-    setCurrentSwipeIndex(0);
-  }, []);
-
-  // Swipe navigation handlers
-  const handleNextPlace = useCallback(() => {
-    setCurrentSwipeIndex(prev => (prev + 1) % sortedPlaces.length);
-    setShowNotes(false);
-  }, [sortedPlaces.length]);
-
-  const handlePrevPlace = useCallback(() => {
-    setCurrentSwipeIndex(prev => prev === 0 ? sortedPlaces.length - 1 : prev - 1);
-    setShowNotes(false);
-  }, [sortedPlaces.length]);
-
-  const handleKeyPress = useCallback((e: KeyboardEvent) => {
-    if (viewMode !== 'swipe') return;
-    
-    if (e.key === 'ArrowRight' || e.key === ' ') {
-      e.preventDefault();
-      handleNextPlace();
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      handlePrevPlace();
-    } else if (e.key === 'Escape') {
-      setViewMode('grid');
-    }
-  }, [viewMode, handleNextPlace, handlePrevPlace]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [handleKeyPress]);
-
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-white">Loading...</p>
+          <p className="mt-4 text-white">Loading list...</p>
         </div>
       </div>
     );
@@ -343,573 +333,446 @@ export default function ListContent({ id }: ListContentProps) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="bg-gray-800 p-8 rounded-lg shadow-md max-w-md w-full">
-          <div className="text-center">
-            <svg
-              className="mx-auto h-12 w-12 text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <h3 className="mt-2 text-lg font-medium text-white">Error</h3>
-            <p className="mt-1 text-sm text-gray-300">{error}</p>
-            <div className="mt-6">
-              <button
-                onClick={() => router.back()}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Go Back
-              </button>
-            </div>
-          </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Error</h1>
+          <p className="text-gray-300 mb-4">{error}</p>
+          <Link
+            href="/lists"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Back to Lists
+          </Link>
         </div>
       </div>
     );
   }
 
   if (!list) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">List Not Found</h1>
+          <p className="text-gray-300 mb-4">The list you're looking for doesn't exist or has been deleted.</p>
+          <Link
+            href="/lists"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Back to Lists
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-gray-900 shadow sticky top-0 z-30">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
-          {isEditing && isOwner ? (
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="inline-flex items-center text-gray-300 hover:text-white mr-4"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span className="text-sm">Cancel</span>
-                </button>
-                <h2 className="text-xl sm:text-2xl font-bold text-white">Edit List</h2>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <form onSubmit={handleEditList} className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-white">
-                      List Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-white">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      rows={3}
-                      value={list.description}
-                      onChange={(e) => setList({ ...list, description: e.target.value })}
-                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-white">
-                      City (to help narrow down place searches)
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      value={list.city}
-                      onChange={(e) => setList({ ...list, city: e.target.value })}
-                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="tags" className="block text-sm font-medium text-white">
-                      Tags (comma-separated)
-                    </label>
-                    <input
-                      type="text"
-                      id="tags"
-                      value={editTags}
-                      onChange={(e) => setEditTags(e.target.value)}
-                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="food, travel, favorites"
-                    />
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex h-5 items-center">
-                      <input
-                        id="isPublic"
-                        type="checkbox"
-                        checked={editIsPublic}
-                        onChange={(e) => setEditIsPublic(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="isPublic" className="font-medium text-white">
-                        Public List
-                      </label>
-                      <p className="text-gray-300">
-                        If checked, this list will be discoverable by other users.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      type="submit"
-                      disabled={updateLoading}
-                      className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
-                    >
-                      {updateLoading ? 'Updating...' : 'Update List'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDeleteList}
-                      disabled={isDeleting}
-                      className="inline-flex justify-center items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      {isDeleting ? 'Deleting...' : 'Delete List'}
-                    </button>
-                  </div>
-                </form>
+      {/* Header */}
+      <header className="bg-gray-900 shadow">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/lists"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-white">{list.name}</h1>
+                {list.description && (
+                  <p className="mt-1 text-gray-300">{list.description}</p>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Navigation and Title */}
-              <div className="flex items-center">
-                <Link
-                  href="/lists"
-                  className="inline-flex items-center text-gray-300 hover:text-white mr-4"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  <span className="text-sm">Lists</span>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">{list.name}</h1>
-                </div>
-              </div>
-              
-              {/* Description */}
-              {list.description && <p className="text-sm text-gray-300">{list.description}</p>}
-            </div>
-          )}
-        </div>
-      </header>
-      
-      {/* Scrollable content area */}
-      {!isEditing && (
-        <div className="bg-gray-900 border-b border-gray-700">
-          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8">
-            <div className="space-y-2">
-              {/* Location */}
-              {list.city && <p className="text-sm text-blue-300">📍 {list.city}</p>}
-              
-              {/* Author */}
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="h-6 w-6 rounded-full overflow-hidden bg-gray-700">
-                    {author?.photoURL ? (
-                      <img
-                        src={author.photoURL}
-                        alt={author.displayName || 'Author'}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          // Hide broken image and show fallback
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : null}
-                    {/* Default avatar - always present as fallback */}
-                    <div className={`absolute inset-0 flex items-center justify-center ${author?.photoURL ? 'hidden' : ''}`}>
-                      <svg
-                        className="h-full w-full text-gray-500"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-                <div className="ml-2 text-sm text-gray-300 flex-1">
-                  Created by {author?.displayName || 'Unknown User'}
-                </div>
-                {/* Public/Private Icon - small and inline */}
-                <div className="ml-2">
-                  <div 
-                    className={`inline-flex items-center p-1 rounded ${
-                      list.isPublic 
-                        ? 'bg-green-900 text-green-200' 
-                        : 'bg-purple-900 text-purple-200'
-                    }`}
-                    title={list.isPublic ? 'Public List' : 'Private List'}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      {list.isPublic ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      )}
-                    </svg>
-                  </div>
-                </div>
-                {/* Edit Button - positioned inline with author */}
-                {isOwner && (
+            
+            {isOwner && (
+              <div className="flex items-center space-x-2">
+                {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="ml-4 inline-flex items-center px-3 py-1.5 border border-gray-600 text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                    title="Edit list"
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
                     Edit
                   </button>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      disabled={saving}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-300 bg-transparent hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 )}
+                
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Edit Form */}
+      {isEditing && (
+        <div className="bg-gray-800 border-b border-gray-700">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-white">
+                  List Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="tags" className="block text-sm font-medium text-white">
+                  Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  id="tags"
+                  value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
+                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="food, travel, favorites"
+                />
+              </div>
+              <div className="flex items-start">
+                <div className="flex h-5 items-center">
+                  <input
+                    id="isPublic"
+                    type="checkbox"
+                    checked={editIsPublic}
+                    onChange={(e) => setEditIsPublic(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label htmlFor="isPublic" className="font-medium text-white">
+                    Public List
+                  </label>
+                  <p className="text-gray-300">
+                    If checked, this list will be discoverable by other users.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
-      <main>
-        <div className={`mx-auto max-w-7xl ${isEditing ? 'py-3 px-4 sm:py-4' : 'py-3 sm:py-6'} sm:px-6 lg:px-8`}>
-          {/* Add Places button - only show in edit mode */}
-          {isEditing && isOwner && (
-            <div className="mb-6">
-              <Link
-                href={`/search?listId=${list.id}`}
-                className="w-full sm:w-auto inline-flex justify-center items-center px-6 py-4 border border-transparent text-lg font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                <svg
-                  className="-ml-1 mr-3 h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Add Places to List
-              </Link>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-900 border-l-4 border-red-600 p-4 mx-auto max-w-7xl">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
             </div>
-          )}
-          
-          {places.length > 0 ? (
-            <>
-              {/* View Mode Selection */}
-              <div className="mb-3 sm:mb-4">
-                <div className="flex w-full sm:w-auto rounded-md shadow-sm" role="group">
-                  <button
-                    type="button"
-                    onClick={handleSetGridView}
-                    className={`flex-1 sm:flex-none px-6 py-3 text-sm font-medium rounded-l-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                      viewMode === 'grid'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-800 text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                      <span className="hidden sm:inline">Grid</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSetSwipeView}
-                    className={`flex-1 sm:flex-none px-6 py-3 text-sm font-medium focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                      viewMode === 'swipe'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-800 text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                      </svg>
-                      <span className="hidden sm:inline">Swipe</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSetMapView}
-                    className={`flex-1 sm:flex-none px-6 py-3 text-sm font-medium rounded-r-md focus:z-10 focus:ring-2 focus:ring-blue-500 focus:outline-none ${
-                      viewMode === 'map'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-800 text-white hover:bg-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" />
-                      </svg>
-                      <span className="hidden sm:inline">Map</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-300">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {/* Sort Control - only show for grid view */}
-              {viewMode === 'grid' && (
-                <div className="mb-3 sm:mb-6">
-                  <SortControl
-                    options={placeSortOptions}
-                    currentSort={placeSortState}
-                    onSortChange={handlePlaceSortChange}
-                    className="w-full sm:w-auto"
-                    listId={id}
-                  />
+      {/* Main Content */}
+      <main>
+        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+          {/* List Info */}
+          <div className="bg-gray-800 shadow rounded-lg mb-6 p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center space-x-4 mb-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    list.is_public 
+                      ? 'bg-green-900 text-green-200' 
+                      : 'bg-purple-900 text-purple-200'
+                  }`}>
+                    {list.is_public ? 'Public' : 'Private'}
+                  </span>
+                  {list.city && (
+                    <span className="text-sm text-blue-300">📍 {list.city}</span>
+                  )}
                 </div>
-              )}
-              
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {sortedPlaces.map((place) => {
-                    const isEditingThisPlace = editingPlaceId === place.listPlaceId;
-                    const isDeletingThisPlace = deletingPlaceId === place.listPlaceId;
-                    
-                    return (
-                      <SwipeableCard
-                        key={place.id}
-                        place={place}
-                        onDelete={handleDeletePlace}
-                        isOwner={isOwner}
-                        isDeleting={isDeletingThisPlace}
-                      >
-                        <div className="bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-300">
-                        {place.photoUrl && (
-                          <div className="relative h-32 sm:h-48 w-full">
-                            <img
-                              src={place.photoUrl}
-                              alt={place.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Hide broken image
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                        <div className="px-3 py-3 sm:px-4 sm:py-5">
-                          <div className="mb-1 sm:mb-2">
-                            <h3 className="text-base sm:text-lg font-medium text-white">{place.name}</h3>
-                          </div>
-                          
-                          <p className="text-xs sm:text-sm text-gray-300 line-clamp-2 mb-2">{place.address}</p>
-                          
-                          {place.rating > 0 && (
-                            <div className="mb-2 flex items-center">
-                              <span className="text-sm font-medium text-white">{place.rating.toFixed(1)}</span>
-                              <div className="ml-1 flex">
-                                {Array.from({ length: 5 }, (_, i) => (
-                                  <svg
-                                    key={i}
-                                    className={`h-4 w-4 ${
-                                      i < Math.floor(place.rating)
-                                        ? 'text-yellow-400'
-                                        : i < Math.ceil(place.rating) && i >= Math.floor(place.rating)
-                                        ? 'text-yellow-300'
-                                        : 'text-gray-500'
-                                    }`}
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    aria-hidden="true"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Notes section */}
-                          <div className="mt-3">
-                            {isEditingThisPlace ? (
-                              <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-300">
-                                  Your notes:
-                                </label>
-                                <textarea
-                                  value={editingNotes}
-                                  onChange={(e) => setEditingNotes(e.target.value)}
-                                  className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder="Add your notes about this place..."
-                                  rows={3}
-                                  autoFocus
-                                />
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={handleSavePlaceNotes}
-                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={handleCancelEditNotes}
-                                    className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {place.notes && isOwner && (
-                                  <div 
-                                    className="bg-gray-700 rounded-md p-2 sm:p-3 cursor-pointer hover:bg-gray-600 transition-colors"
-                                    onClick={() => handleEditPlaceNotes(place)}
-                                  >
-                                    <p className="text-xs sm:text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
-                                  </div>
-                                )}
-                                {place.notes && !isOwner && (
-                                  <div className="bg-gray-700 rounded-md p-2 sm:p-3">
-                                    <p className="text-xs sm:text-sm text-gray-300 whitespace-pre-wrap">{place.notes}</p>
-                                  </div>
-                                )}
-                                {!place.notes && isOwner && (
-                                  <button
-                                    onClick={() => handleEditPlaceNotes(place)}
-                                    className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
-                                  >
-                                    + Add notes
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        </div>
-                      </SwipeableCard>
-                    );
-                  })}
-                </div>
-              ) : viewMode === 'swipe' ? (
-                <SwipeView 
-                  places={sortedPlaces}
-                  currentIndex={currentSwipeIndex}
-                  onNext={handleNextPlace}
-                  onPrev={handlePrevPlace}
-                  onClose={() => setViewMode('grid')}
-                  isOwner={isOwner}
-                  onEditNotes={handleEditPlaceNotes}
-                  onDeletePlace={handleDeletePlace}
-                  editingPlaceId={editingPlaceId}
-                  editingNotes={editingNotes}
-                  setEditingNotes={setEditingNotes}
-                  onSaveNotes={handleSavePlaceNotes}
-                  onCancelEdit={handleCancelEditNotes}
-                  deletingPlaceId={deletingPlaceId}
-                />
-              ) : (
-                <div className="bg-gray-800 rounded-lg shadow overflow-hidden">
-                  <div className="h-[600px] w-full flex items-center justify-center">
-                    <MapView places={places} />
-                  </div>
-                </div>
-              )}
-
-              {/* Last updated date at bottom */}
-              <div className="mt-6 text-center">
-                <p className="text-xs text-gray-400">
-                  Last updated: {list.updatedAt.toLocaleDateString()}
-                </p>
-              </div>
-
-              {/* Tags at bottom - less prominent */}
-              {list.tags && list.tags.length > 0 && (
-                <div className="mt-4 text-center">
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {list.tags.map((tag) => (
-                      <span 
-                        key={tag} 
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-900 text-blue-200"
+                
+                {list.tags && list.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {list.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-700 text-gray-300"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-16 bg-gray-800 shadow rounded-lg">
-              <div className="max-w-sm mx-auto">
-                <div className="mx-auto h-24 w-24 text-gray-400 mb-6">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-full h-full">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">No places yet</h3>
-                <p className="text-gray-300 mb-6 text-sm leading-relaxed">
-                  Start building your list by adding your favorite places. Search for restaurants, cafes, attractions, and more.
-                </p>
-                <Link
-                  href={`/search?listId=${list.id}`}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-lg"
-                >
-                  <svg
-                    className="-ml-1 mr-3 h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Add Your First Place
-                </Link>
+                )}
+                
+                {author && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-400">
+                    {author.photo_url && (
+                      <img
+                        src={author.photo_url}
+                        alt={author.displayName}
+                        className="h-6 w-6 rounded-full"
+                      />
+                    )}
+                    <span>Created by {author.displayName}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-right text-sm text-gray-400">
+                <div>{places.length} {places.length === 1 ? 'place' : 'places'}</div>
+                {list.view_count !== undefined && (
+                  <div>{list.view_count} views</div>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Floating Action Button - only show for list owners when not editing */}
-          {isOwner && !isEditing && places.length > 0 && (
-            <FloatingActionButton 
-              listId={list.id}
-              listCity={list.city}
-              onPlaceAdded={handlePlaceAdded}
-            />
+          {/* View Mode Controls */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
+                    viewMode === 'grid'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                  }`}
+                >
+                  Grid
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-4 py-2 text-sm font-medium rounded-r-md border ${
+                    viewMode === 'map'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                  }`}
+                >
+                  Map
+                </button>
+                {/* Temporarily disabled SwipeView due to interface mismatch
+                <button
+                  onClick={() => setViewMode('swipe')}
+                  className={`px-4 py-2 text-sm font-medium rounded-r-md border ${
+                    viewMode === 'swipe'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                  }`}
+                >
+                  Swipe
+                </button>
+                */}
+              </div>
+              
+              {isOwner && (
+                <Link
+                  href={`/search?listId=${list.id}`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Add Places
+                </Link>
+              )}
+            </div>
+
+            {viewMode === 'grid' && places.length > 0 && (
+              <SortControl
+                options={placeSortOptions}
+                currentSort={placeSortState}
+                onSortChange={handleSortChange}
+                listId={`list-${list.id}`}
+              />
+            )}
+          </div>
+
+          {/* Content based on view mode */}
+          {places.length === 0 ? (
+            <div className="text-center py-12 bg-gray-800 shadow rounded-lg">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-white">No places yet</h3>
+              <p className="mt-1 text-sm text-gray-300">Get started by adding some places to this list.</p>
+              {isOwner && (
+                <div className="mt-6">
+                  <Link
+                    href={`/search?listId=${list.id}`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Add Places
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {viewMode === 'grid' && (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {sortedPlaces.map((place) => (
+                    <div
+                      key={place.id}
+                      className="bg-gray-800 shadow rounded-lg overflow-hidden"
+                    >
+                      {/* Place Image */}
+                      {place.photoUrl && (
+                        <div className="h-48 bg-gray-700">
+                          <img
+                            src={place.photoUrl}
+                            alt={place.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Place Content */}
+                      <div className="p-4">
+                        <h3 className="text-lg font-medium text-white mb-2">{place.name}</h3>
+                        <p className="text-sm text-gray-300 mb-2">{place.address}</p>
+                        
+                        {place.rating > 0 && (
+                          <div className="flex items-center mb-2">
+                            <span className="text-yellow-400">★</span>
+                            <span className="text-sm text-gray-300 ml-1">{place.rating}</span>
+                          </div>
+                        )}
+                        
+                        {/* Notes Section */}
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            Notes
+                          </label>
+                          {editingNotes[place.id] ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={noteValues[place.id] || ''}
+                                onChange={(e) => setNoteValues(prev => ({ ...prev, [place.id]: e.target.value }))}
+                                className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows={3}
+                                placeholder="Add your notes about this place..."
+                              />
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleSaveNotes(place.id)}
+                                  disabled={savingNotes[place.id]}
+                                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                  {savingNotes[place.id] ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  onClick={() => handleCancelEditNotes(place.id)}
+                                  className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-sm text-gray-300 min-h-[3rem] p-2 bg-gray-700 rounded">
+                                {place.notes || 'No notes yet'}
+                              </p>
+                              {isOwner && (
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEditNotes(place.id, place.notes || '')}
+                                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                                  >
+                                    Edit Notes
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemovePlace(place.id)}
+                                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {viewMode === 'map' && (
+                <div className="h-96 rounded-lg overflow-hidden">
+                  <MapView places={sortedPlaces} />
+                </div>
+              )}
+
+              {/* Temporarily disabled SwipeView due to interface mismatch
+              {viewMode === 'swipe' && (
+                <SwipeView
+                  places={sortedPlaces}
+                  onClose={() => setViewMode('grid')}
+                  isOwner={isOwner}
+                  onEditNotes={handleEditNotes}
+                  onSaveNotes={handleSaveNotes}
+                  onCancelEditNotes={handleCancelEditNotes}
+                  onNotesChange={(placeId, value) => setNoteValues(prev => ({ ...prev, [placeId]: value }))}
+                  onRemove={handleRemovePlace}
+                  editingNotes={editingNotes}
+                  noteValues={noteValues}
+                  savingNotes={savingNotes}
+                />
+              )}
+              */}
+            </>
           )}
         </div>
       </main>
+
+      {/* Floating Action Button for adding places */}
+      {isOwner && places.length > 0 && (
+        <FloatingActionButton onPlaceAdded={handlePlaceAdded} />
+      )}
     </div>
   );
 } 

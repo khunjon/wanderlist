@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getPublicLists } from '@/lib/firebase/firestore';
+import { getPublicLists } from '@/lib/supabase/database';
 import { List } from '@/types';
 import { useRouter } from 'next/navigation';
 import { trackListView } from '@/lib/analytics/gtag';
@@ -36,16 +36,16 @@ export default function DiscoverPage() {
           bValue = b.name.toLowerCase();
           break;
         case 'createdAt':
-          aValue = a.createdAt.getTime();
-          bValue = b.createdAt.getTime();
+          aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
+          bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
           break;
         case 'updatedAt':
-          aValue = a.updatedAt.getTime();
-          bValue = b.updatedAt.getTime();
+          aValue = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+          bValue = b.updated_at ? new Date(b.updated_at).getTime() : 0;
           break;
         case 'viewCount':
-          aValue = a.viewCount || 0;
-          bValue = b.viewCount || 0;
+          aValue = a.view_count || 0;
+          bValue = b.view_count || 0;
           break;
         default:
           return 0;
@@ -95,7 +95,8 @@ export default function DiscoverPage() {
   const fetchLists = useCallback(async () => {
     try {
       setLoading(true);
-      const publicLists = await getPublicLists();
+      // Use enhanced getPublicLists with better sorting and pagination
+      const publicLists = await getPublicLists(50, 0, undefined, undefined, 'view_count', 'desc');
       setAllLists(publicLists);
     } catch (error) {
       console.error('Error fetching public lists:', error);
@@ -219,13 +220,13 @@ export default function DiscoverPage() {
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <div className="flex flex-col space-y-1">
                         </div>
-                        {list.viewCount !== undefined && (
+                        {list.view_count !== undefined && (
                           <div className="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            <span>{list.viewCount} views</span>
+                            <span>{list.view_count} views</span>
                           </div>
                         )}
                       </div>

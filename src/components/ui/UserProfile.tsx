@@ -45,7 +45,7 @@ export default function UserProfile({
   return (
     <div className={`flex items-start space-x-3 ${className}`}>
       <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-700 flex-shrink-0 relative`}>
-        {user.photoURL && !imageError ? (
+        {user.photo_url && !imageError ? (
           <>
             {imageLoading && (
               <div className="absolute inset-0 bg-gray-700 flex items-center justify-center">
@@ -53,7 +53,7 @@ export default function UserProfile({
               </div>
             )}
             <Image
-              src={user.photoURL}
+              src={user.photo_url}
               alt={user.displayName || 'User'}
               className="h-full w-full object-cover"
               width={size === 'sm' ? 24 : size === 'md' ? 32 : 48}

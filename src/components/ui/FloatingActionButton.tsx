@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { searchPlaces } from '@/lib/google/places';
-import { createPlace, addPlaceToList } from '@/lib/firebase/firestore';
+import { createPlace, addPlaceToList } from '@/lib/supabase';
 import { GooglePlace } from '@/types';
 import { debounce } from 'lodash';
 
@@ -155,20 +155,23 @@ export default function FloatingActionButton({
       
       // First create or get place in our database
       const placeData = {
-        googlePlaceId: place.place_id,
+        google_place_id: place.place_id,
         name: place.name,
         address: place.formatted_address,
         latitude: place.geometry.location.lat,
         longitude: place.geometry.location.lng,
         rating: place.rating || 0,
-        photoUrl: place.photos && place.photos.length > 0 
+        photo_url: place.photos && place.photos.length > 0 
           ? `/api/places/photo?photoReference=${place.photos[0].photo_reference}&maxWidth=400`
           : '',
-        placeTypes: place.types || [],
+        place_types: place.types || [],
       };
       
-      const placeId = await createPlace(placeData);
-      await addPlaceToList(listId, placeId);
+      const createdPlace = await createPlace(placeData);
+      await addPlaceToList({
+        list_id: listId,
+        place_id: createdPlace.id
+      });
       
       // Mark as added and show success feedback
       setAddedToList(prev => ({ ...prev, [place.place_id]: true }));

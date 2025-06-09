@@ -4,11 +4,11 @@ import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
-import { signOut } from '@/lib/firebase/auth';
+// signOut is now handled by the auth context
 import { useRouter, usePathname } from 'next/navigation';
 
 export default function Navbar() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { isAdmin } = useAdmin();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
@@ -88,9 +88,9 @@ export default function Navbar() {
                     >
                       <span className="sr-only">Open user menu</span>
                       <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-700 relative">
-                        {user.photoURL ? (
+                        {user.photo_url ? (
                           <img
-                            src={user.photoURL}
+                            src={user.photo_url}
                             alt={user.displayName || 'User'}
                             className="h-full w-full object-cover"
                             onError={(e) => {
@@ -100,7 +100,7 @@ export default function Navbar() {
                           />
                         ) : null}
                         {/* Default avatar - always present as fallback */}
-                        <div className={`absolute inset-0 flex items-center justify-center ${user.photoURL ? 'hidden' : ''}`}>
+                        <div className={`absolute inset-0 flex items-center justify-center ${user.photo_url ? 'hidden' : ''}`}>
                           <svg
                             className="h-full w-full text-gray-500"
                             fill="currentColor"
@@ -246,9 +246,9 @@ export default function Navbar() {
                 <div className="flex items-center px-5">
                   <div className="flex-shrink-0">
                     <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-700 relative">
-                      {user.photoURL ? (
+                      {user.photo_url ? (
                         <img
-                          src={user.photoURL}
+                          src={user.photo_url}
                           alt={user.displayName || 'User'}
                           className="h-full w-full object-cover"
                           onError={(e) => {
@@ -258,7 +258,7 @@ export default function Navbar() {
                         />
                       ) : null}
                       {/* Default avatar - always present as fallback */}
-                      <div className={`absolute inset-0 flex items-center justify-center ${user.photoURL ? 'hidden' : ''}`}>
+                      <div className={`absolute inset-0 flex items-center justify-center ${user.photo_url ? 'hidden' : ''}`}>
                         <svg
                           className="h-full w-full text-gray-500"
                           fill="currentColor"

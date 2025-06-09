@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { registerWithEmailAndPassword, signInWithGoogle } from '@/lib/firebase/auth';
+import { signUp, signInWithGoogle } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,7 +59,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      await registerWithEmailAndPassword(email.trim(), password, name.trim());
+      await signUp(email.trim(), password, name.trim());
       // Don't redirect here - let the auth state change handle it
       // Don't set loading to false here - let the useEffect handle it
     } catch (err: any) {

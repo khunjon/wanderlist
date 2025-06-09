@@ -2,67 +2,27 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth, useRequireAuth } from '@/hooks/useAuth';
-import { getUserProfile, updateUserProfile, uploadProfilePhoto } from '@/lib/firebase/user';
-import { signOut } from '@/lib/firebase/auth';
+import { 
+  getEnhancedUserProfile, 
+  updateUserProfile, 
+  updateProfilePhoto,
+  validateProfileCompleteness,
+  updateUserActivity
+} from '@/lib/supabase/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User } from '@/types';
-
-// Image compression utility
-const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<File> => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new window.Image();
-    
-    img.onload = () => {
-      // Calculate new dimensions
-      let { width, height } = img;
-      if (width > height) {
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxWidth) {
-          width = (width * maxWidth) / height;
-          height = maxWidth;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      // Draw and compress
-      ctx?.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
-            resolve(compressedFile);
-          } else {
-            resolve(file);
-          }
-        },
-        'image/jpeg',
-        quality
-      );
-    };
-    
-    img.src = URL.createObjectURL(file);
-  });
-};
+import type { EnhancedProfileData, ProfileUpdateResult, PhotoUpdateResult } from '@/lib/supabase/auth';
 
 export default function ProfilePage() {
-  const { user: authUser, loading: authLoading } = useAuth();
-  const [user, setUser] = useState<User | null>(null);
+  const { user: authUser, loading: authLoading, signOut } = useAuth();
+  const [profile, setProfile] = useState<EnhancedProfileData | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [instagram, setInstagram] = useState('');
   const [tiktok, setTiktok] = useState('');
+  const [profileVisibility, setProfileVisibility] = useState<'public' | 'private' | 'friends'>('private');
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
@@ -70,29 +30,47 @@ export default function ProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [profileCompletion, setProfileCompletion] = useState<{
+    is_complete: boolean;
+    missing_fields: string[];
+    completion_percentage: number;
+  } | null>(null);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use the updated require auth hook with NavigationHandler
   const { NavigationHandler } = useRequireAuth();
 
-  // Fetch user profile data
+  // Fetch enhanced user profile data
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!authUser) return;
 
       try {
+        setError(null);
         setLoading(true);
-        const profile = await getUserProfile(authUser.uid);
-        if (profile) {
-          setUser(profile);
-          setDisplayName(profile.displayName);
-          setBio(profile.bio || '');
-          setInstagram(profile.instagram || '');
-          setTiktok(profile.tiktok || '');
-          setCurrentPhotoUrl(profile.photoURL || null);
+        
+        // Get enhanced profile with statistics
+        const enhancedProfile = await getEnhancedUserProfile(authUser.id);
+        if (enhancedProfile) {
+          setProfile(enhancedProfile);
+          setDisplayName(enhancedProfile.display_name || '');
+          setBio(enhancedProfile.bio || '');
+          setInstagram(enhancedProfile.instagram || '');
+          setTiktok(enhancedProfile.tiktok || '');
+          setProfileVisibility(enhancedProfile.profile_visibility as 'public' | 'private' | 'friends' || 'private');
+          setEmailNotifications(enhancedProfile.email_notifications ?? true);
+          setPushNotifications(enhancedProfile.push_notifications ?? true);
+          setCurrentPhotoUrl(enhancedProfile.photo_url || null);
           setPreviewUrl(null); // Clear any preview
         }
+
+        // Get profile completion status
+        const completion = await validateProfileCompleteness(authUser.id);
+        setProfileCompletion(completion);
+
+        // Update user activity
+        await updateUserActivity(authUser.id);
       } catch (err) {
         console.error('Error fetching user profile:', err);
         setError('Could not load your profile. Please try again.');
@@ -106,53 +84,34 @@ export default function ProfilePage() {
     }
   }, [authUser]);
 
-  // Handle file selection with compression
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      setError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
-      return;
-    }
-
-    setError(null);
-    setUploadingPhoto(true);
-
-    try {
-      let processedFile = file;
-      
-      // Compress if file is larger than 1MB or dimensions are too large
-      if (file.size > 1024 * 1024 || file.type !== 'image/gif') {
-        processedFile = await compressImage(file, 800, 0.8);
-      }
-
-      // Final size check after compression
-      if (processedFile.size > 5 * 1024 * 1024) {
-        setError('Image is still too large after compression. Please try a smaller image.');
-        setUploadingPhoto(false);
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
         return;
       }
 
-      setSelectedFile(processedFile);
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image must be smaller than 5MB');
+        return;
+      }
 
-      // Create preview URL for immediate feedback
+      setSelectedFile(file);
+      
+      // Create preview URL
       const reader = new FileReader();
-      reader.onload = () => {
-        setPreviewUrl(reader.result as string);
-        setUploadingPhoto(false);
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
       };
-      reader.readAsDataURL(processedFile);
-    } catch (err) {
-      console.error('Error processing image:', err);
-      setError('Failed to process image. Please try again.');
-      setUploadingPhoto(false);
+      reader.readAsDataURL(file);
     }
   };
 
-  // Trigger file input click
+  // Handle photo selection button
   const handleSelectPhoto = () => {
     fileInputRef.current?.click();
   };
@@ -166,87 +125,102 @@ export default function ProfilePage() {
 
     if (!authUser) return;
 
-    // Validate bio length
-    if (bio.length > 500) {
-      setError('Bio must be 500 characters or less');
-      setLoading(false);
-      return;
-    }
-
-    // Validate social media handles (remove @ if present and validate format)
-    const cleanInstagram = instagram.replace('@', '').trim();
-    const cleanTiktok = tiktok.replace('@', '').trim();
-    
-    if (cleanInstagram && !/^[a-zA-Z0-9._]{1,30}$/.test(cleanInstagram)) {
-      setError('Instagram username can only contain letters, numbers, periods, and underscores (max 30 characters)');
-      setLoading(false);
-      return;
-    }
-    
-    if (cleanTiktok && !/^[a-zA-Z0-9._]{1,24}$/.test(cleanTiktok)) {
-      setError('TikTok username can only contain letters, numbers, periods, and underscores (max 24 characters)');
-      setLoading(false);
-      return;
-    }
-
     try {
+      let photoUpdateResult: PhotoUpdateResult | null = null;
+
       // Upload photo first if selected
       if (selectedFile) {
         try {
+          setUploadingPhoto(true);
           setSuccessMessage('Uploading photo... Please wait.');
-          const newPhotoURL = await uploadProfilePhoto(authUser.uid, selectedFile);
-          console.log('Photo uploaded successfully, new URL:', newPhotoURL);
+          
+          photoUpdateResult = await updateProfilePhoto(
+            authUser.id, 
+            selectedFile, 
+            currentPhotoUrl || undefined
+          );
+          
+          if (!photoUpdateResult.success) {
+            throw new Error(photoUpdateResult.message);
+          }
           
           // Update the current photo URL immediately
-          setCurrentPhotoUrl(newPhotoURL);
+          setCurrentPhotoUrl(photoUpdateResult.photo_url || null);
           setPreviewUrl(null); // Clear preview
           setSelectedFile(null); // Clear selected file
         } catch (photoError) {
           console.error('Error uploading photo:', photoError);
           setError('Failed to upload profile photo. Please try again with a different image.');
           setLoading(false);
+          setUploadingPhoto(false);
           return;
+        } finally {
+          setUploadingPhoto(false);
         }
       }
 
       // Prepare update data for other fields
-      const updateData: Partial<User> = {};
+      const updates: Parameters<typeof updateUserProfile>[1] = {};
       
-      if (displayName !== user?.displayName) {
-        updateData.displayName = displayName;
+      if (displayName !== profile?.display_name) {
+        updates.displayName = displayName;
       }
       
-      if (bio !== user?.bio) {
-        updateData.bio = bio;
+      if (bio !== profile?.bio) {
+        updates.bio = bio;
       }
       
-      if (cleanInstagram !== user?.instagram) {
-        updateData.instagram = cleanInstagram || undefined;
+      // Clean social media handles (remove @ if present)
+      const cleanInstagram = instagram.replace('@', '').trim();
+      const cleanTiktok = tiktok.replace('@', '').trim();
+      
+      if (cleanInstagram !== profile?.instagram) {
+        updates.instagram = cleanInstagram || undefined;
       }
       
-      if (cleanTiktok !== user?.tiktok) {
-        updateData.tiktok = cleanTiktok || undefined;
+      if (cleanTiktok !== profile?.tiktok) {
+        updates.tiktok = cleanTiktok || undefined;
+      }
+
+      if (profileVisibility !== profile?.profile_visibility) {
+        updates.profileVisibility = profileVisibility;
+      }
+
+      if (emailNotifications !== profile?.email_notifications) {
+        updates.emailNotifications = emailNotifications;
+      }
+
+      if (pushNotifications !== profile?.push_notifications) {
+        updates.pushNotifications = pushNotifications;
       }
 
       // Update profile data if there are changes
-      if (Object.keys(updateData).length > 0) {
-        await updateUserProfile(authUser.uid, updateData);
+      if (Object.keys(updates).length > 0) {
+        const updateResult: ProfileUpdateResult = await updateUserProfile(authUser.id, updates);
+        
+        if (!updateResult.success) {
+          throw new Error(updateResult.message);
+        }
       }
 
       setSuccessMessage('Profile updated successfully!');
       
-      // Refresh user data
-      const updatedProfile = await getUserProfile(authUser.uid);
+      // Refresh profile data
+      const updatedProfile = await getEnhancedUserProfile(authUser.id);
       if (updatedProfile) {
-        setUser(updatedProfile);
-        // Only update photo URL if it's different from what we have
-        if (updatedProfile.photoURL && updatedProfile.photoURL !== currentPhotoUrl) {
-          setCurrentPhotoUrl(updatedProfile.photoURL);
+        setProfile(updatedProfile);
+        // Update photo URL if it changed
+        if (photoUpdateResult?.photo_url && photoUpdateResult.photo_url !== currentPhotoUrl) {
+          setCurrentPhotoUrl(photoUpdateResult.photo_url);
         }
       }
-    } catch (err) {
+
+      // Refresh profile completion status
+      const completion = await validateProfileCompleteness(authUser.id);
+      setProfileCompletion(completion);
+    } catch (err: any) {
       console.error('Error updating profile:', err);
-      setError('Failed to update profile. Please try again.');
+      setError(err.message || 'Failed to update profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -283,281 +257,323 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-background">
       <NavigationHandler />
       
-      <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Your Profile</h1>
-        </div>
-      </header>
-      
-      <main>
-        <div className="mx-auto max-w-4xl py-6 px-4 sm:px-6 lg:px-8">
-          <div className="bg-gray-800 shadow sm:rounded-lg">
-            <div className="px-4 py-6 sm:p-8">
-              {error && (
-                <div className="mb-6 bg-red-900 border-l-4 border-red-600 p-4 rounded-r-md">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-red-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-300">{error}</p>
-                    </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-gray-800 shadow-xl rounded-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
+                <p className="mt-2 text-blue-100">Manage your account and preferences</p>
+              </div>
+              {profileCompletion && (
+                <div className="text-right">
+                  <div className="text-white text-sm font-medium">
+                    Profile Completion
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {profileCompletion.completion_percentage}%
+                  </div>
+                  <div className="w-24 bg-blue-200 rounded-full h-2 mt-1">
+                    <div 
+                      className="bg-white h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${profileCompletion.completion_percentage}%` }}
+                    ></div>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
 
-              {successMessage && (
-                <div className="mb-6 bg-green-900 border-l-4 border-green-600 p-4 rounded-r-md">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-green-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-green-300">{successMessage}</p>
-                    </div>
-                  </div>
+          {/* Profile Statistics */}
+          {profile && (
+            <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-white">{profile.total_lists}</div>
+                  <div className="text-sm text-gray-300">Total Lists</div>
                 </div>
-              )}
+                <div>
+                  <div className="text-2xl font-bold text-white">{profile.public_lists}</div>
+                  <div className="text-sm text-gray-300">Public Lists</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">{profile.total_views}</div>
+                  <div className="text-sm text-gray-300">Total Views</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">{profile.engagement_score}</div>
+                  <div className="text-sm text-gray-300">Engagement Score</div>
+                </div>
+              </div>
+            </div>
+          )}
 
-              <form onSubmit={handleSubmit}>
-                <div className="space-y-8">
-                  {/* Profile Photo Section */}
-                  <div className="text-center">
-                    <div className="relative inline-block">
-                      <div className="relative h-32 w-32 mx-auto rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600">
-                        {getDisplayImageUrl() ? (
-                          <img
-                            src={getDisplayImageUrl()!}
-                            alt="Profile"
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              console.error('Image failed to load:', getDisplayImageUrl());
-                              // Hide the broken image
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        ) : null}
-                        
-                        {/* Default avatar - always present as fallback */}
-                        <div className={`absolute inset-0 flex items-center justify-center ${getDisplayImageUrl() ? 'hidden' : ''}`}>
-                          <svg
-                            className="h-16 w-16 text-gray-500"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
-                        </div>
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mx-6 mt-6">
+              {error}
+            </div>
+          )}
 
-                        {uploadingPhoto && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        className="hidden"
-                        disabled={loading || uploadingPhoto}
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mx-6 mt-6">
+              {successMessage}
+            </div>
+          )}
+
+          {/* Profile Form */}
+          <div className="px-6 py-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*"
+                className="hidden"
+              />
+
+              {/* Profile Photo Section */}
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    {getDisplayImageUrl() ? (
+                      <img
+                        className="h-24 w-24 rounded-full object-cover ring-4 ring-gray-600"
+                        src={getDisplayImageUrl()!}
+                        alt="Profile"
                       />
-                      
-                      <button
-                        type="button"
-                        className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                        onClick={handleSelectPhoto}
-                        disabled={loading || uploadingPhoto}
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    ) : (
+                      <div className="h-24 w-24 rounded-full bg-gray-600 flex items-center justify-center ring-4 ring-gray-600">
+                        <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                      </button>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        className="inline-flex items-center px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-colors"
-                        onClick={handleSelectPhoto}
-                        disabled={loading || uploadingPhoto}
-                      >
-                        {uploadingPhoto ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
-                          </>
-                        )}
-                      </button>
-                      <p className="mt-2 text-xs text-gray-400">
-                        JPG, PNG, GIF, or WebP. Images will be automatically optimized.
-                      </p>
-                    </div>
+                      </div>
+                    )}
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Form Fields */}
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      <label htmlFor="displayName" className="block text-sm font-medium text-white mb-2">
-                        Display Name
-                      </label>
-                      <input
-                        type="text"
-                        name="displayName"
-                        id="displayName"
-                        className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 px-4 transition-colors"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        disabled={loading}
-                        required
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label htmlFor="bio" className="block text-sm font-medium text-white mb-2">
-                        Bio
-                      </label>
-                      <textarea
-                        id="bio"
-                        name="bio"
-                        rows={4}
-                        className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-4 transition-colors resize-none"
-                        placeholder="Tell us about yourself (up to 500 characters)"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        disabled={loading}
-                        maxLength={500}
-                      />
-                      <div className="mt-2 flex justify-between items-center">
-                        <p className="text-xs text-gray-400">
-                          Share a bit about yourself and your interests
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {bio.length}/500
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="instagram" className="block text-sm font-medium text-white mb-2">
-                        Instagram Username
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <span className="text-gray-400 sm:text-sm">@</span>
-                        </div>
-                        <input
-                          type="text"
-                          name="instagram"
-                          id="instagram"
-                          className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 pl-8 pr-4 transition-colors"
-                          placeholder="username"
-                          value={instagram}
-                          onChange={(e) => setInstagram(e.target.value)}
-                          disabled={loading}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="tiktok" className="block text-sm font-medium text-white mb-2">
-                        TikTok Username
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <span className="text-gray-400 sm:text-sm">@</span>
-                        </div>
-                        <input
-                          type="text"
-                          name="tiktok"
-                          id="tiktok"
-                          className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 pl-8 pr-4 transition-colors"
-                          placeholder="username"
-                          value={tiktok}
-                          onChange={(e) => setTiktok(e.target.value)}
-                          disabled={loading}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
-                    <Link
-                      href="/lists"
-                      className="inline-flex justify-center items-center px-6 py-3 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-transparent hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors"
-                    >
-                      Back to My Lists
-                    </Link>
+                </div>
+                
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-white mb-2">Profile Photo</h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Upload a photo to help others recognize you. Images are automatically optimized.
+                  </p>
+                  
+                  <div className="mt-4">
                     <button
-                      type="submit"
+                      type="button"
+                      className="inline-flex items-center px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-colors"
+                      onClick={handleSelectPhoto}
                       disabled={loading || uploadingPhoto}
-                      className="inline-flex justify-center items-center rounded-md border border-transparent bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                     >
-                      {loading ? (
+                      {uploadingPhoto ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                          Updating...
+                          Processing...
                         </>
                       ) : (
-                        'Save Changes'
+                        <>
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
+                        </>
                       )}
                     </button>
+                    <p className="mt-2 text-xs text-gray-400">
+                      JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
+                    </p>
                   </div>
                 </div>
-              </form>
+              </div>
 
-              {/* Account Actions Section */}
-              <div className="mt-12 pt-8 border-t border-gray-700">
-                <h3 className="text-lg font-medium text-white mb-6">Account Actions</h3>
-                <div className="flex justify-start">
-                  <button
-                    onClick={handleSignOut}
-                    className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-white bg-red-700 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-800 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign Out
-                  </button>
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="displayName" className="block text-sm font-medium text-white mb-2">
+                    Display Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="displayName"
+                    id="displayName"
+                    className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 px-4 transition-colors"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
                 </div>
+
+                <div className="sm:col-span-2">
+                  <label htmlFor="bio" className="block text-sm font-medium text-white mb-2">
+                    Bio
+                  </label>
+                  <textarea
+                    id="bio"
+                    name="bio"
+                    rows={4}
+                    className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-4 transition-colors resize-none"
+                    placeholder="Tell us about yourself (up to 1000 characters)"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    disabled={loading}
+                    maxLength={1000}
+                  />
+                  <div className="mt-2 flex justify-between items-center">
+                    <p className="text-xs text-gray-400">
+                      Share a bit about yourself and your interests
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {bio.length}/1000
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="instagram" className="block text-sm font-medium text-white mb-2">
+                    Instagram Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 sm:text-sm">@</span>
+                    </div>
+                    <input
+                      type="text"
+                      name="instagram"
+                      id="instagram"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 pl-8 pr-4 transition-colors"
+                      placeholder="username"
+                      value={instagram}
+                      onChange={(e) => setInstagram(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="tiktok" className="block text-sm font-medium text-white mb-2">
+                    TikTok Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 sm:text-sm">@</span>
+                    </div>
+                    <input
+                      type="text"
+                      name="tiktok"
+                      id="tiktok"
+                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 pl-8 pr-4 transition-colors"
+                      placeholder="username"
+                      value={tiktok}
+                      onChange={(e) => setTiktok(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="profileVisibility" className="block text-sm font-medium text-white mb-2">
+                    Profile Visibility
+                  </label>
+                  <select
+                    id="profileVisibility"
+                    name="profileVisibility"
+                    className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 px-4 transition-colors"
+                    value={profileVisibility}
+                    onChange={(e) => setProfileVisibility(e.target.value as 'public' | 'private' | 'friends')}
+                    disabled={loading}
+                  >
+                    <option value="private">Private</option>
+                    <option value="public">Public</option>
+                    <option value="friends">Friends Only</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Control who can see your profile and lists
+                  </p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <h3 className="text-lg font-medium text-white mb-4">Notification Preferences</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center">
+                      <input
+                        id="emailNotifications"
+                        name="emailNotifications"
+                        type="checkbox"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                        checked={emailNotifications}
+                        onChange={(e) => setEmailNotifications(e.target.checked)}
+                        disabled={loading}
+                      />
+                      <label htmlFor="emailNotifications" className="ml-3 block text-sm text-white">
+                        Email notifications
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="pushNotifications"
+                        name="pushNotifications"
+                        type="checkbox"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-gray-700"
+                        checked={pushNotifications}
+                        onChange={(e) => setPushNotifications(e.target.checked)}
+                        disabled={loading}
+                      />
+                      <label htmlFor="pushNotifications" className="ml-3 block text-sm text-white">
+                        Push notifications
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+                <Link
+                  href="/lists"
+                  className="inline-flex justify-center items-center px-6 py-3 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-transparent hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors"
+                >
+                  Back to My Lists
+                </Link>
+                <button
+                  type="submit"
+                  disabled={loading || uploadingPhoto}
+                  className="inline-flex justify-center items-center rounded-md border border-transparent bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Account Actions Section */}
+            <div className="mt-12 pt-8 border-t border-gray-600">
+              <h3 className="text-lg font-medium text-white mb-4">Account Actions</h3>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleSignOut}
+                  className="inline-flex justify-center items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-red-400 bg-transparent hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors"
+                >
+                  Sign Out
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 } 

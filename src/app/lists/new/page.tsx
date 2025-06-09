@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { createList } from '@/lib/firebase/firestore';
+import { createList } from '@/lib/supabase';
+import { convertToSupabaseListInsert, getUserId } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { trackListCreate } from '@/lib/analytics/gtag';
@@ -47,7 +48,7 @@ export default function NewListPage() {
         .filter(tag => tag.length > 0);
 
       const listData = {
-        userId: user.uid,
+        userId: getUserId(user),
         name: name.trim(),
         description: description.trim(),
         city: city.trim(),
@@ -55,7 +56,9 @@ export default function NewListPage() {
         isPublic,
       };
 
-      const listId = await createList(listData);
+      const supabaseListData = convertToSupabaseListInsert(listData);
+      const newList = await createList(supabaseListData);
+      const listId = newList.id;
       
       // Track list creation event with custom dimensions
       trackListCreate(name.trim(), listId);

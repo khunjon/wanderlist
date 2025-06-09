@@ -5,7 +5,7 @@ A better way to save and organize places from Google Maps.
 ## Features
 
 ### Core Functionality
-- User authentication (Firebase Auth)
+- User authentication (Supabase Auth)
 - **Enhanced User Profiles**: Users can create a private bio (up to 500 characters) and add their Instagram and TikTok usernames for future use
 - Search for places using Google Places API
 - Create and manage custom lists of places
@@ -38,9 +38,10 @@ A better way to save and organize places from Google Maps.
 
 - **Frontend**: Next.js 15 with TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: Firebase Firestore
-- **Authentication**: Firebase Auth
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
 - **Maps Integration**: Google Places API
+- **AI Integration**: Cursor MCP for enhanced development
 - **Deployment**: Vercel
 
 ## User Interface
@@ -81,29 +82,32 @@ Lists now show information in a logical hierarchy:
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Firebase account
+- Supabase account
 - Google Cloud account with Maps/Places API enabled
+- Cursor IDE (recommended for MCP integration)
 
 ### Environment Setup
 
 1. Clone the repository
 2. Create a `.env.local` file in the root directory with the following variables:
 
-```
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+```bash
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Google Maps
+# Google Maps Integration
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 
-# App
+# Application Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# MCP Configuration (for Cursor AI Development)
+SUPABASE_PERSONAL_ACCESS_TOKEN=your-personal-access-token
 ```
+
+For detailed setup instructions, see [docs/setup/environment-setup.md](./docs/setup/environment-setup.md).
 
 ### Installation
 
@@ -117,105 +121,44 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Firebase Setup
+### Supabase Setup
 
-1. Create a new Firebase project at [firebase.google.com](https://firebase.google.com)
-2. Enable Authentication with Email/Password and Google Sign-in methods
-3. Create a Firestore database
-4. Set up the security rules (example below)
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Set up the database schema using `supabase-schema.sql`
+3. Configure authentication providers (Email/Password and Google OAuth)
+4. Set up storage bucket for profile photos
+5. Configure Row Level Security policies (included in schema)
+6. Deploy database functions for optimized operations
 
-### Firestore Security Rules
+For detailed setup instructions, see [docs/setup/supabase-setup.md](./docs/setup/supabase-setup.md).
 
-**Important**: The security rules have been updated to allow unauthenticated users to view public lists for the discover functionality. Deploy these updated rules to your Firebase project:
+### Cursor MCP Integration
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Helper function to check if user is admin
-    function isAdmin() {
-      return request.auth != null && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
-    }
-    
-    // Users can read/write their own documents, admins can read all
-    // Also allow reading user profiles for authors of public lists (for discovery)
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if isAdmin(); // Admins can read all user documents
-      // Allow reading user profiles without authentication (for public list authors)
-      // This enables showing author information on public lists
-      allow read: if true;
-    }
-    
-    // Lists can be read by owner, if they're public (even without auth), or by admins
-    match /lists/{listId} {
-      allow create: if request.auth != null;
-      // Allow reading public lists without authentication for discovery
-      // Allow reading own lists when authenticated
-      // Allow admins to read all lists
-      allow read: if resource.data.isPublic == true || 
-                     (request.auth != null && resource.data.userId == request.auth.uid) ||
-                     (request.auth != null && isAdmin());
-      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-    
-    // Places can be read by anyone (they're public data)
-    match /places/{placeId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-    }
-    
-    // ListPlaces can be read by anyone if the parent list is public
-    // Can be written only by the list owner or admins
-    match /listPlaces/{listPlaceId} {
-      allow create: if request.auth != null;
-      // Allow reading if the parent list is public (for discovery)
-      // Allow reading/writing if user owns the list
-      // Allow admins to read all listPlaces
-      allow read: if get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.isPublic == true ||
-                     (request.auth != null && get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid) ||
-                     (request.auth != null && isAdmin());
-      allow update, delete: if request.auth != null && 
-                               (get(/databases/$(database)/documents/lists/$(resource.data.listId)).data.userId == request.auth.uid ||
-                                isAdmin());
-    }
-  }
-}
+This project includes Model Context Protocol (MCP) integration for enhanced AI-assisted development with Supabase:
+
+#### Quick Setup
+1. **Generate Personal Access Token** in your Supabase dashboard
+2. **Add token to environment**: `SUPABASE_PERSONAL_ACCESS_TOKEN=your-token`
+3. **Restart Cursor** to enable MCP integration
+
+#### MCP Capabilities
+With MCP enabled, you can ask the AI to:
+- **Database Operations**: Query tables, execute SQL, apply migrations
+- **Schema Management**: List tables, analyze structure, generate TypeScript types
+- **Function Development**: Deploy and test database functions
+- **Performance Analysis**: Optimize queries and analyze indexes
+- **Real-time Development**: Test changes instantly with live database access
+
+#### Development Workflow
+```bash
+# Example MCP-enhanced development commands:
+# "Show me all tables in the database"
+# "Execute this SQL query and show results"
+# "Generate TypeScript types for the current schema"
+# "Deploy this database function and test it"
 ```
 
-**To deploy these rules:**
-1. Install Firebase CLI: `npm install -g firebase-tools`
-2. Login to Firebase: `firebase login`
-3. Initialize Firebase in your project: `firebase init firestore`
-4. Deploy the rules: `firebase deploy --only firestore:rules`
-
-**Key Changes:**
-- Public lists can now be read without authentication
-- This enables the discover page to work for unauthenticated users
-- Authentication is still required for interactive features (future like/favorite functionality)
-
-### Firebase Storage Rules
-
-Make sure to also configure Firebase Storage Rules to allow users to upload profile photos:
-
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Profile photos: users can upload and read their own photos
-    match /profile-photos/{userId} {
-      allow read;  // Allow everyone to read profile photos
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Default deny
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-  }
-}
-```
+See [docs/setup/mcp-setup.md](./docs/setup/mcp-setup.md) for complete MCP configuration and usage patterns.
 
 ### Google Cloud Setup
 
@@ -274,18 +217,46 @@ The easiest way to deploy the application is using Vercel:
 
 Make sure to add all the environment variables listed in the Environment Setup section to your Vercel project settings.
 
-### Firebase Auth Configuration
+### Supabase Auth Configuration
 
 When deploying to Vercel, make sure to:
-1. Add your deployment domain to the authorized domains list in Firebase Authentication settings
+1. Add your deployment domain to the authorized domains list in Supabase Authentication settings
 2. If testing on a preview deployment, add the preview URL to authorized domains as well
+3. Configure proper redirect URLs for your production domain
 
 ## Troubleshooting
 
-If you encounter the "auth/unauthorized-domain" error when testing with Google Auth:
-1. Go to the Firebase Console
-2. Navigate to Authentication > Settings > Authorized domains
-3. Add your domain (including `localhost` for local development)
+### Common Issues
+
+#### Authentication Problems
+If you encounter authentication errors:
+1. Check your Supabase project URL and keys in `.env.local`
+2. Verify authentication providers are enabled in Supabase dashboard
+3. For Google Auth: Add your domain to authorized domains in Supabase Auth settings
+
+#### Database Connection Issues
+If you experience database connectivity problems:
+1. Verify your Supabase project is active (not paused)
+2. Check Row Level Security policies are properly configured
+3. Ensure your service role key has necessary permissions
+
+#### MCP Integration Issues
+If MCP tools aren't working:
+1. Verify `SUPABASE_PERSONAL_ACCESS_TOKEN` is set correctly
+2. Restart Cursor after adding the token
+3. Check that your Supabase project has the necessary permissions
+
+For detailed troubleshooting guides, see [docs/troubleshooting/](./docs/troubleshooting/).
+
+## Documentation
+
+For comprehensive documentation including setup guides, architecture decisions, and migration records, see the [docs/](./docs/) directory:
+
+- **[Complete Documentation Index](./docs/README.md)** - Overview of all documentation
+- **[Setup Guides](./docs/setup/)** - Environment and tool configuration
+- **[Troubleshooting](./docs/troubleshooting/)** - Common issues and solutions
+- **[Architecture](./docs/architecture/)** - System design and decisions
+- **[Migration Records](./docs/migration/)** - Complete Firestore to Supabase migration documentation
 
 ## License
 

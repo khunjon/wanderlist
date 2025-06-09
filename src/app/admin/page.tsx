@@ -3,30 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
-import { Line } from 'react-chartjs-2';
-import { collection, getDocs, query, orderBy, limit, where, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import { supabase } from '@/lib/supabase';
 
 interface AdminStats {
   totalUsers: number;
@@ -38,12 +15,7 @@ interface AdminStats {
     name: string;
     viewCount: number;
     userId: string;
-    createdAt: Date;
-  }>;
-  chartData: Array<{
-    date: string;
-    newUsers: number;
-    newLists: number;
+    createdAt: string;
   }>;
 }
 
@@ -70,164 +42,67 @@ export default function AdminPage() {
       setStatsLoading(true);
       setError(null);
       
-      // Fetch data directly from Firestore (client-side)
-      console.log('Fetching admin stats...');
+      console.log('Fetching admin stats from Supabase...');
       
       // Get total user count
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const totalUsers = usersSnapshot.size;
-      console.log('Total users:', totalUsers);
-
-      // Get top lists by view count (handle case where viewCount might not exist)
-      let topLists = [];
-      let allListsData = [];
-      try {
-        const topListsQuery = query(
-          collection(db, 'lists'),
-          orderBy('viewCount', 'desc'),
-          limit(10)
-        );
-        const topListsSnapshot = await getDocs(topListsQuery);
-        topLists = topListsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name || 'Untitled List',
-            viewCount: data.viewCount || 0,
-            userId: data.userId || 'Unknown',
-            createdAt: data.createdAt?.toDate?.() || new Date(),
-          };
-        });
-        
-        // Also get all lists for total count and public/private breakdown
-        const allListsSnapshot = await getDocs(collection(db, 'lists'));
-        allListsData = allListsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            isPublic: data.isPublic || false,
-            userId: data.userId || 'Unknown',
-          };
-        });
-      } catch (orderError) {
-        console.log('ViewCount field might not exist, fetching all lists...');
-        const allListsSnapshot = await getDocs(collection(db, 'lists'));
-        allListsData = allListsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name || 'Untitled List',
-            viewCount: data.viewCount || 0,
-            userId: data.userId || 'Unknown',
-            createdAt: data.createdAt?.toDate?.() || new Date(),
-            isPublic: data.isPublic || false,
-          };
-        });
-        
-        // Sort by viewCount and take top 10
-        topLists = allListsData
-          .sort((a, b) => b.viewCount - a.viewCount)
-          .slice(0, 10);
-      }
-      console.log('Top lists:', topLists.length);
-
-      // Get data for the last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      // Get new users by day (last 30 days)
-      let newUsersSnapshot;
-      try {
-        const newUsersQuery = query(
-          collection(db, 'users'),
-          where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
-        );
-        newUsersSnapshot = await getDocs(newUsersQuery);
-      } catch (userError) {
-        console.log('Error querying users by date, using all users...');
-        newUsersSnapshot = await getDocs(collection(db, 'users'));
-      }
+      const { count: totalUsers, error: usersError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
       
-      // Get new lists by day (last 30 days)
-      let newListsSnapshot;
-      try {
-        const newListsQuery = query(
-          collection(db, 'lists'),
-          where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
-        );
-        newListsSnapshot = await getDocs(newListsQuery);
-      } catch (listError) {
-        console.log('Error querying lists by date, using all lists...');
-        newListsSnapshot = await getDocs(collection(db, 'lists'));
-      }
+      if (usersError) throw usersError;
 
-      // Process data for charts
-      const usersByDay: { [key: string]: number } = {};
-      const listsByDay: { [key: string]: number } = {};
+      // Get total lists count and public/private breakdown
+      const { data: allLists, error: listsError } = await supabase
+        .from('lists')
+        .select('id, name, is_public, view_count, user_id, created_at')
+        .order('view_count', { ascending: false });
+      
+      if (listsError) throw listsError;
 
-      // Initialize all days with 0
-      for (let i = 0; i < 30; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateKey = date.toISOString().split('T')[0];
-        usersByDay[dateKey] = 0;
-        listsByDay[dateKey] = 0;
-      }
+      const totalLists = allLists?.length || 0;
+      const publicLists = allLists?.filter(list => list.is_public).length || 0;
+      const privateLists = totalLists - publicLists;
 
-      // Count new users by day
-      newUsersSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const createdAt = data.createdAt?.toDate?.() || new Date();
-        const dateKey = createdAt.toISOString().split('T')[0];
-        if (usersByDay.hasOwnProperty(dateKey)) {
-          usersByDay[dateKey]++;
-        }
-      });
-
-      // Count new lists by day
-      newListsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        const createdAt = data.createdAt?.toDate?.() || new Date();
-        const dateKey = createdAt.toISOString().split('T')[0];
-        if (listsByDay.hasOwnProperty(dateKey)) {
-          listsByDay[dateKey]++;
-        }
-      });
-
-      // Convert to chart data format
-      const chartData = Object.keys(usersByDay)
-        .sort()
-        .map(date => ({
-          date,
-          newUsers: usersByDay[date],
-          newLists: listsByDay[date],
+      // Get top 10 lists by view count
+      const topLists = (allLists || [])
+        .slice(0, 10)
+        .map(list => ({
+          id: list.id,
+          name: list.name,
+          viewCount: list.view_count || 0,
+          userId: list.user_id,
+          createdAt: list.created_at || new Date().toISOString(),
         }));
 
-      const statsData = {
-        totalUsers,
-        totalLists: allListsData.length,
-        publicLists: allListsData.filter(list => list.isPublic === true).length,
-        privateLists: allListsData.filter(list => list.isPublic === false).length,
+      console.log('Admin stats fetched:', {
+        totalUsers: totalUsers || 0,
+        totalLists,
+        publicLists,
+        privateLists,
+        topListsCount: topLists.length
+      });
+
+      setStats({
+        totalUsers: totalUsers || 0,
+        totalLists,
+        publicLists,
+        privateLists,
         topLists,
-        chartData,
-      };
-      
-      console.log('Stats loaded successfully:', statsData);
-      setStats(statsData);
-    } catch (error) {
-      console.error('Error fetching admin stats:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load admin statistics');
+      });
+    } catch (err) {
+      console.error('Error fetching admin stats:', err);
+      setError('Failed to load admin statistics. Please try again.');
     } finally {
       setStatsLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading || statsLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-300">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-white">Loading admin dashboard...</p>
         </div>
       </div>
     );
@@ -235,7 +110,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
           <p className="text-gray-300">You don't have permission to access this page.</p>
@@ -244,216 +119,155 @@ export default function AdminPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
-          <p className="text-gray-300 mb-4">{error}</p>
-          <button
-            onClick={fetchAdminStats}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Prepare chart data with dark theme
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          color: '#e5e7eb', // gray-200
-        },
-      },
-      title: {
-        display: true,
-        text: 'New Users and Lists (Last 30 Days)',
-        color: '#f9fafb', // gray-50
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: '#9ca3af', // gray-400
-        },
-        grid: {
-          color: '#374151', // gray-700
-        },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: '#9ca3af', // gray-400
-        },
-        grid: {
-          color: '#374151', // gray-700
-        },
-      },
-    },
-  };
-
-  const chartDataConfig = stats ? {
-    labels: stats.chartData.map(item => {
-      const date = new Date(item.date);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }),
-    datasets: [
-      {
-        label: 'New Users',
-        data: stats.chartData.map(item => item.newUsers),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.1,
-      },
-      {
-        label: 'New Lists',
-        data: stats.chartData.map(item => item.newLists),
-        borderColor: 'rgb(16, 185, 129)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.1,
-      },
-    ],
-  } : null;
-
   return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-300">Overview of platform statistics and top performing content</p>
+    <div className="min-h-screen bg-background">
+      <header className="bg-gray-900 shadow">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Admin Dashboard</h1>
         </div>
+      </header>
+      
+      <main>
+        <div className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
+          {error && (
+            <div className="mb-6 bg-red-900 border-l-4 border-red-600 p-4 rounded-r-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-        {statsLoading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-300">Loading statistics...</p>
-          </div>
-        ) : stats ? (
-          <div className="space-y-8">
-            {/* Stats Overview */}
+          {stats && (
             <div className="space-y-6">
-              {/* Row 1: Total Users, New Users (30d) */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-400 mb-1">Total Users</p>
-                    <p className="text-xl font-semibold text-white">{stats.totalUsers.toLocaleString()}</p>
+              {/* Overview Stats */}
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-400 truncate">Total Users</dt>
+                          <dd className="text-lg font-medium text-white">{stats.totalUsers}</dd>
+                        </dl>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-400 mb-1">New Users (30d)</p>
-                    <p className="text-xl font-semibold text-white">
-                      {stats.chartData.reduce((sum, item) => sum + item.newUsers, 0).toLocaleString()}
-                    </p>
+                <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-400 truncate">Total Lists</dt>
+                          <dd className="text-lg font-medium text-white">{stats.totalLists}</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-400 truncate">Public Lists</dt>
+                          <dd className="text-lg font-medium text-white">{stats.publicLists}</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="p-5">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      </div>
+                      <div className="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt className="text-sm font-medium text-gray-400 truncate">Private Lists</dt>
+                          <dd className="text-lg font-medium text-white">{stats.privateLists}</dd>
+                        </dl>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Row 2: Total Lists, New Lists */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-400 mb-1">Total Lists</p>
-                    <p className="text-xl font-semibold text-white">{stats.totalLists.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-400 mb-1">New Lists (30d)</p>
-                    <p className="text-xl font-semibold text-white">
-                      {stats.chartData.reduce((sum, item) => sum + item.newLists, 0).toLocaleString()}
-                    </p>
+              {/* Top Lists */}
+              <div className="bg-gray-800 shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <h3 className="text-lg leading-6 font-medium text-white mb-4">Top Lists by Views</h3>
+                  <div className="overflow-hidden">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Views</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-700">
+                        {stats.topLists.map((list) => (
+                          <tr key={list.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{list.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{list.viewCount}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {new Date(list.createdAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
 
-              {/* Row 3: Public Lists, Private Lists */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-400 mb-1">Public Lists</p>
-                    <p className="text-xl font-semibold text-white">{stats.publicLists.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-                  <div className="text-center">
-                    <p className="text-xs font-medium text-gray-400 mb-1">Private Lists</p>
-                    <p className="text-xl font-semibold text-white">{stats.privateLists.toLocaleString()}</p>
+              {/* Database Info */}
+              <div className="bg-gray-800 shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <h3 className="text-lg leading-6 font-medium text-white mb-4">Database Information</h3>
+                  <div className="text-sm text-gray-300 space-y-2">
+                    <p><strong>Database:</strong> Supabase (PostgreSQL)</p>
+                    <p><strong>Authentication:</strong> Supabase Auth</p>
+                    <p><strong>Storage:</strong> Supabase Storage</p>
+                    <p><strong>Real-time:</strong> Enabled</p>
+                    <p><strong>Backend:</strong> ✅ Supabase (PostgreSQL, Auth, Storage, Real-time)</p>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Chart */}
-            <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
-              <h2 className="text-lg font-semibold text-white mb-4">Growth Trends</h2>
-              {chartDataConfig && (
-                <div className="h-96">
-                  <Line options={chartOptions} data={chartDataConfig} />
-                </div>
-              )}
-            </div>
-
-            {/* Top Lists */}
-            <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
-              <div className="px-6 py-4 border-b border-gray-700">
-                <h2 className="text-lg font-semibold text-white">Top Lists by Views</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-900">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        List Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Views
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        User ID
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
-                    {stats.topLists.map((list) => (
-                      <tr key={list.id} className="hover:bg-gray-700 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-white">{list.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-300">{list.viewCount.toLocaleString()}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-400">
-                            {new Date(list.createdAt).toLocaleDateString()}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-400 font-mono">{list.userId}</div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 } 

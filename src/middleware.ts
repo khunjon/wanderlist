@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/lib/firebase/config';
 
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
-  // Note: We cannot directly access Firebase auth in middleware
-  // since it runs on the edge and Firebase only works in the browser or Node.js
+  // Note: We cannot directly access Supabase auth in middleware
+  // since it runs on the edge and requires browser/Node.js environment
   // We can use cookies or token approach instead
   
   // For demonstration purposes, this is a placeholder

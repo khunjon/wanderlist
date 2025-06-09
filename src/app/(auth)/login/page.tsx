@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInWithEmail, signInWithGoogle } from '@/lib/firebase/auth';
+import { signIn, signInWithGoogle } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,7 +43,7 @@ export default function LoginPage() {
     }
 
     try {
-      await signInWithEmail(email.trim(), password);
+      await signIn(email.trim(), password);
       // Don't redirect here - let the auth state change handle it
       // Don't set loading to false here - let the useEffect handle it
     } catch (err: any) {
