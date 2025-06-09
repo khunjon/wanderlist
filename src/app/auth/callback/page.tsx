@@ -24,6 +24,6 @@ export default async function AuthCallback({
     }
   }
 
-  // Redirect to the home page or wherever the user was trying to go
-  redirect('/')
+  // Redirect directly to lists page to avoid extra redirect hop
+  redirect('/lists')
 } 

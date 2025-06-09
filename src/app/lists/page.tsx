@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { trackListView } from '@/lib/analytics/gtag';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
+import { AuthPerformance } from '@/lib/utils/performance';
 
 const sortOptions: SortOption[] = [
   { value: 'updatedAt', label: 'Last Edited' },
@@ -98,8 +99,10 @@ export default function ListsPage() {
     
     try {
       setLoading(true);
+      AuthPerformance.trackListsLoad();
       const userLists = await getUserLists(user.id);
       setAllLists(userLists);
+      AuthPerformance.trackListsComplete();
     } catch (error) {
       console.error('Error fetching lists:', error);
     } finally {
@@ -114,11 +117,16 @@ export default function ListsPage() {
       return;
     }
 
-    // Initial fetch of lists
-    if (user) {
-      fetchLists();
+    // Defer list fetching to avoid blocking the initial render
+    if (user && !loading) {
+      // Use setTimeout to defer the expensive operation
+      const timeoutId = setTimeout(() => {
+        fetchLists();
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [user, authLoading, router, fetchLists]);
+  }, [user, authLoading, router, fetchLists, loading]);
 
   // Memoized search input change handler
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,6 +160,7 @@ export default function ListsPage() {
     );
   }
 
+  // Show page structure immediately, even while lists are loading
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gray-900 shadow">
@@ -176,6 +185,7 @@ export default function ListsPage() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="w-full px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
               />
               {searchQuery && (
                 <button

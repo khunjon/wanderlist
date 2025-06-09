@@ -19,7 +19,12 @@ export default function Navbar() {
   // Redirect logged-in users from home page to their lists
   useEffect(() => {
     if (!loading && user && pathname === '/') {
-      router.push('/lists');
+      // Add a small delay to ensure auth state is fully settled
+      const timeoutId = setTimeout(() => {
+        router.push('/lists');
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user, loading, pathname, router]);
 

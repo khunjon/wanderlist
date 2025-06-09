@@ -48,6 +48,7 @@ function handleDatabaseError(error: any, operation: string): never {
 
 export async function getUserLists(userId: string): Promise<List[]> {
   try {
+    // Note: Ensure database has index on (user_id, updated_at) for optimal performance
     const { data, error } = await supabase
       .from('lists')
       .select('*')

@@ -7,6 +7,7 @@ import { supabase, User as AppUser, syncUserProfile, onAuthStateChange } from '@
 import { User } from '@/types';
 import { convertToLegacyUser } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
+import { AuthPerformance } from '@/lib/utils/performance';
 
 interface AuthContextType {
   user: User | null;
@@ -86,10 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
         
         if (session?.user) {
+          AuthPerformance.trackAuthRedirect();
           setSupabaseUser(session.user);
           const userProfile = await syncUserProfile(session.user);
           const appUser = convertToLegacyUser(session.user, userProfile);
           setUser(appUser);
+          AuthPerformance.trackAuthComplete();
         } else {
           setSupabaseUser(null);
           setUser(null);

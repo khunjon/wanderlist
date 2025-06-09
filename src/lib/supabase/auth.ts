@@ -552,8 +552,7 @@ export async function syncUserProfile(user: SupabaseUser): Promise<User> {
       throw error
     }
 
-    // Update user activity
-    await updateUserActivity(user.id)
+    // Note: We update last_active_at in the upsert above, so no need for separate updateUserActivity call
 
     // Return the profile data in the expected format
     return {
