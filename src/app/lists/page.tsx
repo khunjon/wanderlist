@@ -22,6 +22,7 @@ export default function ListsPage() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
   const router = useRouter();
@@ -95,20 +96,22 @@ export default function ListsPage() {
 
   // Fetch user's lists
   const fetchLists = useCallback(async () => {
-    if (!user) return;
+    if (!user || hasFetched) return;
     
     try {
       setLoading(true);
+      setHasFetched(true);
       AuthPerformance.trackListsLoad();
       const userLists = await getUserLists(user.id);
       setAllLists(userLists);
       AuthPerformance.trackListsComplete();
     } catch (error) {
       console.error('Error fetching lists:', error);
+      setHasFetched(false); // Reset on error so it can be retried
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, hasFetched]);
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -117,8 +120,8 @@ export default function ListsPage() {
       return;
     }
 
-    // Defer list fetching to avoid blocking the initial render
-    if (user && !loading) {
+    // Fetch lists when user is available and we haven't fetched yet
+    if (user && !authLoading && !hasFetched) {
       // Use setTimeout to defer the expensive operation
       const timeoutId = setTimeout(() => {
         fetchLists();
@@ -126,7 +129,14 @@ export default function ListsPage() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [user, authLoading, router, fetchLists, loading]);
+  }, [user, authLoading, router, fetchLists, hasFetched]);
+
+  // Reset fetch flag when user changes
+  useEffect(() => {
+    if (user) {
+      setHasFetched(false);
+    }
+  }, [user?.id]); // Only reset when user ID changes
 
   // Memoized search input change handler
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
