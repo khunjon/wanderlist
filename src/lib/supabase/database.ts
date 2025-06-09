@@ -404,16 +404,14 @@ export async function getPlaceByGoogleId(googlePlaceId: string): Promise<Place |
       .from('places')
       .select('*')
       .eq('google_place_id', googlePlaceId)
-      .single()
+      .limit(1)
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return null
-      }
       handleDatabaseError(error, 'getPlaceByGoogleId')
     }
 
-    return data
+    // Return the first result if any exist, otherwise null
+    return data && data.length > 0 ? data[0] : null
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getPlaceByGoogleId')
@@ -718,16 +716,13 @@ export async function isPlaceInList(listId: string, placeId: string): Promise<bo
       .select('id')
       .eq('list_id', listId)
       .eq('place_id', placeId)
-      .single()
+      .limit(1)
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return false
-      }
       handleDatabaseError(error, 'isPlaceInList')
     }
 
-    return !!data
+    return data && data.length > 0
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'isPlaceInList')
