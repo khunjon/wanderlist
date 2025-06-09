@@ -179,8 +179,6 @@ export async function validateFunctions(): Promise<ValidationResult> {
 
 // Run complete validation
 export async function validateSupabaseConfiguration(): Promise<ValidationReport> {
-  console.log('🔍 Validating Supabase configuration...')
-
   const [client, auth, database, storage, functions] = await Promise.all([
     validateClient(),
     validateAuth(),
@@ -206,15 +204,6 @@ export async function validateSupabaseConfiguration(): Promise<ValidationReport>
     functions,
     overall
   }
-
-  // Log results
-  console.log('\n📊 Validation Report:')
-  console.log('Client:', client.success ? '✅' : '❌', client.message)
-  console.log('Auth:', auth.success ? '✅' : '❌', auth.message)
-  console.log('Database:', database.success ? '✅' : '❌', database.message)
-  console.log('Storage:', storage.success ? '✅' : '❌', storage.message)
-  console.log('Functions:', functions.success ? '✅' : '❌', functions.message)
-  console.log('\n', overall.message)
 
   return report
 }

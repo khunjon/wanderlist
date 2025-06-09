@@ -87,7 +87,7 @@ function getRedirectUrl(): string {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
   
-  // TEMPORARY: Force production URL for placemarks.xyz
+  // Force production URL for placemarks.xyz
   if (typeof process !== 'undefined' && (
     process.env.VERCEL_URL?.includes('placemarks') || 
     (typeof window !== 'undefined' && window.location.hostname === 'placemarks.xyz')
@@ -121,9 +121,6 @@ function getRedirectUrl(): string {
 export async function signInWithGoogle() {
   const redirectUrl = getRedirectUrl();
   const fullRedirectUrl = `${redirectUrl}/auth/callback`;
-  
-  // Temporary debug - remove after testing
-  console.log('🔍 OAuth Redirect URL:', fullRedirectUrl);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -234,7 +231,6 @@ export async function updateUserProfile(
     preferences?: UserPreferences
   }
 ): Promise<ProfileUpdateResult> {
-  // Temporarily use direct table update instead of RPC function
   try {
     const updateData: any = {}
     
@@ -450,7 +446,6 @@ export async function deleteProfilePhoto(photoUrl: string): Promise<void> {
 
 // Validate profile completeness
 export async function validateProfileCompleteness(userId: string): Promise<ProfileValidationResult> {
-  // Temporarily use a simple check instead of RPC
   try {
     const { data, error } = await supabase
       .from('users')

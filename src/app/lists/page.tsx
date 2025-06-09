@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { trackListView } from '@/lib/analytics/gtag';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
-import { AuthPerformance } from '@/lib/utils/performance';
 
 const sortOptions: SortOption[] = [
   { value: 'updatedAt', label: 'Last Edited' },
@@ -101,10 +100,8 @@ export default function ListsPage() {
     try {
       setLoading(true);
       setHasFetched(true);
-      AuthPerformance.trackListsLoad();
       const userLists = await getUserLists(user.id);
       setAllLists(userLists);
-      AuthPerformance.trackListsComplete();
     } catch (error) {
       console.error('Error fetching lists:', error);
       setHasFetched(false); // Reset on error so it can be retried

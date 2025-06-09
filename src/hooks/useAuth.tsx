@@ -7,7 +7,6 @@ import { supabase, User as AppUser, syncUserProfile, onAuthStateChange } from '@
 import { User } from '@/types';
 import { convertToLegacyUser } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
-import { AuthPerformance } from '@/lib/utils/performance';
 
 interface AuthContextType {
   user: User | null;
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if Supabase client is properly initialized
     if (!supabase) {
-      console.error('❌ Supabase client not initialized');
+      console.error('Supabase client not initialized');
       setError(new Error('Supabase client not initialized'));
       setLoading(false);
       return;
@@ -70,56 +69,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log('🔍 Getting initial session...');
-        
-        console.log('📡 Calling supabase.auth.getSession()...');
         const { data: { session }, error } = await Promise.race([
           supabase.auth.getSession(),
           new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error('getSession timeout')), 2000)
           )
         ]);
-        console.log('📡 getSession() completed');
         
         if (error) {
-          console.error('❌ Error getting session:', error);
+          console.error('Error getting session:', error);
           throw error;
         }
 
         if (session?.user) {
-          console.log('✅ Found existing session for:', session.user.email);
-          console.log('👤 Setting supabase user...');
           setSupabaseUser(session.user);
           
-          console.log('🔄 Syncing user profile...');
           const userProfile = await Promise.race([
             syncUserProfile(session.user),
             new Promise<never>((_, reject) => 
               setTimeout(() => reject(new Error('syncUserProfile timeout')), 3000)
             )
           ]);
-          console.log('🔄 Profile sync completed');
           
-          console.log('🔄 Converting to legacy user...');
           const appUser = convertToLegacyUser(session.user, userProfile);
-          console.log('🔄 Conversion completed');
-          
-          console.log('👤 Setting app user...');
           setUser(appUser);
-          console.log('👤 App user set');
-        } else {
-          console.log('ℹ️ No existing session found');
         }
       } catch (err) {
-        console.error('❌ Error getting initial session:', err);
+        console.error('Error getting initial session:', err);
         // Don't set error for timeout - let auth state change handle it
-        if (err instanceof Error && err.message === 'getSession timeout') {
-          console.log('⏰ getSession timed out, relying on auth state change listener');
-        } else {
+        if (!(err instanceof Error && err.message.includes('timeout'))) {
           setError(err as Error);
         }
       } finally {
-        console.log('✅ Initial session check complete, setting loading to false');
         setLoading(false);
       }
     };
@@ -130,55 +111,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loadingTimeout = setTimeout(() => {
       setLoading(currentLoading => {
         if (currentLoading) {
-          console.warn('⚠️ Auth loading timeout - forcing loading to false');
+          console.warn('Auth loading timeout - forcing loading to false');
           return false;
         }
         return currentLoading;
       });
-    }, 5000); // Reduced to 5 seconds for faster debugging
+    }, 5000);
 
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       try {
-        console.log('🔄 Auth state change:', event, session?.user?.email || 'no user');
         setError(null);
-        setLoading(false); // Always set loading to false when auth state changes
+        setLoading(false);
         
         if (session?.user) {
-          console.log('👤 Processing signed in user...');
-          AuthPerformance.trackAuthRedirect();
-          
-          console.log('👤 Setting supabase user...');
           setSupabaseUser(session.user);
           
-          console.log('🔄 Starting syncUserProfile...');
           const userProfile = await Promise.race([
             syncUserProfile(session.user),
             new Promise<never>((_, reject) => 
               setTimeout(() => reject(new Error('syncUserProfile timeout in auth change')), 3000)
             )
           ]);
-          console.log('🔄 syncUserProfile completed');
           
-          console.log('🔄 Converting to legacy user...');
           const appUser = convertToLegacyUser(session.user, userProfile);
-          console.log('🔄 Conversion completed');
-          
-          console.log('👤 Setting app user...');
           setUser(appUser);
-          console.log('👤 App user set successfully');
-          
-          AuthPerformance.trackAuthComplete();
         } else {
-          console.log('👤 No user in session, clearing user state');
           setSupabaseUser(null);
           setUser(null);
         }
       } catch (err) {
-        console.error('❌ Error handling auth state change:', err);
+        console.error('Error handling auth state change:', err);
         setError(err as Error);
       } finally {
-        console.log('✅ Auth state change complete, setting loading to false');
         setLoading(false);
       }
     });

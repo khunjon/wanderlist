@@ -42,8 +42,6 @@ export default function AdminPage() {
       setStatsLoading(true);
       setError(null);
       
-      console.log('Fetching admin stats from Supabase...');
-      
       // Get total user count
       const { count: totalUsers, error: usersError } = await supabase
         .from('users')
@@ -73,14 +71,6 @@ export default function AdminPage() {
           userId: list.user_id,
           createdAt: list.created_at || new Date().toISOString(),
         }));
-
-      console.log('Admin stats fetched:', {
-        totalUsers: totalUsers || 0,
-        totalLists,
-        publicLists,
-        privateLists,
-        topListsCount: topLists.length
-      });
 
       setStats({
         totalUsers: totalUsers || 0,

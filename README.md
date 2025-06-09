@@ -226,6 +226,14 @@ When deploying to Vercel, make sure to:
 
 ## Troubleshooting
 
+### Recent Fixes (December 2024)
+
+#### ✅ Supabase RLS Infinite Recursion Fixed
+The infinite recursion error in Row Level Security policies has been resolved. This was caused by circular dependencies between the `lists` and `list_collaborators` tables. The fix involved creating security definer functions to break the circular dependency. See [docs/troubleshooting/SUPABASE_RLS_TROUBLESHOOTING.md](./docs/troubleshooting/SUPABASE_RLS_TROUBLESHOOTING.md) for details.
+
+#### ✅ Debug Logging Cleanup
+Extensive debug logging that was added during authentication troubleshooting has been cleaned up for production use. Essential error logging remains for debugging purposes.
+
 ### Common Issues
 
 #### Authentication Problems
@@ -239,6 +247,7 @@ If you experience database connectivity problems:
 1. Verify your Supabase project is active (not paused)
 2. Check Row Level Security policies are properly configured
 3. Ensure your service role key has necessary permissions
+4. If you see infinite recursion errors, refer to the RLS troubleshooting guide
 
 #### MCP Integration Issues
 If MCP tools aren't working:
