@@ -82,6 +82,11 @@ export async function signIn(email: string, password: string) {
 
 // Get the correct redirect URL for OAuth
 function getRedirectUrl(): string {
+  // TEMPORARY: Force production URL for testing
+  if (typeof window !== 'undefined' && window.location.hostname === 'placemarks.xyz') {
+    return 'https://placemarks.xyz';
+  }
+  
   // Try environment variable first
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL;
@@ -113,6 +118,9 @@ function getRedirectUrl(): string {
 export async function signInWithGoogle() {
   const redirectUrl = getRedirectUrl();
   const fullRedirectUrl = `${redirectUrl}/auth/callback`;
+  
+  // Temporary debug - remove after testing
+  console.log('🔍 OAuth Redirect URL:', fullRedirectUrl);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
