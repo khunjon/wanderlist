@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { trackEvent, identifyUser, setUserProperties, mixpanel } from '@/lib/mixpanelClient';
+import { trackEvent, identifyUser, setUserProperties, trackListView, trackListCreate, mixpanel } from '@/lib/mixpanelClient';
 
 export const useMixpanel = () => {
   const track = useCallback((eventName: string, properties?: Record<string, any>) => {
@@ -25,6 +25,8 @@ export const useMixpanel = () => {
     identify,
     setProperties,
     reset,
+    trackListView,
+    trackListCreate,
     mixpanel: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ? mixpanel : null
   };
 }; 

@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getUserProfile } from '@/lib/supabase';
 import MapView from '@/components/maps/MapView';
-import { trackListView } from '@/lib/analytics/gtag';
+import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
+import { trackListView } from '@/lib/mixpanelClient';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import SwipeView from '@/components/SwipeView';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
@@ -137,7 +138,20 @@ export default function ListContent({ id }: ListContentProps) {
 
         // Track list view and increment view count
         if (user) {
-          trackListView(listData.name, listData.id);
+          // Track with Google Analytics
+          trackListViewGA(listData.name, listData.id);
+          
+          // Track with Mixpanel
+          trackListView({
+            list_id: listData.id,
+            list_name: listData.name,
+            list_author: author?.displayName || author?.email || 'Unknown',
+            list_creation_date: listData.created_at || new Date().toISOString(),
+            is_public: listData.is_public || false,
+            view_count: listData.view_count || 0,
+            place_count: places.length
+          });
+          
           // Only increment view count if user is not the owner
           if (listData.user_id !== user.id) {
             await incrementListViewCount(id);

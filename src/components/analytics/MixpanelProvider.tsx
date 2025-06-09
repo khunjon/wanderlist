@@ -23,6 +23,8 @@ export default function MixpanelProvider({ children }: MixpanelProviderProps) {
 
   useEffect(() => {
     // Track page views when pathname changes
+    // Note: We handle page views manually (not using Mixpanel's automatic tracking)
+    // to have better control over Next.js routing and avoid duplicates
     if (pathname) {
       trackPageView(pathname);
     }

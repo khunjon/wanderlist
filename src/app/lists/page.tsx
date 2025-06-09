@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { getUserLists } from '@/lib/supabase/database';
 import { List } from '@/types';
 import { useRouter } from 'next/navigation';
-import { trackListView } from '@/lib/analytics/gtag';
+import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
+import { trackListView } from '@/lib/mixpanelClient';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 
@@ -147,9 +148,21 @@ export default function ListsPage() {
 
   // Memoized list click handler
   const handleListClick = useCallback((list: List) => {
-    trackListView(list.name, list.id);
+    // Track with Google Analytics
+    trackListViewGA(list.name, list.id);
+    
+    // Track with Mixpanel
+    trackListView({
+      list_id: list.id,
+      list_name: list.name,
+      list_author: user?.displayName || user?.email || 'Unknown',
+      list_creation_date: list.created_at || list.createdAt?.toISOString() || new Date().toISOString(),
+      is_public: list.is_public || list.isPublic || false,
+      view_count: list.view_count || list.viewCount || 0
+    });
+    
     router.push(`/lists/${list.id}`);
-  }, [router]);
+  }, [router, user]);
 
   // Memoized sort change handler
   const handleSortChange = useCallback((newSort: SortState) => {

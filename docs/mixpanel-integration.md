@@ -85,10 +85,10 @@ Here are some suggested events for the Wanderlist app:
 - `Place Shared`
 
 ### List Events
-- `List Created`
-- `List Deleted`
-- `List Shared`
-- `List Viewed`
+- `List Create` - When a user creates a new list
+- `List View` - When a user views a list (their own or others)
+- `List Shared` - When a user shares a list
+- `List Deleted` - When a user deletes a list
 
 ### Search Events
 - `Search Performed`
@@ -99,7 +99,7 @@ Here are some suggested events for the Wanderlist app:
 
 ```tsx
 // In a place component
-const { track } = useMixpanel();
+const { track, trackListView, trackListCreate } = useMixpanel();
 
 const handleAddPlace = (place: Place, listId: string) => {
   // Your existing logic...
@@ -113,13 +113,29 @@ const handleAddPlace = (place: Place, listId: string) => {
   });
 };
 
-const handleRemovePlace = (place: Place, listId: string) => {
-  // Your existing logic...
-  
-  track('Place Removed', {
-    place_id: place.google_place_id,
-    place_name: place.name,
-    list_id: listId
+// List tracking examples
+const handleListView = (list: List, author: User) => {
+  trackListView({
+    list_id: list.id,
+    list_name: list.name,
+    list_author: author.displayName || author.email,
+    list_creation_date: list.created_at,
+    is_public: list.is_public,
+    place_count: list.places?.length || 0,
+    view_count: list.view_count || 0
+  });
+};
+
+const handleListCreate = (newList: List, user: User) => {
+  trackListCreate({
+    list_id: newList.id,
+    list_name: newList.name,
+    list_author: user.displayName || user.email,
+    list_creation_date: newList.created_at,
+    is_public: newList.is_public,
+    city: newList.city,
+    tags: newList.tags,
+    description: newList.description
   });
 };
 ```
@@ -163,11 +179,12 @@ const handleUserProfileUpdate = (user: User) => {
 
 ## Features
 
-- **Automatic Page Tracking**: Page views are automatically tracked
+- **Smart Page Tracking**: Page views are tracked manually for better Next.js integration (no duplicates)
 - **Autocapture**: Mixpanel will automatically capture clicks and form submissions
 - **User Identification**: Link events to specific users
 - **Custom Properties**: Add context to your events
 - **TypeScript Support**: Full TypeScript support with proper types
+- **Domain Tracking**: Correctly tracks your custom domain (not Vercel internal URLs)
 
 ## Testing
 

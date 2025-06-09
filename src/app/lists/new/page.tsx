@@ -6,7 +6,8 @@ import { createList } from '@/lib/supabase';
 import { convertToSupabaseListInsert, getUserId } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { trackListCreate } from '@/lib/analytics/gtag';
+import { trackListCreate as trackListCreateGA } from '@/lib/analytics/gtag';
+import { trackListCreate } from '@/lib/mixpanelClient';
 
 export default function NewListPage() {
   const { user, loading: authLoading } = useAuth();
@@ -60,8 +61,20 @@ export default function NewListPage() {
       const newList = await createList(supabaseListData);
       const listId = newList.id;
       
-      // Track list creation event with custom dimensions
-      trackListCreate(name.trim(), listId);
+      // Track list creation event with Google Analytics
+      trackListCreateGA(name.trim(), listId);
+      
+      // Track list creation event with Mixpanel
+      trackListCreate({
+        list_id: listId,
+        list_name: name.trim(),
+        list_author: user.displayName || user.email || 'Unknown',
+        list_creation_date: new Date().toISOString(),
+        is_public: isPublic,
+        city: city.trim(),
+        tags: tagArray,
+        description: description.trim()
+      });
       
       router.push(`/lists/${listId}`);
     } catch (err) {
