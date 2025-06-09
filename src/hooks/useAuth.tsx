@@ -59,31 +59,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Check if Supabase client is properly initialized
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized');
+      setError(new Error('Supabase client not initialized'));
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('🔍 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          throw error;
+        }
 
         if (session?.user) {
+          console.log('✅ Found existing session for:', session.user.email);
           setSupabaseUser(session.user);
           const userProfile = await syncUserProfile(session.user);
           const appUser = convertToLegacyUser(session.user, userProfile);
           setUser(appUser);
+        } else {
+          console.log('ℹ️ No existing session found');
         }
       } catch (err) {
-        console.error('Error getting initial session:', err);
+        console.error('❌ Error getting initial session:', err);
         setError(err as Error);
       } finally {
+        console.log('✅ Initial session check complete, setting loading to false');
         setLoading(false);
       }
     };
 
     getInitialSession();
 
+    // Safety timeout to prevent infinite loading state
+    const loadingTimeout = setTimeout(() => {
+      setLoading(currentLoading => {
+        if (currentLoading) {
+          console.warn('⚠️ Auth loading timeout - forcing loading to false');
+          return false;
+        }
+        return currentLoading;
+      });
+    }, 5000); // Reduced to 5 seconds for faster debugging
+
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       try {
+        console.log('🔄 Auth state change:', event, session?.user?.email || 'no user');
         setError(null);
         
         if (session?.user) {
@@ -98,14 +127,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       } catch (err) {
-        console.error('Error handling auth state change:', err);
+        console.error('❌ Error handling auth state change:', err);
         setError(err as Error);
       } finally {
+        console.log('✅ Auth state change complete, setting loading to false');
         setLoading(false);
       }
     });
 
     return () => {
+      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);

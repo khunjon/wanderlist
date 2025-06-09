@@ -5,6 +5,7 @@ import { signUp, signInWithGoogle } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import AuthDebug from '@/components/debug/AuthDebug';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -18,7 +19,10 @@ export default function SignupPage() {
   
   // Redirect if already authenticated
   useEffect(() => {
+    console.log('Signup page auth state:', { user: !!user, authLoading, userEmail: user?.email });
+    
     if (user && !authLoading) {
+      console.log('Redirecting authenticated user to /lists');
       // Clear any error states when user is successfully authenticated
       setError(null);
       setLoading(false);
@@ -98,6 +102,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+      <AuthDebug />
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
