@@ -145,13 +145,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false); // Always set loading to false when auth state changes
         
         if (session?.user) {
+          console.log('👤 Processing signed in user...');
           AuthPerformance.trackAuthRedirect();
+          
+          console.log('👤 Setting supabase user...');
           setSupabaseUser(session.user);
-          const userProfile = await syncUserProfile(session.user);
+          
+          console.log('🔄 Starting syncUserProfile...');
+          const userProfile = await Promise.race([
+            syncUserProfile(session.user),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('syncUserProfile timeout in auth change')), 3000)
+            )
+          ]);
+          console.log('🔄 syncUserProfile completed');
+          
+          console.log('🔄 Converting to legacy user...');
           const appUser = convertToLegacyUser(session.user, userProfile);
+          console.log('🔄 Conversion completed');
+          
+          console.log('👤 Setting app user...');
           setUser(appUser);
+          console.log('👤 App user set successfully');
+          
           AuthPerformance.trackAuthComplete();
         } else {
+          console.log('👤 No user in session, clearing user state');
           setSupabaseUser(null);
           setUser(null);
         }
