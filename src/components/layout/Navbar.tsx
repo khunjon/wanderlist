@@ -18,7 +18,16 @@ export default function Navbar() {
 
   // Redirect logged-in users from home page to their lists
   useEffect(() => {
+    console.log('Navbar redirect check:', { 
+      loading, 
+      user: !!user, 
+      userEmail: user?.email,
+      pathname, 
+      shouldRedirect: !loading && user && pathname === '/' 
+    });
+    
     if (!loading && user && pathname === '/') {
+      console.log('🔄 Redirecting authenticated user from / to /lists');
       // Add a small delay to ensure auth state is fully settled
       const timeoutId = setTimeout(() => {
         router.push('/lists');
