@@ -71,7 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const getInitialSession = async () => {
       try {
         console.log('🔍 Getting initial session...');
+        
+        console.log('📡 Calling supabase.auth.getSession()...');
         const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('📡 getSession() completed');
         
         if (error) {
           console.error('❌ Error getting session:', error);
@@ -80,10 +83,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           console.log('✅ Found existing session for:', session.user.email);
+          console.log('👤 Setting supabase user...');
           setSupabaseUser(session.user);
-          const userProfile = await syncUserProfile(session.user);
+          
+          console.log('🔄 Syncing user profile...');
+          const userProfile = await Promise.race([
+            syncUserProfile(session.user),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('syncUserProfile timeout')), 3000)
+            )
+          ]);
+          console.log('🔄 Profile sync completed');
+          
+          console.log('🔄 Converting to legacy user...');
           const appUser = convertToLegacyUser(session.user, userProfile);
+          console.log('🔄 Conversion completed');
+          
+          console.log('👤 Setting app user...');
           setUser(appUser);
+          console.log('👤 App user set');
         } else {
           console.log('ℹ️ No existing session found');
         }
