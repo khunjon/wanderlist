@@ -38,3 +38,4 @@ next-env.d.ts
 .cursor/history.json
 .cursor/sessions/
 .cursor/user.json
+.cursor/mcp.json
