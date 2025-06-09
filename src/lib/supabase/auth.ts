@@ -82,30 +82,38 @@ export async function signIn(email: string, password: string) {
 
 // Get the correct redirect URL for OAuth
 function getRedirectUrl(): string {
-  // TEMPORARY: Force production URL for testing
-  if (typeof window !== 'undefined' && window.location.hostname === 'placemarks.xyz') {
-    return 'https://placemarks.xyz';
-  }
-  
-  // Try environment variable first
+  // Always prioritize environment variable first (works on both client and server)
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
   
-  // Dynamic detection based on current location
+  // TEMPORARY: Force production URL for placemarks.xyz
+  if (typeof process !== 'undefined' && (
+    process.env.VERCEL_URL?.includes('placemarks') || 
+    (typeof window !== 'undefined' && window.location.hostname === 'placemarks.xyz')
+  )) {
+    return 'https://placemarks.xyz';
+  }
+  
+  // Client-side dynamic detection (only for development)
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     
-    // If we're not on localhost, use the current origin
-    if (!origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+    // If we're on localhost, use the current origin for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return origin;
     }
     
-    // Otherwise use localhost for development
+    // For production without env var, use current origin as fallback
     return origin;
   }
   
-  // Server-side fallback
+  // Server-side: Try to detect from headers (Vercel provides these)
+  if (typeof process !== 'undefined' && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Final fallback for development
   return 'http://localhost:3000';
 }
 
