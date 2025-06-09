@@ -92,11 +92,6 @@ function getRedirectUrl(): string {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
   
-  // Try Next.js custom env
-  if (process.env.CUSTOM_APP_URL) {
-    return process.env.CUSTOM_APP_URL;
-  }
-  
   // Dynamic detection based on current location
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
