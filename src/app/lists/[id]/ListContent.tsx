@@ -119,31 +119,22 @@ export default function ListContent({ id }: ListContentProps) {
   const fetchData = useCallback(async () => {
     if (!id) return;
 
-    console.log('🚀 fetchData called for ID:', id, 'User:', user?.id || 'none');
-
     try {
       setLoading(true);
       setError(null);
       setIsNotFound(false);
 
-      console.log('📡 Calling getListById...');
       const listData = await getListById(id);
-      console.log('📊 getListById result:', listData ? 'Found' : 'Not found');
 
       if (!listData) {
-        console.log('🚨 No list data, setting 404 state');
         setIsNotFound(true);
         return;
       }
 
-      console.log('✅ List found:', listData.name);
       setList(listData);
 
       // Fetch places for this list
-      console.log('📍 Fetching places...');
       const listPlaces = await getListPlaces(id);
-      console.log('📍 Found', listPlaces.length, 'places');
-      
       const transformedPlaces: PlaceWithNotes[] = listPlaces.map(lp => ({
         id: lp.places.id,
         googlePlaceId: lp.places.google_place_id,
@@ -177,10 +168,8 @@ export default function ListContent({ id }: ListContentProps) {
         });
       }
 
-      console.log('🏁 fetchData completed successfully');
-
     } catch (error) {
-      console.error('❌ Error in fetchData:', error);
+      console.error('Error fetching list data:', error);
       setError('Failed to load list');
       setIsNotFound(true);
     } finally {
@@ -189,22 +178,8 @@ export default function ListContent({ id }: ListContentProps) {
   }, [id, user]);
 
   useEffect(() => {
-    console.log('🔄 ListContent useEffect triggered:', { 
-      id, 
-      authLoading, 
-      hasUser: !!user,
-      timestamp: new Date().toISOString()
-    });
-    
     if (!authLoading && id) {
-      console.log('✅ Conditions met, calling fetchData');
       fetchData();
-    } else {
-      console.log('⏳ Waiting for conditions:', { 
-        hasId: !!id, 
-        authLoading,
-        hasUser: !!user 
-      });
     }
   }, [id, authLoading, fetchData]);
 

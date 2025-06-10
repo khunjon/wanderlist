@@ -261,21 +261,15 @@ export async function searchPublicListsAdvanced(
 
 export async function getListById(listId: string): Promise<List | null> {
   try {
-    // Much shorter timeout for better UX
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), 2000); // 2 seconds max
-    });
-
-    // Simple query - just check if list exists first
-    const queryPromise = supabase
+    const { data, error } = await supabase
       .from('lists')
-      .select('*')
+      .select(`
+        *,
+        users!inner(display_name, photo_url)
+      `)
       .eq('id', listId)
-      .single(); // Use single() instead of limit(1) for better performance
+      .single();
 
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-
-    // Handle "not found" error from single()
     if (error && error.code === 'PGRST116') {
       return null; // List not found
     }
@@ -284,33 +278,9 @@ export async function getListById(listId: string): Promise<List | null> {
       handleDatabaseError(error, 'getListById')
     }
 
-    // If we found a list, fetch the user data separately (without timeout for this quick query)
-    if (data) {
-      try {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('display_name, photo_url')
-          .eq('id', data.user_id)
-          .single();
-        
-        if (userData) {
-          data.users = userData;
-        }
-      } catch (userError) {
-        // If user fetch fails, continue without user data
-        console.warn('Failed to fetch user data for list:', userError);
-      }
-      
-      return data;
-    }
-
-    return null;
+    return data;
   } catch (error) {
     if (error instanceof DatabaseError) throw error
-    if (error instanceof Error && error.message === 'Query timeout') {
-      console.error('getListById query timed out for ID:', listId);
-      return null; // Treat timeout as "not found"
-    }
     handleDatabaseError(error, 'getListById')
   }
 }
