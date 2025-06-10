@@ -26,24 +26,115 @@ interface ListContentProps {
 
 export default function ListContent({ id }: ListContentProps) {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  // State management
   const [list, setList] = useState<List | null>(null);
   const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
   const [author, setAuthor] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
+  const [authStabilized, setAuthStabilized] = useState(false);
+
+  // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editIsPublic, setEditIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [placeSortState, setPlaceSortState] = useState<SortState>({ field: 'addedAt', direction: 'desc' });
-  const [viewMode, setViewMode] = useState<'grid' | 'map' | 'swipe'>('grid');
+
+  // Notes editing state
   const [editingNotes, setEditingNotes] = useState<Record<string, boolean>>({});
   const [noteValues, setNoteValues] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
-  const router = useRouter();
+
+  // View state
+  const [currentView, setCurrentView] = useState<'grid' | 'map' | 'swipe'>('grid');
+  const [placeSortState, setPlaceSortState] = useState<SortState>({ field: 'addedAt', direction: 'desc' });
+
+  // Track when auth has stabilized
+  useEffect(() => {
+    if (!authLoading) {
+      // Wait a bit longer to ensure auth is truly stable
+      const timeoutId = setTimeout(() => {
+        setAuthStabilized(true);
+      }, 500); // 500ms to ensure auth state is fully settled
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setAuthStabilized(false);
+    }
+  }, [authLoading, user]);
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      setIsNotFound(false);
+
+      const listData = await getListById(id);
+
+      if (!listData) {
+        setIsNotFound(true);
+        return;
+      }
+
+      setList(listData);
+
+      // Fetch places for this list
+      const listPlaces = await getListPlaces(id);
+      const transformedPlaces: PlaceWithNotes[] = listPlaces.map(lp => ({
+        id: lp.places.id,
+        googlePlaceId: lp.places.google_place_id,
+        name: lp.places.name,
+        address: lp.places.address,
+        latitude: lp.places.latitude,
+        longitude: lp.places.longitude,
+        rating: lp.places.rating || 0,
+        photoUrl: lp.places.photo_url || '',
+        placeTypes: lp.places.place_types || [],
+        notes: lp.notes || '',
+        listPlaceId: lp.id,
+        addedAt: new Date(lp.added_at || '')
+      }));
+      setPlaces(transformedPlaces);
+
+      // Track list view with complete data
+      if (listData && transformedPlaces) {
+        // Track with Google Analytics
+        trackListViewGA(listData.name, listData.id);
+        
+        // Track with Mixpanel - now with author and place count
+        trackListView({
+          list_id: listData.id,
+          list_name: listData.name,
+          list_author: (listData as any).users?.display_name || 'Unknown',
+          list_creation_date: listData.created_at || new Date().toISOString(),
+          is_public: listData.is_public || false,
+          view_count: listData.view_count || 0,
+          place_count: transformedPlaces.length
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching list data:', error);
+      setError('Failed to load list');
+      setIsNotFound(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, user]);
+
+  useEffect(() => {
+    // Only fetch data when auth has truly stabilized
+    if (authStabilized && id) {
+      fetchData();
+    }
+  }, [id, authStabilized, fetchData]);
 
   // Memoized sort function for places
   const sortPlaces = useCallback((placesToSort: PlaceWithNotes[], sort: SortState) => {
@@ -115,73 +206,6 @@ export default function ListContent({ id }: ListContentProps) {
       console.error('Error refreshing places:', err);
     }
   }, [id]);
-
-  const fetchData = useCallback(async () => {
-    if (!id) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      setIsNotFound(false);
-
-      const listData = await getListById(id);
-
-      if (!listData) {
-        setIsNotFound(true);
-        return;
-      }
-
-      setList(listData);
-
-      // Fetch places for this list
-      const listPlaces = await getListPlaces(id);
-      const transformedPlaces: PlaceWithNotes[] = listPlaces.map(lp => ({
-        id: lp.places.id,
-        googlePlaceId: lp.places.google_place_id,
-        name: lp.places.name,
-        address: lp.places.address,
-        latitude: lp.places.latitude,
-        longitude: lp.places.longitude,
-        rating: lp.places.rating || 0,
-        photoUrl: lp.places.photo_url || '',
-        placeTypes: lp.places.place_types || [],
-        notes: lp.notes || '',
-        listPlaceId: lp.id,
-        addedAt: new Date(lp.added_at || '')
-      }));
-      setPlaces(transformedPlaces);
-
-      // Track list view with complete data
-      if (listData && transformedPlaces) {
-        // Track with Google Analytics
-        trackListViewGA(listData.name, listData.id);
-        
-        // Track with Mixpanel - now with author and place count
-        trackListView({
-          list_id: listData.id,
-          list_name: listData.name,
-          list_author: (listData as any).users?.display_name || 'Unknown',
-          list_creation_date: listData.created_at || new Date().toISOString(),
-          is_public: listData.is_public || false,
-          view_count: listData.view_count || 0,
-          place_count: transformedPlaces.length
-        });
-      }
-
-    } catch (error) {
-      console.error('Error fetching list data:', error);
-      setError('Failed to load list');
-      setIsNotFound(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [id, user]);
-
-  useEffect(() => {
-    if (!authLoading && id) {
-      fetchData();
-    }
-  }, [id, authLoading, fetchData]);
 
   // Memoized save handler
   const handleSave = useCallback(async () => {
@@ -554,9 +578,9 @@ export default function ListContent({ id }: ListContentProps) {
             <div className="flex items-center space-x-4">
               <div className="flex rounded-md shadow-sm">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => setCurrentView('grid')}
                   className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
-                    viewMode === 'grid'
+                    currentView === 'grid'
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
                   }`}
@@ -564,9 +588,9 @@ export default function ListContent({ id }: ListContentProps) {
                   Grid
                 </button>
                 <button
-                  onClick={() => setViewMode('map')}
+                  onClick={() => setCurrentView('map')}
                   className={`px-4 py-2 text-sm font-medium rounded-r-md border ${
-                    viewMode === 'map'
+                    currentView === 'map'
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
                   }`}
@@ -578,7 +602,7 @@ export default function ListContent({ id }: ListContentProps) {
 
             </div>
 
-            {viewMode === 'grid' && places.length > 0 && (
+            {currentView === 'grid' && places.length > 0 && (
               <SortControl
                 options={placeSortOptions}
                 currentSort={placeSortState}
@@ -626,7 +650,7 @@ export default function ListContent({ id }: ListContentProps) {
             </div>
           ) : (
             <>
-              {viewMode === 'grid' && (
+              {currentView === 'grid' && (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {sortedPlaces.map((place) => (
                     <div
@@ -758,7 +782,7 @@ export default function ListContent({ id }: ListContentProps) {
                 </div>
               )}
 
-              {viewMode === 'map' && (
+              {currentView === 'map' && (
                 <div className="h-96 rounded-lg overflow-hidden">
                   <MapView places={sortedPlaces} />
                 </div>

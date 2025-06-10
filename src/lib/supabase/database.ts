@@ -265,11 +265,7 @@ export async function getListById(listId: string): Promise<List | null> {
       .from('lists')
       .select('*')
       .eq('id', listId)
-      .single();
-
-    if (error && error.code === 'PGRST116') {
-      return null; // List not found
-    }
+      .maybeSingle();
 
     if (error) {
       handleDatabaseError(error, 'getListById')
