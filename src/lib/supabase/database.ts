@@ -301,12 +301,7 @@ export async function createList(list: ListInsert): Promise<List> {
   try {
     const { data, error } = await supabase
       .from('lists')
-      .insert({
-        ...list,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_activity_at: new Date().toISOString()
-      })
+      .insert(list)
       .select()
 
     if (error) {
@@ -327,11 +322,7 @@ export async function updateList(listId: string, updates: ListUpdate): Promise<L
   try {
     const { data, error } = await supabase
       .from('lists')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-        last_activity_at: new Date().toISOString()
-      })
+      .update(updates)
       .eq('id', listId)
       .select()
 
