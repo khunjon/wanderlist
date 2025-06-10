@@ -91,15 +91,16 @@ export default function ListContent({ id }: ListContentProps) {
     if (queryStartTime && authStabilized) {
       const circuitBreakerTimeout = setTimeout(() => {
         const elapsed = Date.now() - queryStartTime;
-        if (elapsed > 5000 && isLoading) {
-          console.warn('Query hanging detected, forcing page refresh');
-          window.location.reload();
+        if (elapsed > 3000 && isLoading) {
+          console.warn('Query hanging detected, redirecting to lists page');
+          // Instead of refreshing, redirect to a working page
+          router.push('/lists');
         }
-      }, 5500); // Check after 5.5 seconds
+      }, 3500); // Check after 3.5 seconds
       
       return () => clearTimeout(circuitBreakerTimeout);
     }
-  }, [queryStartTime, authStabilized, isLoading]);
+  }, [queryStartTime, authStabilized, isLoading, router]);
 
   const fetchData = useCallback(async () => {
     if (!authStabilized) return;
@@ -115,7 +116,14 @@ export default function ListContent({ id }: ListContentProps) {
     setQueryStartTime(Date.now());
     
     try {
-      const result = await getListById(id);
+      const result = await Promise.race([
+        getListById(id),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Query timed out'));
+          }, 5000);
+        })
+      ]);
       
       if (!result) {
         console.log('No list found for ID:', id);
@@ -170,6 +178,13 @@ export default function ListContent({ id }: ListContentProps) {
         console.log(`Retrying... attempt ${retryCount + 1}`);
         setRetryCount(prev => prev + 1);
         setTimeout(() => fetchData(), 1000 * (retryCount + 1));
+        return;
+      }
+      
+      // If all retries failed and this looks like a timeout, redirect to lists page
+      if (error instanceof Error && error.message.includes('timed out')) {
+        console.log('Query timed out, redirecting to lists page');
+        router.push('/lists');
         return;
       }
       
@@ -414,15 +429,23 @@ export default function ListContent({ id }: ListContentProps) {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Error</h1>
-          <p className="text-gray-300 mb-4">{error}</p>
-          <Link
-            href="/lists"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Back to Lists
-          </Link>
+        <div className="text-center max-w-md mx-auto px-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Unable to Load List</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => window.open(window.location.href, '_blank')}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Open in New Tab
+            </button>
+            <button
+              onClick={() => router.push('/lists')}
+              className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Back to Lists
+            </button>
+          </div>
         </div>
       </div>
     );
