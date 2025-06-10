@@ -263,10 +263,7 @@ export async function getListById(listId: string): Promise<List | null> {
   try {
     const { data, error } = await supabase
       .from('lists')
-      .select(`
-        *,
-        users!inner(display_name, photo_url)
-      `)
+      .select('*')
       .eq('id', listId)
       .single();
 
