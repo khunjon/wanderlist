@@ -13,6 +13,7 @@ import { trackListView } from '@/lib/mixpanelClient';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 import SwipeView from '@/components/SwipeView';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
+import { supabase } from '@/lib/supabase';
 
 const placeSortOptions: SortOption[] = [
   { value: 'addedAt', label: 'Date Added' },
@@ -32,10 +33,13 @@ export default function ListContent({ id }: ListContentProps) {
   const [list, setList] = useState<List | null>(null);
   const [places, setPlaces] = useState<PlaceWithNotes[]>([]);
   const [author, setAuthor] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
   const [authStabilized, setAuthStabilized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [queryStartTime, setQueryStartTime] = useState<number | null>(null);
 
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -68,22 +72,61 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [authLoading, user]);
 
+  // Force a fresh auth check on component mount to clear stale state
+  useEffect(() => {
+    const forceAuthRefresh = async () => {
+      try {
+        // Force a fresh session check
+        await supabase.auth.getSession();
+      } catch (error) {
+        console.warn('Failed to refresh auth session:', error);
+      }
+    };
+    
+    forceAuthRefresh();
+  }, []); // Only run once on mount
+
+  // Circuit breaker: if query hangs for more than 5 seconds, force page refresh
+  useEffect(() => {
+    if (queryStartTime && authStabilized) {
+      const circuitBreakerTimeout = setTimeout(() => {
+        const elapsed = Date.now() - queryStartTime;
+        if (elapsed > 5000 && isLoading) {
+          console.warn('Query hanging detected, forcing page refresh');
+          window.location.reload();
+        }
+      }, 5500); // Check after 5.5 seconds
+      
+      return () => clearTimeout(circuitBreakerTimeout);
+    }
+  }, [queryStartTime, authStabilized, isLoading]);
+
   const fetchData = useCallback(async () => {
-    if (!id) return;
-
+    if (!authStabilized) return;
+    
+    console.log('Starting fetchData with auth state:', { 
+      authLoading, 
+      hasUser: !!user,
+      authStabilized 
+    });
+    
+    setIsLoading(true);
+    setError(null);
+    setQueryStartTime(Date.now());
+    
     try {
-      setLoading(true);
-      setError(null);
-      setIsNotFound(false);
-
-      const listData = await getListById(id);
-
-      if (!listData) {
+      const result = await getListById(id);
+      
+      if (!result) {
+        console.log('No list found for ID:', id);
         setIsNotFound(true);
+        setIsLoading(false);
         return;
       }
-
-      setList(listData);
+      
+      console.log('Successfully fetched list:', result.name);
+      setList(result);
+      setIsNotFound(false);
 
       // Fetch places for this list
       const listPlaces = await getListPlaces(id);
@@ -104,30 +147,39 @@ export default function ListContent({ id }: ListContentProps) {
       setPlaces(transformedPlaces);
 
       // Track list view with complete data
-      if (listData && transformedPlaces) {
+      if (result && transformedPlaces) {
         // Track with Google Analytics
-        trackListViewGA(listData.name, listData.id);
+        trackListViewGA(result.name, result.id);
         
         // Track with Mixpanel - now with author and place count
         trackListView({
-          list_id: listData.id,
-          list_name: listData.name,
-          list_author: (listData as any).users?.display_name || 'Unknown',
-          list_creation_date: listData.created_at || new Date().toISOString(),
-          is_public: listData.is_public || false,
-          view_count: listData.view_count || 0,
+          list_id: result.id,
+          list_name: result.name,
+          list_author: (result as any).users?.display_name || 'Unknown',
+          list_creation_date: result.created_at || new Date().toISOString(),
+          is_public: result.is_public || false,
+          view_count: result.view_count || 0,
           place_count: transformedPlaces.length
         });
       }
 
     } catch (error) {
-      console.error('Error fetching list data:', error);
-      setError('Failed to load list');
+      console.error('Error fetching list:', error);
+      
+      if (retryCount < 2) {
+        console.log(`Retrying... attempt ${retryCount + 1}`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => fetchData(), 1000 * (retryCount + 1));
+        return;
+      }
+      
+      setError(error instanceof Error ? error.message : 'Failed to load list');
       setIsNotFound(true);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      setQueryStartTime(null);
     }
-  }, [id, user]);
+  }, [id, authStabilized, authLoading, user, retryCount]);
 
   useEffect(() => {
     // Only fetch data when auth has truly stabilized
@@ -348,7 +400,7 @@ export default function ListContent({ id }: ListContentProps) {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
