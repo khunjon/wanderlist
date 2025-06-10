@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getListById, getListPlaces, deleteList, updateList, updateListPlaceNotes, removePlaceFromList, incrementListViewCount } from '@/lib/supabase';
 import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getUserProfile } from '@/lib/supabase';
 import MapView from '@/components/maps/MapView';
@@ -124,7 +125,8 @@ export default function ListContent({ id }: ListContentProps) {
         // Fetch list data
         const listData = await getListById(id);
         if (!listData) {
-          setError('List not found');
+          // Trigger Next.js 404 page
+          notFound();
           return;
         }
 
@@ -364,21 +366,9 @@ export default function ListContent({ id }: ListContentProps) {
     );
   }
 
+  // If list is null after loading, notFound() should have been called
   if (!list) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">List Not Found</h1>
-          <p className="text-gray-300 mb-4">The list you're looking for doesn't exist or has been deleted.</p>
-          <Link
-            href="/lists"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Back to Lists
-          </Link>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

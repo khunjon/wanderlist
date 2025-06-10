@@ -222,7 +222,10 @@ function detect404Page(url: string): boolean {
                          !url.startsWith('/api/') &&
                          url.length > 1; // Exclude root path
   
-  return titleContains404 || isNotFoundRoute || isUnknownRoute;
+  // Method 4: Check if this is a list page that returned 404 (invalid list ID)
+  const isInvalidListPage = url.startsWith('/lists/') && url !== '/lists' && titleContains404;
+  
+  return titleContains404 || isNotFoundRoute || isUnknownRoute || isInvalidListPage;
 }
 
 // Helper function to determine which method detected the 404
@@ -245,6 +248,13 @@ function get404DetectionMethod(url: string): string {
   
   if (isUnknownRoute) {
     methods.push('unknown_route');
+  }
+  
+  const isInvalidListPage = url.startsWith('/lists/') && url !== '/lists' && 
+                           (document.title.includes('404') || document.title.includes('Not Found'));
+  
+  if (isInvalidListPage) {
+    methods.push('invalid_list_id');
   }
   
   return methods.join(',') || 'none';

@@ -320,6 +320,8 @@ To test the 404 tracking:
 2. Check your browser console for debug logs showing 404 detection
 3. Verify the "404 Page View" event appears in Mixpanel Live View
 
+**Note**: Invalid list IDs (like `/lists/invalid-id`) now properly trigger Next.js 404 pages instead of hanging in a loading state.
+
 ## Privacy Considerations
 
 - Only track events that provide value for analytics
