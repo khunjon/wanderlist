@@ -849,6 +849,99 @@ export type Database = {
           removed_count: number
         }[]
       }
+      check_table_bloat: {
+        Args: {}
+        Returns: {
+          table_name: string
+          live_rows: number
+          dead_rows: number
+          dead_row_percentage: number
+          total_size: string
+          maintenance_status: string
+        }[]
+      }
+      get_urgent_maintenance_tables: {
+        Args: {}
+        Returns: {
+          table_name: string
+          dead_row_percentage: number
+          recommended_action: string
+          priority: string
+        }[]
+      }
+      get_autovacuum_settings: {
+        Args: {}
+        Returns: {
+          setting_name: string
+          current_value: string
+          unit: string
+          description: string
+        }[]
+      }
+      log_maintenance_operation: {
+        Args: {
+          p_operation_type: string
+          p_table_name?: string
+          p_duration_ms?: number
+          p_dead_rows_before?: number
+          p_dead_rows_after?: number
+          p_status?: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
+      analyze_index_usage: {
+        Args: {}
+        Returns: {
+          table_name: string
+          index_name: string
+          index_size: string
+          usage_category: string
+          scan_count: number
+          tuples_read: number
+          tuples_fetched: number
+          avg_tuples_per_scan: number
+          efficiency_ratio: number
+          recommendation: string
+          priority: string
+        }[]
+      }
+      get_unused_indexes: {
+        Args: {}
+        Returns: {
+          table_name: string
+          index_name: string
+          index_size: string
+          index_definition: string
+          space_wasted: string
+          drop_command: string
+        }[]
+      }
+      suggest_missing_indexes: {
+        Args: {}
+        Returns: {
+          table_name: string
+          suggested_columns: string
+          reason: string
+          create_command: string
+          priority: string
+        }[]
+      }
+      get_index_size_summary: {
+        Args: {}
+        Returns: {
+          table_name: string
+          total_indexes: number
+          total_index_size: string
+          unused_indexes: number
+          unused_index_size: string
+          efficiency_score: number
+        }[]
+      }
+      record_index_usage_snapshot: {
+        Args: {}
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
@@ -1172,4 +1265,47 @@ export interface PlaceInList {
   user_photos: any;
   tags: string[];
   updated_at: string;
+}
+
+// Index monitoring types
+export type IndexUsageAnalysis = Database['public']['Functions']['analyze_index_usage']['Returns'][0]
+export type UnusedIndex = Database['public']['Functions']['get_unused_indexes']['Returns'][0]
+export type MissingIndexSuggestion = Database['public']['Functions']['suggest_missing_indexes']['Returns'][0]
+export type IndexSizeSummary = Database['public']['Functions']['get_index_size_summary']['Returns'][0]
+
+export interface IndexMonitoringReport {
+  summary: {
+    total_indexes: number;
+    unused_indexes: number;
+    total_size: string;
+    wasted_space: string;
+    overall_efficiency: number;
+  };
+  high_priority_issues: IndexUsageAnalysis[];
+  unused_indexes: UnusedIndex[];
+  missing_indexes: MissingIndexSuggestion[];
+  size_summary: IndexSizeSummary[];
+  recommendations: string[];
+}
+
+export interface IndexPerformanceMetrics {
+  table_name: string;
+  index_name: string;
+  usage_trend: 'increasing' | 'decreasing' | 'stable' | 'unused';
+  efficiency_score: number;
+  scan_frequency: number;
+  size_impact: 'low' | 'medium' | 'high';
+  recommendation: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface IndexOptimizationSuggestion {
+  type: 'drop' | 'create' | 'modify' | 'monitor';
+  table_name: string;
+  index_name?: string;
+  reason: string;
+  impact: string;
+  sql_command: string;
+  estimated_benefit: string;
+  risk_level: 'low' | 'medium' | 'high';
 }
