@@ -55,19 +55,10 @@ export const trackPageView = (url: string) => {
     // Enhanced 404 detection
     const is404Page = detect404Page(url);
     
-    // Debug logging for 404 detection
-    console.log('404 Detection Debug:', {
-      url,
-      title: document.title,
-      is404Page,
-      pathname: window.location.pathname
-    });
-    
     // Ensure we're tracking the full URL with the correct domain
     const fullUrl = `${window.location.origin}${url}`;
     
     if (is404Page) {
-      console.log('🚨 Tracking 404 Page View:', url);
       // Track as a special 404 event instead of normal page view
       mixpanel.track('404 Page View', {
         incorrect_path: url,
@@ -216,7 +207,7 @@ function detect404Page(url: string): boolean {
   const isNotFoundRoute = window.location.pathname === '/not-found';
   
   // Method 3: Check if the URL doesn't match any known routes
-  const knownRoutes = ['/lists', '/discover', '/search', '/profile', '/auth'];
+  const knownRoutes = ['/lists', '/discover', '/search', '/profile', '/auth', '/login', '/signup', '/reset-password'];
   const isUnknownRoute = !knownRoutes.some(route => url.startsWith(route)) && 
                          url !== '/' && 
                          !url.startsWith('/api/') &&
@@ -240,7 +231,7 @@ function get404DetectionMethod(url: string): string {
     methods.push('not_found_route');
   }
   
-  const knownRoutes = ['/lists', '/discover', '/search', '/profile', '/auth'];
+  const knownRoutes = ['/lists', '/discover', '/search', '/profile', '/auth', '/login', '/signup', '/reset-password'];
   const isUnknownRoute = !knownRoutes.some(route => url.startsWith(route)) && 
                          url !== '/' && 
                          !url.startsWith('/api/') &&

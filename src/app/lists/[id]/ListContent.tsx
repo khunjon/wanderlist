@@ -123,7 +123,17 @@ export default function ListContent({ id }: ListContentProps) {
         setError(null);
 
         // Fetch list data
-        const listData = await getListById(id);
+        let listData;
+        try {
+          listData = await getListById(id);
+        } catch (err) {
+          console.error('Error fetching list:', err);
+          // If there's an error fetching, treat as not found
+          setIsNotFound(true);
+          setLoading(false);
+          return;
+        }
+        
         if (!listData) {
           // Set not found state for client-side 404 handling
           setIsNotFound(true);
@@ -220,8 +230,8 @@ export default function ListContent({ id }: ListContentProps) {
       }
     };
 
-    // Only fetch if we have the ID and either no user requirement or user is loaded
-    if (id && (!authLoading || user)) {
+    // Only fetch if we have the ID and auth loading is complete
+    if (id && !authLoading) {
       fetchData();
     }
   }, [id, user, authLoading]);
