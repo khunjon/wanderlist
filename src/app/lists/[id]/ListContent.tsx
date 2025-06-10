@@ -44,8 +44,6 @@ const CACHE_TTL = 30 * 1000; // 30 seconds
 
 // Client-side fallback function
 const fetchDataClientSide = async (id: string, user: any) => {
-  console.log('Falling back to client-side query...');
-  
   const { data: list, error: listError } = await supabase
     .from('lists')
     .select('*')
@@ -140,8 +138,7 @@ export default function ListContent({ id }: ListContentProps) {
       const circuitBreakerTimeout = setTimeout(() => {
         const elapsed = Date.now() - queryStartTime;
         if (elapsed > 3000 && isLoading) {
-          console.warn('Query hanging detected, redirecting to lists page');
-          // Instead of refreshing, redirect to a working page
+          // Query hanging detected, redirect to a working page
           router.push('/lists');
         }
       }, 3500); // Check after 3.5 seconds
@@ -153,19 +150,12 @@ export default function ListContent({ id }: ListContentProps) {
   const fetchData = useCallback(async (currentRetryCount = 0) => {
     if (!authStabilized) return;
     
-    console.log('Starting fetchData with auth state:', { 
-      authLoading, 
-      hasUser: !!user,
-      authStabilized 
-    });
-    
     const cacheKey = `list-${id}`;
     const startTime = Date.now();
     
     // Check cache first for faster perceived performance
     const cached = requestCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('Using cached data for list:', id);
       const { list: listData, places: placesData } = cached.data;
       setList(listData);
       setIsNotFound(false);
@@ -191,7 +181,6 @@ export default function ListContent({ id }: ListContentProps) {
     
     // If there's an ongoing request for this list, wait for it
     if (cached?.promise) {
-      console.log('Waiting for ongoing request for list:', id);
       try {
         await cached.promise;
         return;
@@ -213,12 +202,10 @@ export default function ListContent({ id }: ListContentProps) {
       const shouldUseClientSide = performanceTracker.shouldUseClientSide() && user;
       
       if (shouldUseClientSide) {
-        console.log('Using client-side query for better performance...');
         fetchMethod = 'client-side';
         responseData = await fetchDataClientSide(id, user);
       } else {
         // Use server-side API route
-        console.log('Fetching list via server-side API...');
         
         // Get the current session token to send with the request
         const { data: { session } } = await supabase.auth.getSession();
@@ -256,8 +243,6 @@ export default function ListContent({ id }: ListContentProps) {
             performanceTracker.serverResponseTimes.shift(); // Keep only last 10
           }
           
-          console.log(`Server response time: ${actualTime}ms (avg: ${performanceTracker.getAverageServerTime().toFixed(0)}ms)`);
-          
           return data;
         });
         
@@ -272,7 +257,6 @@ export default function ListContent({ id }: ListContentProps) {
           responseData = await responsePromise;
         } catch (error: any) {
           if (error.message === 'List not found') {
-            console.log('List not found:', id);
             setIsNotFound(true);
             return;
           }
@@ -281,7 +265,6 @@ export default function ListContent({ id }: ListContentProps) {
       }
       
       const { list: listData, places: placesData } = responseData;
-      console.log(`Successfully fetched list via ${fetchMethod}: ${listData.name}`);
       
       // Cache the successful response
       requestCache.set(cacheKey, { 
@@ -332,7 +315,6 @@ export default function ListContent({ id }: ListContentProps) {
       requestCache.delete(cacheKey);
       
       if (currentRetryCount < 2) {
-        console.log(`Retrying... attempt ${currentRetryCount + 1}`);
         setRetryCount(currentRetryCount + 1);
         setTimeout(() => fetchData(currentRetryCount + 1), 1000 * (currentRetryCount + 1));
         return;

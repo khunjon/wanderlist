@@ -39,6 +39,8 @@ High-level system design and architectural decisions.
 - **[Design Decisions](./architecture/system-design.md#technology-stack-decisions)** - Technology choices and trade-offs
 - **[Performance Considerations](./architecture/system-design.md#performance-considerations)** - Performance optimization strategies
 - **[Security Architecture](./architecture/system-design.md#security-architecture)** - Security model and implementation
+- **[Client to API Migration](./architecture/CLIENT_TO_API_MIGRATION.md)** - Complete explanation of migrating from client-side Supabase queries to server-side API routes
+- **[List Loading Performance Optimization](./architecture/LIST_LOADING_OPTIMIZATION.md)** - Comprehensive hybrid solution for reliable and fast list loading
 
 ### 📚 Migration Documentation
 Complete record of the Firestore to Supabase migration process.
