@@ -7,15 +7,9 @@ import { useRouter } from 'next/navigation';
 import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
 import { trackListView } from '@/lib/mixpanelClient';
 import { SortState, SortOption } from '@/components/ui/SortControl';
-
-// Import extracted components
-import { 
-  ListsHeader, 
-  ListsGrid, 
-  ListsEmptyState, 
-  ListsLoading,
-  type ListWithPlaceCount 
-} from '@/components/lists';
+import { ListsHeader, ListsGrid, ListsLoading, ListsEmptyState } from '@/components/lists';
+import type { ListWithPlaceCount } from '@/components/lists/ListsGrid';
+import { perf } from '@/lib/utils/performance';
 
 const sortOptions: SortOption[] = [
   { value: 'updatedAt', label: 'Last Edited' },
@@ -39,6 +33,16 @@ export default function ListsPage() {
   const [displayLists, setDisplayLists] = useState<ListWithPlaceCount[]>([]);
   const router = useRouter();
 
+  // Performance monitoring for component lifecycle
+  const componentTimer = useMemo(() => perf.component('ListsPage', 'mount'), []);
+  
+  useEffect(() => {
+    componentTimer.start();
+    return () => {
+      componentTimer.end();
+    };
+  }, [componentTimer]);
+
   // Debounce search input with 300ms delay
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -50,6 +54,13 @@ export default function ListsPage() {
 
   // Update display lists whenever allLists, debouncedSearch, or sortState changes
   useEffect(() => {
+    const processingTimer = perf.operation('listProcessing', { 
+      totalLists: allLists.length, 
+      hasSearch: !!debouncedSearch.trim(),
+      sortField: sortState.field 
+    });
+    processingTimer.start();
+
     let filtered = allLists;
 
     // Apply search filter
@@ -106,6 +117,7 @@ export default function ListsPage() {
     });
 
     setDisplayLists(sorted);
+    processingTimer.end();
   }, [allLists, debouncedSearch, sortState]);
 
   // Simplified auth and data fetching logic - single useEffect
@@ -139,8 +151,13 @@ export default function ListsPage() {
           return;
         }
         
-        // Fetch fresh data
+        // Fetch fresh data with performance monitoring
+        const fetchTimer = perf.api('/api/lists/user', 'GET');
+        fetchTimer.start();
+        
         const userLists = await getUserListsWithPlaceCounts(user.id);
+        
+        fetchTimer.end(200, JSON.stringify(userLists).length);
         
         // Update cache
         listsCache.set(cacheKey, {

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { List } from '@/types';
+import { perf } from '@/lib/utils/performance';
 
 // Enhanced List type with place count
 type ListWithPlaceCount = List & { place_count: number };
@@ -76,6 +77,16 @@ interface ListsGridProps {
 
 // Memoized grid component to prevent unnecessary re-renders
 const ListsGrid = React.memo<ListsGridProps>(({ lists, onListClick }) => {
+  // Performance monitoring for grid renders
+  const renderTimer = React.useMemo(() => perf.component('ListsGrid', 'update'), []);
+  
+  React.useEffect(() => {
+    renderTimer.start();
+    return () => {
+      renderTimer.end();
+    };
+  });
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">

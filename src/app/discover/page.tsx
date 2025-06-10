@@ -9,6 +9,7 @@ import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
 import { trackListView } from '@/lib/mixpanelClient';
 import { DiscoverHeader, DiscoverGrid, DiscoverLoading, DiscoverEmptyState } from '@/components/discover';
 import type { ListWithPlaceCountAndAuthor } from '@/components/discover/DiscoverGrid';
+import { perf } from '@/lib/utils/performance';
 
 // Sort options for discover page
 const sortOptions = [
@@ -29,6 +30,16 @@ export default function DiscoverPage() {
   const [displayLists, setDisplayLists] = useState<ListWithPlaceCountAndAuthor[]>([]);
   const router = useRouter();
 
+  // Performance monitoring for component lifecycle
+  const componentTimer = useMemo(() => perf.component('DiscoverPage', 'mount'), []);
+  
+  useEffect(() => {
+    componentTimer.start();
+    return () => {
+      componentTimer.end();
+    };
+  }, [componentTimer]);
+
   // Debounce search input with 300ms delay
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -40,6 +51,13 @@ export default function DiscoverPage() {
 
   // Update display lists whenever allLists, debouncedSearch, or sortState changes
   useEffect(() => {
+    const processingTimer = perf.operation('discoverProcessing', { 
+      totalLists: allLists.length, 
+      hasSearch: !!debouncedSearch.trim(),
+      sortField: sortState.field 
+    });
+    processingTimer.start();
+
     let filtered = allLists;
 
     // Apply search filter
@@ -89,6 +107,7 @@ export default function DiscoverPage() {
     });
 
     setDisplayLists(sorted);
+    processingTimer.end();
   }, [allLists, debouncedSearch, sortState]);
 
   // Fetch public lists
@@ -96,9 +115,19 @@ export default function DiscoverPage() {
     const fetchLists = async () => {
       try {
         setLoading(true);
+        
+        // Performance monitoring for API call
+        const fetchTimer = perf.api('/api/discover/lists', 'GET');
+        fetchTimer.start();
+        
         const lists = await getPublicListsForDiscovery(50, 0, undefined, undefined, 'view_count', 'desc');
         
+        fetchTimer.end(200, JSON.stringify(lists).length);
+        
         // Transform the data to match our expected type
+        const transformTimer = perf.operation('dataTransformation', { listCount: lists.length });
+        transformTimer.start();
+        
         const transformedLists: ListWithPlaceCountAndAuthor[] = lists.map((list: any) => ({
           ...list,
           place_count: list.place_count || 0,
@@ -108,6 +137,7 @@ export default function DiscoverPage() {
           } : undefined
         }));
         
+        transformTimer.end();
         setAllLists(transformedLists);
       } catch (error) {
         console.error('Error fetching public lists:', error);

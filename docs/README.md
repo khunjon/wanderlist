@@ -42,6 +42,12 @@ High-level system design and architectural decisions.
 - **[Client to API Migration](./architecture/CLIENT_TO_API_MIGRATION.md)** - Complete explanation of migrating from client-side Supabase queries to server-side API routes
 - **[List Loading Performance Optimization](./architecture/LIST_LOADING_OPTIMIZATION.md)** - Comprehensive hybrid solution for reliable and fast list loading
 
+### ⚡ Performance Optimization
+Comprehensive performance analysis and optimization documentation.
+
+- **[Performance Baseline](./performance/PERFORMANCE_BASELINE.md)** - Complete performance analysis with MCP database insights, component optimization, and auth state improvements
+- **[Optimization Summary](./performance/OPTIMIZATION_SUMMARY.md)** - Comprehensive summary of component architecture optimization, React.memo implementation, and performance improvements
+
 ### 📚 Migration Documentation
 Complete record of the Firestore to Supabase migration process.
 
@@ -107,9 +113,11 @@ Ideas and insights for future development.
 3. Review [System Architecture](./architecture/system-design.md) for design patterns
 
 ### For Performance Issues
-1. Use Supabase dashboard for query analysis
-2. Check [Performance Considerations](./architecture/system-design.md#performance-considerations)
-3. Review database indexes and RLS policies
+1. Check [Performance Baseline](./performance/PERFORMANCE_BASELINE.md) for comprehensive analysis
+2. Review [Optimization Summary](./performance/OPTIMIZATION_SUMMARY.md) for implemented improvements
+3. Use Supabase dashboard for query analysis
+4. Check [Performance Considerations](./architecture/system-design.md#performance-considerations)
+5. Review database indexes and RLS policies
 
 ## Contributing to Documentation
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
+import { perf } from '@/lib/utils/performance';
 
 // Optimized props interface - combine related state and reduce prop count
 interface SearchProps {
@@ -24,6 +25,16 @@ interface ListsHeaderProps {
 
 // Memoized component to prevent unnecessary re-renders
 const ListsHeader = React.memo<ListsHeaderProps>(({ search, sort, hasLists }) => {
+  // Performance monitoring for component renders
+  const renderTimer = React.useMemo(() => perf.component('ListsHeader', 'update'), []);
+  
+  React.useEffect(() => {
+    renderTimer.start();
+    return () => {
+      renderTimer.end();
+    };
+  });
+
   // Internal handler to convert input event to string value
   const handleSearchInputChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     search.onChange(e.target.value);

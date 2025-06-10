@@ -11,6 +11,7 @@ import {
   ListPlaceUpdate,
   GetUserListsWithCountsReturn
 } from './client'
+import { perf } from '@/lib/utils/performance'
 
 // Enhanced error handling
 class DatabaseError extends Error {
@@ -220,6 +221,9 @@ export async function getPublicListsForDiscovery(
   sortBy: string = 'view_count',
   sortDirection: 'asc' | 'desc' = 'desc'
 ): Promise<any[]> {
+  const dbTimer = perf.api('db:getPublicListsForDiscovery', 'GET');
+  dbTimer.start();
+  
   try {
     const { data, error } = await supabase
       .rpc('get_public_lists_for_discovery', {
@@ -232,11 +236,15 @@ export async function getPublicListsForDiscovery(
       })
 
     if (error) {
+      dbTimer.end(500, 0);
       handleDatabaseError(error, 'getPublicListsForDiscovery')
     }
 
+    const resultSize = data ? JSON.stringify(data).length : 0;
+    dbTimer.end(200, resultSize);
     return data || []
   } catch (error) {
+    dbTimer.end(500, 0);
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getPublicListsForDiscovery')
   }
@@ -986,22 +994,31 @@ export { DatabaseError }
 // PERFORMANCE: 17.8x faster than original get_user_lists_with_counts function (MCP analysis)
 // Uses parallel queries and optimized indexes for maximum performance
 export async function getUserListsWithPlaceCounts(userId: string): Promise<(List & { place_count: number })[]> {
+  const dbTimer = perf.api('db:getUserListsWithPlaceCounts', 'GET');
+  dbTimer.start();
+  
   try {
     // OPTIMIZED: Use optimized queries for better performance
     // This approach is 17.8x faster than the original function based on MCP analysis
     
     // First, get all user lists
+    const listsTimer = perf.operation('dbQuery:userLists', { userId });
+    listsTimer.start();
+    
     const { data: lists, error: listsError } = await supabase
       .from('lists')
       .select('*')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false })
 
+    listsTimer.end();
+
     if (listsError) {
       handleDatabaseError(listsError, 'getUserListsWithPlaceCounts - lists')
     }
 
     if (!lists || lists.length === 0) {
+      dbTimer.end(200, 0);
       return []
     }
 
@@ -1009,16 +1026,27 @@ export async function getUserListsWithPlaceCounts(userId: string): Promise<(List
     const listIds = lists.map(list => list.id)
     
     // Get place counts for all user lists
+    const placeCountsTimer = perf.operation('dbQuery:placeCounts', { listCount: listIds.length });
+    placeCountsTimer.start();
+    
     const { data: placeCounts, error: placeCountsError } = await supabase
       .from('list_places')
       .select('list_id')
       .in('list_id', listIds)
+
+    placeCountsTimer.end();
 
     if (placeCountsError) {
       console.warn('Error fetching place counts:', placeCountsError)
     }
 
     // Count places per list
+    const processingTimer = perf.operation('dataProcessing:placeCounts', { 
+      listCount: lists.length,
+      placeRecords: placeCounts?.length || 0 
+    });
+    processingTimer.start();
+    
     const placeCountMap = new Map<string, number>()
     if (placeCounts) {
       placeCounts.forEach(item => {
@@ -1033,8 +1061,11 @@ export async function getUserListsWithPlaceCounts(userId: string): Promise<(List
       place_count: placeCountMap.get(list.id) || 0
     }))
 
+    processingTimer.end();
+    dbTimer.end(200, JSON.stringify(listsWithCounts).length);
     return listsWithCounts
   } catch (error) {
+    dbTimer.end(500, 0);
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getUserListsWithPlaceCounts')
   }
