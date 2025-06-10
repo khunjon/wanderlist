@@ -123,12 +123,15 @@ export default function ListContent({ id }: ListContentProps) {
         setError(null);
 
         // Fetch list data
+        console.log('🔍 Fetching list for ID:', id);
         let listData;
         try {
           listData = await getListById(id);
+          console.log('📊 List data result:', listData ? 'Found' : 'Not found');
         } catch (err) {
-          console.error('Error fetching list:', err);
+          console.error('❌ Error fetching list:', err);
           // If there's an error fetching, treat as not found
+          console.log('🚨 Setting 404 state due to error');
           setIsNotFound(true);
           setLoading(false);
           return;
@@ -136,10 +139,13 @@ export default function ListContent({ id }: ListContentProps) {
         
         if (!listData) {
           // Set not found state for client-side 404 handling
+          console.log('🚨 List not found, setting 404 state');
           setIsNotFound(true);
           setLoading(false);
           return;
         }
+        
+        console.log('✅ List found, proceeding with normal flow');
 
         // Check if user has permission to view this list
         if (!listData.is_public && (!user || listData.user_id !== user.id)) {
@@ -231,8 +237,12 @@ export default function ListContent({ id }: ListContentProps) {
     };
 
     // Only fetch if we have the ID and auth loading is complete
+    console.log('🔄 useEffect triggered:', { id, authLoading, user: !!user });
     if (id && !authLoading) {
+      console.log('🚀 Starting fetchData...');
       fetchData();
+    } else {
+      console.log('⏳ Waiting for conditions:', { hasId: !!id, authLoading });
     }
   }, [id, user, authLoading]);
 
@@ -351,6 +361,7 @@ export default function ListContent({ id }: ListContentProps) {
 
   // Handle not found state with proper 404 page
   if (isNotFound) {
+    console.log('🚨 Rendering 404 page');
     // Set document title for 404 detection
     useEffect(() => {
       document.title = '404 - List Not Found | Placemarks';
@@ -373,6 +384,7 @@ export default function ListContent({ id }: ListContentProps) {
   }
 
   if (loading) {
+    console.log('⏳ Rendering loading state');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
