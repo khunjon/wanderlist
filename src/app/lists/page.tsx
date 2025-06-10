@@ -18,6 +18,10 @@ const sortOptions: SortOption[] = [
   { value: 'viewCount', label: 'Views' },
 ];
 
+// Simple cache for getUserLists API calls
+const listsCache = new Map<string, { data: List[]; timestamp: number }>();
+const CACHE_DURATION = 30 * 1000; // 30 seconds
+
 export default function ListsPage() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<List[]>([]);
@@ -92,7 +96,29 @@ export default function ListsPage() {
 
     try {
       setLoading(true);
+      
+      // Check cache first
+      const cacheKey = user.id;
+      const cached = listsCache.get(cacheKey);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        // Use cached data
+        setAllLists(cached.data);
+        setHasFetched(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch fresh data
       const userLists = await getUserLists(user.id);
+      
+      // Update cache
+      listsCache.set(cacheKey, {
+        data: userLists,
+        timestamp: now
+      });
+      
       setAllLists(userLists);
       setHasFetched(true);
     } catch (error) {
