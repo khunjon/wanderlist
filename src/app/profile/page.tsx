@@ -13,7 +13,6 @@ import {
 import { addCacheBuster } from '@/lib/utils/imageUtils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ProfilePhotoUpload } from '@/components/ProfilePhotoUpload';
 import type { EnhancedProfileData, ProfileUpdateResult, PhotoUpdateResult } from '@/lib/supabase/auth';
 
 export default function ProfilePage() {
@@ -26,8 +25,11 @@ export default function ProfilePage() {
   const [profileVisibility, setProfileVisibility] = useState<'public' | 'private' | 'friends'>('private');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [profileCompletion, setProfileCompletion] = useState<{
@@ -36,7 +38,7 @@ export default function ProfilePage() {
     completion_percentage: number;
   } | null>(null);
   const router = useRouter();
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Use the updated require auth hook with NavigationHandler
   const { NavigationHandler } = useRequireAuth();
@@ -63,6 +65,7 @@ export default function ProfilePage() {
           setPushNotifications(enhancedProfile.push_notifications ?? true);
           // Set photo URL with cache busting for fresh loads
           setCurrentPhotoUrl(addCacheBuster(enhancedProfile.photo_url));
+          setPreviewUrl(null); // Clear any preview
         }
 
         // Get profile completion status
@@ -96,6 +99,38 @@ export default function ProfilePage() {
     if (!authUser) return;
 
     try {
+      let photoUpdateResult: PhotoUpdateResult | null = null;
+
+      // Upload photo first if selected
+      if (selectedFile) {
+        try {
+          setUploadingPhoto(true);
+          setSuccessMessage('Uploading photo... Please wait.');
+          
+          photoUpdateResult = await updateProfilePhoto(
+            authUser.id, 
+            selectedFile, 
+            currentPhotoUrl || undefined
+          );
+          
+          if (!photoUpdateResult.success) {
+            throw new Error(photoUpdateResult.message);
+          }
+          
+          // Update the current photo URL immediately with cache busting
+          setCurrentPhotoUrl(addCacheBuster(photoUpdateResult.photo_url));
+          setPreviewUrl(null); // Clear preview
+          setSelectedFile(null); // Clear selected file
+        } catch (photoError) {
+          console.error('Error uploading photo:', photoError);
+          setError('Failed to upload profile photo. Please try again with a different image.');
+          setLoading(false);
+          setUploadingPhoto(false);
+          return;
+        } finally {
+          setUploadingPhoto(false);
+        }
+      }
 
       // Prepare update data for other fields
       const updates: Parameters<typeof updateUserProfile>[1] = {};
@@ -141,14 +176,28 @@ export default function ProfilePage() {
         }
       }
 
-      setSuccessMessage('Profile updated successfully!');
+      // Show success message
+      let successMsg = 'Profile updated successfully!';
+      if (photoUpdateResult?.success) {
+        successMsg += ' Profile photo updated.';
+      }
+      setSuccessMessage(successMsg);
       
       // Refresh profile data
       const updatedProfile = await getEnhancedUserProfile(authUser.id);
       if (updatedProfile) {
         setProfile(updatedProfile);
-        // Update photo URL with cache busting
-        setCurrentPhotoUrl(addCacheBuster(updatedProfile.photo_url));
+        // Update photo URL with cache busting if it changed
+        if (photoUpdateResult?.photo_url) {
+          setCurrentPhotoUrl(addCacheBuster(photoUpdateResult.photo_url));
+        } else {
+          setCurrentPhotoUrl(addCacheBuster(updatedProfile.photo_url));
+        }
+      }
+      
+      // Refresh the auth profile to update all components
+      if (photoUpdateResult?.success) {
+        await refreshProfile();
       }
 
       // Refresh profile completion status
@@ -173,9 +222,41 @@ export default function ProfilePage() {
     }
   };
 
-  // Get the image URL to display
+  // Get the image URL to display (preview takes priority)
   const getDisplayImageUrl = () => {
-    return currentPhotoUrl;
+    return previewUrl || currentPhotoUrl;
+  };
+
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image must be smaller than 5MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle photo selection button
+  const handleSelectPhoto = () => {
+    fileInputRef.current?.click();
   };
 
   // Debug function to test storage (commented out for production)
@@ -278,7 +359,14 @@ export default function ProfilePage() {
           {/* Profile Form */}
           <div className="px-6 py-8">
             <form onSubmit={handleSubmit} className="space-y-8">
-
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*"
+                className="hidden"
+              />
 
               {/* Profile Photo Section */}
               <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
@@ -307,30 +395,28 @@ export default function ProfilePage() {
                   </p>
                   
                   <div className="mt-4">
-                    <ProfilePhotoUpload
-                      userId={authUser!.id}
-                      currentPhotoUrl={currentPhotoUrl || undefined}
-                      onPhotoUpdated={(newUrl) => {
-                        setCurrentPhotoUrl(addCacheBuster(newUrl));
-                        setSuccessMessage('Profile photo updated successfully!');
-                        // Update the profile state
-                        if (profile) {
-                          setProfile({ ...profile, photo_url: newUrl });
-                        }
-                      }}
-                      onPhotoDeleted={() => {
-                        setCurrentPhotoUrl(null);
-                        setSuccessMessage('Profile photo deleted successfully!');
-                        // Update the profile state
-                        if (profile) {
-                          setProfile({ ...profile, photo_url: '' });
-                        }
-                      }}
-                      size="sm"
-                      className="inline-flex"
-                    />
+                    <button
+                      type="button"
+                      className="inline-flex items-center px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-colors"
+                      onClick={handleSelectPhoto}
+                      disabled={loading || uploadingPhoto}
+                    >
+                      {uploadingPhoto ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
+                          </svg>
+                          {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
+                        </>
+                      )}
+                    </button>
                     <p className="mt-2 text-xs text-gray-400">
-                      JPG, PNG, GIF, or WebP. Max 5MB. Cache-busting ensures immediate updates.
+                      JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
                     </p>
                   </div>
                 </div>
@@ -487,7 +573,7 @@ export default function ProfilePage() {
                 </Link>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || uploadingPhoto}
                   className="inline-flex justify-center items-center rounded-md border border-transparent bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? (
