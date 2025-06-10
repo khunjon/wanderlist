@@ -71,10 +71,16 @@ Lists now show information in a logical hierarchy:
 5. **Tags and Privacy Status**
 
 ### Profile Management
-- **Personal Bio**: Add a personal bio up to 500 characters (currently private)
-- **Social Media Integration**: Connect your Instagram and TikTok accounts to your profile (for future use)
-- **Profile Photo Upload**: Upload and manage your profile picture
-- **Privacy Controls**: All profile information is currently kept private
+- **Personal Bio**: Add a personal bio up to 1000 characters with real-time character counter
+- **Social Media Integration**: Connect your Instagram and TikTok accounts to your profile
+- **Profile Photo Upload**: Upload and manage your profile picture with automatic image optimization
+  - Supports JPG, PNG, GIF, and WebP formats (max 5MB)
+  - Automatic image compression and resizing (800px max width)
+  - Real-time preview and instant updates across the app
+  - Secure storage with user-specific folder structure
+- **Profile Completion Tracking**: Visual progress indicator showing profile completeness percentage
+- **Privacy Controls**: Configurable profile visibility (Public, Private, Friends Only)
+- **Notification Preferences**: Customizable email and push notification settings
 
 ## Getting Started
 
@@ -126,7 +132,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Set up the database schema using `supabase-schema.sql`
 3. Configure authentication providers (Email/Password and Google OAuth)
-4. Set up storage bucket for profile photos
+4. **Set up storage bucket for profile photos**:
+   - Create a public bucket named `profile-photos`
+   - Storage policies are automatically configured via the schema
+   - Supports user-specific folder structure for security
 5. Configure Row Level Security policies (included in schema)
 6. Deploy database functions for optimized operations
 
@@ -226,7 +235,16 @@ When deploying to Vercel, make sure to:
 
 ## Troubleshooting
 
-### Recent Fixes (December 2024)
+### Recent Fixes (June 2025)
+
+#### ✅ Profile Photo Upload System Fixed
+The profile photo upload functionality has been completely overhauled and fixed:
+- **Storage Path Structure**: Fixed file path mismatch between upload function and storage policies
+- **Next.js Image Optimization**: Added Supabase storage domain to allowed image domains
+- **Cache Busting**: Implemented automatic cache busting to ensure updated photos display immediately
+- **Cross-Component Updates**: Profile photos now update instantly across navbar, profile page, and list author displays
+- **Enhanced Error Handling**: Comprehensive logging and user-friendly error messages
+- **Image Compression**: Improved compression algorithm that preserves PNG transparency and handles all supported formats
 
 #### ✅ Supabase RLS Infinite Recursion Fixed
 The infinite recursion error in Row Level Security policies has been resolved. This was caused by circular dependencies between the `lists` and `list_collaborators` tables. The fix involved creating security definer functions to break the circular dependency. See [docs/troubleshooting/SUPABASE_RLS_TROUBLESHOOTING.md](./docs/troubleshooting/SUPABASE_RLS_TROUBLESHOOTING.md) for details.

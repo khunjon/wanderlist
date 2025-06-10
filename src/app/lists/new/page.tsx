@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { createList } from '@/lib/supabase';
-import { convertToSupabaseListInsert, getUserId } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { trackListCreate as trackListCreateGA } from '@/lib/analytics/gtag';
@@ -49,16 +48,15 @@ export default function NewListPage() {
         .filter(tag => tag.length > 0);
 
       const listData = {
-        userId: getUserId(user),
+        user_id: user.id,
         name: name.trim(),
         description: description.trim(),
         city: city.trim(),
         tags: tagArray,
-        isPublic,
+        is_public: isPublic,
       };
 
-      const supabaseListData = convertToSupabaseListInsert(listData);
-      const newList = await createList(supabaseListData);
+      const newList = await createList(listData);
       const listId = newList.id;
       
       // Track list creation event with Google Analytics

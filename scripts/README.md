@@ -1,5 +1,36 @@
 # Database Cleanup Scripts
 
+## Profile Photo Upload System (June 2025)
+
+### ✅ Fixed Issues
+The profile photo upload system has been completely overhauled and is now fully functional:
+
+- **Storage Path Structure**: Fixed file path mismatch between upload function and storage policies
+- **Next.js Image Optimization**: Added Supabase storage domain to allowed image domains  
+- **Cache Busting**: Implemented automatic cache busting to ensure updated photos display immediately
+- **Cross-Component Updates**: Profile photos now update instantly across navbar, profile page, and list author displays
+- **Enhanced Error Handling**: Comprehensive logging and user-friendly error messages
+- **Image Compression**: Improved compression algorithm that preserves PNG transparency
+
+### Setup Requirements
+1. **Storage Bucket**: Ensure `profile-photos` bucket exists in Supabase Storage
+2. **Storage Policies**: Uncomment storage policies in `supabase-schema.sql` after creating bucket
+3. **Next.js Config**: Add your Supabase storage domain to `next.config.js`
+
+For detailed documentation, see [docs/features/profile-photo-upload.md](../docs/features/profile-photo-upload.md).
+
+## Legacy Code Cleanup (June 2025)
+
+### ✅ Completed Migration Cleanup
+Removed unnecessary Firebase-to-Supabase migration compatibility layer:
+
+- **Type System Simplification**: Cleaned up User and List types to remove dual naming conventions
+- **Function Removal**: Removed legacy conversion functions (`convertToLegacyUser`, `convertToLegacyList`, etc.)
+- **Code Modernization**: Updated all components to use clean Supabase property names
+- **Build Optimization**: Reduced bundle size by removing unused compatibility code
+
+The codebase now uses a clean, consistent type system without legacy Firebase compatibility.
+
 ## Duplicate Places Issue
 
 ### Problem

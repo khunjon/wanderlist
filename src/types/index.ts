@@ -1,61 +1,30 @@
-// User type - Supabase schema
+// User type - Clean Supabase schema
 export interface User {
-  // Primary identifier
   id: string;
-  uid?: string; // Legacy Firebase compatibility
-  
-  // Email
   email: string;
-  
-  // Display name
   displayName: string;
-  display_name?: string | null;
-  
-  // Timestamps
   createdAt: Date;
-  created_at?: string | null;
-  updated_at?: string | null;
-  
-  // Photo URL
   photo_url?: string | null;
-  photoURL?: string | null; // Legacy Firebase compatibility
-  
-  // Admin status
   is_admin?: boolean | null;
-  isAdmin?: boolean | null; // Legacy Firebase compatibility
-  
-  // Profile fields
   bio?: string | null;
   instagram?: string | null;
   tiktok?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
-// List type - Supabase schema
+// List type - Clean Supabase schema
 export interface List {
   id: string;
-  
-  // User ID
   user_id: string;
-  userId?: string; // Legacy Firebase compatibility
-  
   name: string;
   description: string | null;
   city?: string | null;
   tags?: string[] | null;
-  
-  // Public status
   is_public?: boolean | null;
-  isPublic?: boolean | null; // Legacy Firebase compatibility
-  
-  // Timestamps
-  createdAt?: Date;
-  updatedAt?: Date;
   created_at?: string | null;
   updated_at?: string | null;
-  
-  // View count
   view_count?: number | null;
-  viewCount?: number | null; // Legacy Firebase compatibility
 }
 
 // Place type

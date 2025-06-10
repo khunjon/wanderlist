@@ -156,9 +156,9 @@ export default function ListsPage() {
       list_id: list.id,
       list_name: list.name,
       list_author: user?.displayName || user?.email || 'Unknown',
-      list_creation_date: list.created_at || list.createdAt?.toISOString() || new Date().toISOString(),
-      is_public: list.is_public || list.isPublic || false,
-      view_count: list.view_count || list.viewCount || 0
+      list_creation_date: list.created_at || new Date().toISOString(),
+      is_public: list.is_public || false,
+      view_count: list.view_count || 0
     });
     
     router.push(`/lists/${list.id}`);

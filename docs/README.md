@@ -18,6 +18,11 @@ Essential guides for getting the development environment running.
 - **[Supabase Setup](./setup/supabase-setup.md)** - Database and backend configuration
 - **[MCP Setup](./setup/mcp-setup.md)** - Cursor AI integration for enhanced development
 
+### ✨ Features & Functionality
+Detailed documentation for key application features.
+
+- **[Profile Photo Upload](./features/profile-photo-upload.md)** - Complete profile photo upload system documentation
+
 
 ### 🔧 Troubleshooting
 Solutions to common issues and problems encountered during development.

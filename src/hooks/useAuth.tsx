@@ -5,7 +5,7 @@ import { useState, useEffect, createContext, useContext, ReactNode, Suspense } f
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, User as AppUser, syncUserProfile, onAuthStateChange } from '@/lib/supabase';
 import { User } from '@/types';
-import { convertToLegacyUser } from '@/lib/supabase/typeUtils';
+import { convertToUser } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
 import { identifyUser, trackEvent, mixpanel } from '@/lib/mixpanelClient';
 
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (supabaseUser) {
       try {
         const updatedProfile = await syncUserProfile(supabaseUser);
-        const appUser = convertToLegacyUser(supabaseUser, updatedProfile);
+        const appUser = convertToUser(supabaseUser, updatedProfile);
         setUser(appUser);
       } catch (err) {
         console.error('Error refreshing profile:', err);
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             )
           ]);
           
-          const appUser = convertToLegacyUser(session.user, userProfile);
+          const appUser = convertToUser(session.user, userProfile);
           setUser(appUser);
 
           // Identify user with Mixpanel
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             )
           ]);
           
-          const appUser = convertToLegacyUser(session.user, userProfile);
+          const appUser = convertToUser(session.user, userProfile);
           setUser(appUser);
 
           // Identify user with Mixpanel
