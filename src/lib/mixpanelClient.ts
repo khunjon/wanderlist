@@ -12,14 +12,17 @@ const getTrackingDomain = () => {
 
 export const initMixpanel = () => {
   if (!MIXPANEL_TOKEN) {
-    console.warn('Mixpanel token is missing! Check your .env file.');
+    console.warn('❌ Mixpanel token is missing! Check your .env file.');
     return;
   }
 
+  console.log('🚀 Initializing Mixpanel with token:', MIXPANEL_TOKEN.substring(0, 8) + '...');
+
   const trackingDomain = getTrackingDomain();
+  console.log('🌐 Tracking domain:', trackingDomain);
 
   mixpanel.init(MIXPANEL_TOKEN, { 
-    autocapture: true,
+    autocapture: false, // Disable automatic click and form tracking
     track_pageview: false, // Disable automatic page views to prevent duplicates
     persistence: 'localStorage',
     // Force the correct domain for tracking
@@ -31,6 +34,7 @@ export const initMixpanel = () => {
     secure_cookie: true,
     // Custom domain tracking
     loaded: function(mixpanel) {
+      console.log('✅ Mixpanel loaded successfully');
       // Override the default domain with our custom domain
       if (trackingDomain) {
         mixpanel.register({
@@ -39,6 +43,7 @@ export const initMixpanel = () => {
           'domain': window.location.hostname,
           'url_origin': trackingDomain
         });
+        console.log('🔧 Mixpanel domain properties registered');
       }
     }
   });
@@ -115,22 +120,36 @@ export const trackListCreate = (listData: {
   tags?: string[];
   description?: string;
 }) => {
-  if (MIXPANEL_TOKEN) {
-    mixpanel.track('List Create', {
-      list_id: listData.list_id,
-      list_name: listData.list_name,
-      list_author: listData.list_author,
-      list_creation_date: listData.list_creation_date,
-      is_public: listData.is_public || false,
-      city: listData.city || '',
-      tags: listData.tags || [],
-      tag_count: listData.tags?.length || 0,
-      description: listData.description || '',
-      has_description: !!(listData.description && listData.description.trim()),
-      timestamp: new Date().toISOString(),
-      domain: typeof window !== 'undefined' ? window.location.hostname : '',
-      current_url: typeof window !== 'undefined' ? window.location.href : ''
-    });
+  console.log('🎯 Mixpanel trackListCreate called with:', listData);
+  
+  if (!MIXPANEL_TOKEN) {
+    console.warn('❌ Mixpanel token is missing - List Create event not tracked');
+    return;
+  }
+
+  const eventData = {
+    list_id: listData.list_id,
+    list_name: listData.list_name,
+    list_author: listData.list_author,
+    list_creation_date: listData.list_creation_date,
+    is_public: listData.is_public || false,
+    city: listData.city || '',
+    tags: listData.tags || [],
+    tag_count: listData.tags?.length || 0,
+    description: listData.description || '',
+    has_description: !!(listData.description && listData.description.trim()),
+    timestamp: new Date().toISOString(),
+    domain: typeof window !== 'undefined' ? window.location.hostname : '',
+    current_url: typeof window !== 'undefined' ? window.location.href : ''
+  };
+
+  console.log('📊 Sending List Create event to Mixpanel:', eventData);
+  
+  try {
+    mixpanel.track('List Create', eventData);
+    console.log('✅ List Create event sent successfully');
+  } catch (error) {
+    console.error('❌ Error sending List Create event:', error);
   }
 };
 

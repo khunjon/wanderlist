@@ -180,7 +180,7 @@ const handleUserProfileUpdate = (user: User) => {
 ## Features
 
 - **Smart Page Tracking**: Page views are tracked manually for better Next.js integration (no duplicates)
-- **Autocapture**: Mixpanel will automatically capture clicks and form submissions
+- **Manual Event Tracking**: All events are tracked manually for precise control (autocapture disabled)
 - **User Identification**: Link events to specific users
 - **Custom Properties**: Add context to your events
 - **TypeScript Support**: Full TypeScript support with proper types
@@ -211,6 +211,53 @@ import { updateDomainProperties } from '@/lib/mixpanelClient';
 
 // Call this if domain tracking seems incorrect
 updateDomainProperties();
+```
+
+## Manual Tracking Configuration
+
+This integration is configured for **manual tracking only**. Mixpanel's autocapture feature is disabled to prevent unwanted automatic events like `[Auto] Page View` and `[Auto] Click`.
+
+### What's Disabled
+- ❌ Automatic click tracking
+- ❌ Automatic form submission tracking  
+- ❌ Automatic page view tracking (we handle this manually)
+
+### What's Enabled
+- ✅ Manual event tracking via `track()` function
+- ✅ Manual page view tracking (controlled by Next.js router)
+- ✅ User identification and properties
+- ✅ Custom event properties
+
+### Adding Manual Click Tracking
+
+If you want to track specific clicks, add them manually:
+
+```tsx
+const { track } = useMixpanel();
+
+const handleButtonClick = () => {
+  track('Button Clicked', {
+    button_name: 'Save Place',
+    button_location: 'place-details-page',
+    user_action: 'save'
+  });
+};
+
+<button onClick={handleButtonClick}>Save Place</button>
+```
+
+### Adding Manual Form Tracking
+
+For form submissions, track them manually:
+
+```tsx
+const handleFormSubmit = (formData: any) => {
+  track('Form Submitted', {
+    form_name: 'create_list',
+    form_fields: Object.keys(formData),
+    success: true
+  });
+};
 ```
 
 ## Privacy Considerations
