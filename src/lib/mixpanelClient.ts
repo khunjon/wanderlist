@@ -46,26 +46,72 @@ export const initMixpanel = () => {
 
 export const trackPageView = (url: string) => {
   if (MIXPANEL_TOKEN && typeof window !== 'undefined') {
+    // Check if this is a 404 page by looking at the document title
+    const is404Page = document.title.includes('404') || document.title.includes('Not Found');
+    
     // Ensure we're tracking the full URL with the correct domain
     const fullUrl = `${window.location.origin}${url}`;
     
-    mixpanel.track('Page View', {
-      // Standard Mixpanel page view properties
-      '$current_url': fullUrl,
-      '$referrer': document.referrer,
-      // Custom properties for better analytics
-      url: fullUrl,
-      path: url,
-      domain: window.location.hostname,
-      title: document.title,
-      timestamp: new Date().toISOString(),
-      // Additional context
-      user_agent: navigator.userAgent,
-      screen_width: window.screen.width,
-      screen_height: window.screen.height
-    });
+    if (is404Page) {
+      // Track as a special 404 event instead of normal page view
+      mixpanel.track('404 Page View', {
+        incorrect_path: url,
+        full_url: fullUrl,
+        referrer: document.referrer,
+        domain: window.location.hostname,
+        title: document.title,
+        timestamp: new Date().toISOString(),
+        user_agent: navigator.userAgent,
+        screen_width: window.screen.width,
+        screen_height: window.screen.height,
+        // Categorize the type of 404 for better analysis
+        path_category: categorize404Path(url)
+      });
+    } else {
+      // Normal page view tracking
+      mixpanel.track('Page View', {
+        // Standard Mixpanel page view properties
+        '$current_url': fullUrl,
+        '$referrer': document.referrer,
+        // Custom properties for better analytics
+        url: fullUrl,
+        path: url,
+        domain: window.location.hostname,
+        title: document.title,
+        timestamp: new Date().toISOString(),
+        // Additional context
+        user_agent: navigator.userAgent,
+        screen_width: window.screen.width,
+        screen_height: window.screen.height
+      });
+    }
   }
 };
+
+// Helper function to categorize 404 paths for better analytics
+function categorize404Path(path: string): string {
+  if (!path) return 'unknown';
+  
+  // Remove leading slash for analysis
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // Categorize based on path patterns
+  if (cleanPath.startsWith('lists/')) return 'list_page';
+  if (cleanPath.startsWith('profile')) return 'profile_page';
+  if (cleanPath.startsWith('search')) return 'search_page';
+  if (cleanPath.startsWith('discover')) return 'discover_page';
+  if (cleanPath.startsWith('auth/')) return 'auth_page';
+  if (cleanPath.startsWith('api/')) return 'api_endpoint';
+  if (cleanPath.includes('.')) return 'file_request';
+  if (cleanPath === '') return 'root_page';
+  
+  // Check for common patterns
+  if (/^[a-f0-9-]{36}$/.test(cleanPath)) return 'uuid_direct_access';
+  if (/^\d+$/.test(cleanPath)) return 'numeric_id';
+  if (cleanPath.length > 50) return 'very_long_path';
+  
+  return 'other';
+}
 
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
   if (MIXPANEL_TOKEN) {
