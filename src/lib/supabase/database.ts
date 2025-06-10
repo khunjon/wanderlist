@@ -261,27 +261,50 @@ export async function searchPublicListsAdvanced(
 
 export async function getListById(listId: string): Promise<List | null> {
   try {
-    // Add timeout to prevent hanging queries
+    // Much shorter timeout for better UX
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), 10000);
+      setTimeout(() => reject(new Error('Query timeout')), 2000); // 2 seconds max
     });
 
+    // Simple query - just check if list exists first
     const queryPromise = supabase
       .from('lists')
-      .select(`
-        *,
-        users(display_name, photo_url)
-      `)
+      .select('*')
       .eq('id', listId)
-      .limit(1);
+      .single(); // Use single() instead of limit(1) for better performance
 
     const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+    // Handle "not found" error from single()
+    if (error && error.code === 'PGRST116') {
+      return null; // List not found
+    }
 
     if (error) {
       handleDatabaseError(error, 'getListById')
     }
 
-    return data && data.length > 0 ? data[0] : null
+    // If we found a list, fetch the user data separately (without timeout for this quick query)
+    if (data) {
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('display_name, photo_url')
+          .eq('id', data.user_id)
+          .single();
+        
+        if (userData) {
+          data.users = userData;
+        }
+      } catch (userError) {
+        // If user fetch fails, continue without user data
+        console.warn('Failed to fetch user data for list:', userError);
+      }
+      
+      return data;
+    }
+
+    return null;
   } catch (error) {
     if (error instanceof DatabaseError) throw error
     if (error instanceof Error && error.message === 'Query timeout') {
