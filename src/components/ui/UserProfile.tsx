@@ -61,6 +61,8 @@ export default function UserProfile({
               onLoad={handleImageLoad}
               onError={handleImageError}
               onLoadStart={() => setImageLoading(true)}
+              unoptimized={user.photo_url.includes('supabase.co')} // Disable optimization for Supabase images
+              key={user.photo_url} // Force re-render when URL changes
             />
           </>
         ) : (

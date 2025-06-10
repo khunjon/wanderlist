@@ -1,12 +1,15 @@
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User as AppUser, List as SupabaseList, Place as SupabasePlace } from '@/lib/supabase';
 import { User as LegacyUser, List as LegacyList, Place as LegacyPlace } from '@/types';
+import { addCacheBuster } from '@/lib/utils/imageUtils';
 
 /**
  * Converts Supabase user and profile data to legacy User format
  * Provides both naming conventions for backward compatibility
  */
 export function convertToLegacyUser(supabaseUser: SupabaseUser, profile: AppUser): LegacyUser {
+  const photoUrl = addCacheBuster(profile.photo_url);
+  
   return {
     // Both naming conventions for compatibility
     uid: supabaseUser.id,
@@ -17,8 +20,8 @@ export function convertToLegacyUser(supabaseUser: SupabaseUser, profile: AppUser
     createdAt: new Date(profile.created_at || supabaseUser.created_at),
     created_at: profile.created_at,
     updated_at: profile.updated_at,
-    photoURL: profile.photo_url,
-    photo_url: profile.photo_url,
+    photoURL: photoUrl,
+    photo_url: photoUrl,
     isAdmin: profile.is_admin,
     is_admin: profile.is_admin,
     bio: profile.bio,

@@ -9,13 +9,14 @@ import {
   validateProfileCompleteness,
   updateUserActivity
 } from '@/lib/supabase/auth';
-import { testStorageUpload, getCurrentUserInfo } from '@/lib/debug/storage-test';
+// import { testStorageUpload, getCurrentUserInfo } from '@/lib/debug/storage-test'; // Debug only
+import { addCacheBuster } from '@/lib/utils/imageUtils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { EnhancedProfileData, ProfileUpdateResult, PhotoUpdateResult } from '@/lib/supabase/auth';
 
 export default function ProfilePage() {
-  const { user: authUser, loading: authLoading, signOut } = useAuth();
+  const { user: authUser, loading: authLoading, signOut, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<EnhancedProfileData | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -62,7 +63,8 @@ export default function ProfilePage() {
           setProfileVisibility(enhancedProfile.profile_visibility as 'public' | 'private' | 'friends' || 'private');
           setEmailNotifications(enhancedProfile.email_notifications ?? true);
           setPushNotifications(enhancedProfile.push_notifications ?? true);
-          setCurrentPhotoUrl(enhancedProfile.photo_url || null);
+          // Set photo URL with cache busting for fresh loads
+          setCurrentPhotoUrl(addCacheBuster(enhancedProfile.photo_url));
           setPreviewUrl(null); // Clear any preview
         }
 
@@ -145,8 +147,8 @@ export default function ProfilePage() {
             throw new Error(photoUpdateResult.message);
           }
           
-          // Update the current photo URL immediately
-          setCurrentPhotoUrl(photoUpdateResult.photo_url || null);
+          // Update the current photo URL immediately with cache busting
+          setCurrentPhotoUrl(addCacheBuster(photoUpdateResult.photo_url));
           setPreviewUrl(null); // Clear preview
           setSelectedFile(null); // Clear selected file
         } catch (photoError) {
@@ -210,10 +212,17 @@ export default function ProfilePage() {
       const updatedProfile = await getEnhancedUserProfile(authUser.id);
       if (updatedProfile) {
         setProfile(updatedProfile);
-        // Update photo URL if it changed
-        if (photoUpdateResult?.photo_url && photoUpdateResult.photo_url !== currentPhotoUrl) {
-          setCurrentPhotoUrl(photoUpdateResult.photo_url);
+        // Update photo URL with cache busting if it changed
+        if (photoUpdateResult?.photo_url) {
+          setCurrentPhotoUrl(addCacheBuster(photoUpdateResult.photo_url));
+        } else {
+          setCurrentPhotoUrl(addCacheBuster(updatedProfile.photo_url));
         }
+      }
+      
+      // Refresh the auth profile to update all components
+      if (photoUpdateResult?.success) {
+        await refreshProfile();
       }
 
       // Refresh profile completion status
@@ -243,22 +252,22 @@ export default function ProfilePage() {
     return previewUrl || currentPhotoUrl;
   };
 
-  // Debug function to test storage
-  const handleDebugStorage = async () => {
-    if (!authUser) return;
-    
-    console.log('=== STORAGE DEBUG TEST ===');
-    
-    // Test current user info
-    const userInfo = await getCurrentUserInfo();
-    console.log('User info test:', userInfo);
-    
-    // Test storage upload
-    const storageTest = await testStorageUpload(authUser.id);
-    console.log('Storage test:', storageTest);
-    
-    alert(`Debug complete. Check console for details. Storage test: ${storageTest.success ? 'SUCCESS' : 'FAILED'}`);
-  };
+  // Debug function to test storage (commented out for production)
+  // const handleDebugStorage = async () => {
+  //   if (!authUser) return;
+  //   
+  //   console.log('=== STORAGE DEBUG TEST ===');
+  //   
+  //   // Test current user info
+  //   const userInfo = await getCurrentUserInfo();
+  //   console.log('User info test:', userInfo);
+  //   
+  //   // Test storage upload
+  //   const storageTest = await testStorageUpload(authUser.id);
+  //   console.log('Storage test:', storageTest);
+  //   
+  //   alert(`Debug complete. Check console for details. Storage test: ${storageTest.success ? 'SUCCESS' : 'FAILED'}`);
+  // };
 
   if (authLoading || loading) {
     return (
@@ -408,14 +417,14 @@ export default function ProfilePage() {
                       JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
                     </p>
                     
-                    {/* Debug button - remove in production */}
-                    <button
+                    {/* Debug button - commented out for production */}
+                    {/* <button
                       type="button"
                       onClick={handleDebugStorage}
                       className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
                     >
                       Debug Storage (Dev Only)
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>

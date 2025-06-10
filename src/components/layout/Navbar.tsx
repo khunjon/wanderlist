@@ -98,6 +98,7 @@ export default function Navbar() {
                             src={user.photo_url}
                             alt={user.displayName || 'User'}
                             className="h-full w-full object-cover"
+                            key={user.photo_url} // Force re-render when URL changes
                             onError={(e) => {
                               // Hide broken image and show fallback
                               (e.target as HTMLImageElement).style.display = 'none';
@@ -256,6 +257,7 @@ export default function Navbar() {
                           src={user.photo_url}
                           alt={user.displayName || 'User'}
                           className="h-full w-full object-cover"
+                          key={user.photo_url} // Force re-render when URL changes
                           onError={(e) => {
                             // Hide broken image and show fallback
                             (e.target as HTMLImageElement).style.display = 'none';

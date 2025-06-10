@@ -589,14 +589,21 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
 // Enhanced auth sync with optimized database function
 export async function syncUserProfile(user: SupabaseUser): Promise<User> {
   try {
-    // Use direct upsert instead of RPC
+    // First, get the current user data from database to preserve existing fields
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    // Use direct upsert instead of RPC, preserving existing data
     const { data, error } = await supabase
       .from('users')
       .upsert({
         id: user.id,
         email: user.email!,
-        display_name: user.user_metadata?.display_name || user.user_metadata?.full_name || null,
-        photo_url: user.user_metadata?.avatar_url || null,
+        display_name: existingUser?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || null,
+        photo_url: existingUser?.photo_url || user.user_metadata?.avatar_url || null, // Preserve existing photo_url
         updated_at: new Date().toISOString(),
         last_active_at: new Date().toISOString()
       }, {

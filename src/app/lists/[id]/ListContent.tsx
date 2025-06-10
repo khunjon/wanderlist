@@ -553,6 +553,7 @@ export default function ListContent({ id }: ListContentProps) {
                         src={author.photo_url}
                         alt={author.displayName}
                         className="h-6 w-6 rounded-full"
+                        key={author.photo_url} // Force re-render when URL changes
                       />
                     )}
                     <span>Created by {author.displayName}</span>
