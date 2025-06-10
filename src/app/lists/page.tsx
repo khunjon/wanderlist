@@ -3,29 +3,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { getUserLists } from '@/lib/supabase/database';
+import { getUserListsWithPlaceCounts } from '@/lib/supabase/database';
 import { List } from '@/types';
 import { useRouter } from 'next/navigation';
 import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
 import { trackListView } from '@/lib/mixpanelClient';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 
+// Enhanced List type with place count
+type ListWithPlaceCount = List & { place_count: number };
 
 const sortOptions: SortOption[] = [
   { value: 'updatedAt', label: 'Last Edited' },
   { value: 'name', label: 'Name' },
   { value: 'createdAt', label: 'Created Date' },
   { value: 'viewCount', label: 'Views' },
+  { value: 'placeCount', label: 'Places' }, // New sort option for place count
 ];
 
-// Simple cache for getUserLists API calls
-const listsCache = new Map<string, { data: List[]; timestamp: number }>();
+// Simple cache for getUserListsWithPlaceCounts API calls
+const listsCache = new Map<string, { data: ListWithPlaceCount[]; timestamp: number }>();
 const CACHE_DURATION = 30 * 1000; // 30 seconds
 
 // Memoized list item component to prevent unnecessary re-renders
 interface ListItemProps {
-  list: List;
-  onListClick: (list: List) => void;
+  list: ListWithPlaceCount;
+  onListClick: (list: ListWithPlaceCount) => void;
 }
 
 const ListItem = React.memo<ListItemProps>(({ list, onListClick }) => {
@@ -62,6 +65,13 @@ const ListItem = React.memo<ListItemProps>(({ list, onListClick }) => {
         <div className="flex justify-between items-center text-xs text-gray-400">
           <div className="flex flex-col space-y-1">
             <span>Last updated: {list.updated_at ? new Date(list.updated_at).toLocaleDateString() : 'Unknown'}</span>
+            <span className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {list.place_count} {list.place_count === 1 ? 'place' : 'places'}
+            </span>
           </div>
           {list.view_count !== undefined && (
             <div className="flex items-center">
@@ -82,13 +92,13 @@ ListItem.displayName = 'ListItem';
 
 export default function ListsPage() {
   const { user, loading: authLoading } = useAuth();
-  const [allLists, setAllLists] = useState<List[]>([]);
+  const [allLists, setAllLists] = useState<ListWithPlaceCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
-  const [displayLists, setDisplayLists] = useState<List[]>([]);
+  const [displayLists, setDisplayLists] = useState<ListWithPlaceCount[]>([]);
   const router = useRouter();
 
   // Debounce search input with 300ms delay
@@ -142,6 +152,10 @@ export default function ListsPage() {
           aValue = a.view_count || 0;
           bValue = b.view_count || 0;
           break;
+        case 'placeCount':
+          aValue = a.place_count || 0;
+          bValue = b.place_count || 0;
+          break;
         default:
           return 0;
       }
@@ -179,7 +193,7 @@ export default function ListsPage() {
       }
       
       // Fetch fresh data
-      const userLists = await getUserLists(user.id);
+      const userLists = await getUserListsWithPlaceCounts(user.id);
       
       // Update cache
       listsCache.set(cacheKey, {
@@ -225,7 +239,7 @@ export default function ListsPage() {
   }, []);
 
   // Memoized list click handler
-  const handleListClick = useCallback((list: List) => {
+  const handleListClick = useCallback((list: ListWithPlaceCount) => {
     // Track with Google Analytics
     trackListViewGA(list.name, list.id);
     
@@ -235,7 +249,7 @@ export default function ListsPage() {
        list_name: list.name,
        list_author: user?.displayName || 'Unknown',
        list_creation_date: list.created_at || new Date().toISOString(),
-       place_count: 0, // Not loaded on overview page
+       place_count: list.place_count,
        is_public: list.is_public || false
      });
     
@@ -320,7 +334,7 @@ export default function ListsPage() {
                 />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {displayLists.map((list: List) => (
+                {displayLists.map((list: ListWithPlaceCount) => (
                   <ListItem
                     key={list.id}
                     list={list}

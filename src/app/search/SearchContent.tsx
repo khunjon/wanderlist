@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { searchPlaces } from '@/lib/google/places';
-import { createPlace, addPlaceToList, getUserLists, getListById, upsertPlace } from '@/lib/supabase';
+import { createPlace, addPlaceToList, getUserListsWithPlaceCounts, getListById, upsertPlace } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';

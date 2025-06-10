@@ -32,6 +32,7 @@ export type { AuthState } from './auth'
 // Database functions (client-side)
 export {
   getUserLists,
+  getUserListsWithPlaceCounts,
   getPublicLists,
   getListById,
   createList,
