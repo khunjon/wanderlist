@@ -261,12 +261,10 @@ export async function searchPublicListsAdvanced(
 
 export async function getListById(listId: string): Promise<List | null> {
   try {
+    // First, get the list data without user join to avoid RLS issues
     const { data, error } = await supabase
       .from('lists')
-      .select(`
-        *,
-        users!inner(display_name, photo_url)
-      `)
+      .select('*')
       .eq('id', listId)
       .single();
 
@@ -276,6 +274,24 @@ export async function getListById(listId: string): Promise<List | null> {
 
     if (error) {
       handleDatabaseError(error, 'getListById')
+    }
+
+    // If we found a list, fetch the user data separately
+    if (data) {
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('display_name, photo_url')
+          .eq('id', data.user_id)
+          .single();
+        
+        if (userData) {
+          (data as any).users = userData;
+        }
+      } catch (userError) {
+        // If user fetch fails, continue without user data
+        console.warn('Failed to fetch user data for list:', userError);
+      }
     }
 
     return data;
