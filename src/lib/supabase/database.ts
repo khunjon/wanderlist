@@ -260,73 +260,27 @@ export async function searchPublicListsAdvanced(
 // =============================================
 
 export async function getListById(listId: string): Promise<List | null> {
-  console.log('🔍 getListById starting for:', listId);
-  
   try {
-    // Add a shorter timeout since we know it hangs
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        console.log('⏰ Query timeout after 5 seconds for:', listId);
-        reject(new Error('Query timeout'));
-      }, 5000); // 5 seconds - if it doesn't work by then, it's hanging
-    });
-
-    // Try a more permissive query that should work regardless of auth state
-    console.log('📡 Starting list query for:', listId);
-    const queryPromise = supabase
+    const { data, error } = await supabase
       .from('lists')
-      .select('*')
+      .select(`
+        *,
+        users!inner(display_name, photo_url)
+      `)
       .eq('id', listId)
-      .maybeSingle(); // Use maybeSingle instead of single to be more permissive
+      .single();
 
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-    console.log('📊 List query completed for:', listId, 'Success:', !!data, 'Error:', !!error);
+    if (error && error.code === 'PGRST116') {
+      return null; // List not found
+    }
 
     if (error) {
-      console.error('❌ List query error:', error);
-      // If we get an RLS error, return null instead of throwing
-      if (error.message?.includes('RLS') || error.message?.includes('policy')) {
-        console.log('🔒 RLS policy blocked query, treating as not found');
-        return null;
-      }
       handleDatabaseError(error, 'getListById')
     }
 
-    // If no data found
-    if (!data) {
-      console.log('📭 No list data found for:', listId);
-      return null;
-    }
-
-    // If we found a list, fetch the user data separately
-    console.log('✅ List found, fetching user data for user_id:', data.user_id);
-    try {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('display_name, photo_url')
-        .eq('id', data.user_id)
-        .maybeSingle(); // Also use maybeSingle for user data
-      
-      if (userData) {
-        (data as any).users = userData;
-        console.log('👤 User data attached:', userData.display_name);
-      } else {
-        console.log('👤 No user data found for:', data.user_id);
-      }
-    } catch (userError) {
-      // If user fetch fails, continue without user data
-      console.warn('⚠️ Failed to fetch user data for list:', userError);
-    }
-
-    console.log('🏁 getListById completed for:', listId);
     return data;
   } catch (error) {
-    console.error('💥 Exception in getListById:', error);
     if (error instanceof DatabaseError) throw error
-    if (error instanceof Error && error.message === 'Query timeout') {
-      console.error('⏰ getListById timed out for:', listId);
-      return null; // Treat timeout as "not found"
-    }
     handleDatabaseError(error, 'getListById')
   }
 }
