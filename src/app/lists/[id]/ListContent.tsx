@@ -25,6 +25,54 @@ interface ListContentProps {
   id: string;
 }
 
+// Add performance tracking
+const performanceTracker = {
+  serverResponseTimes: [] as number[],
+  getAverageServerTime: () => {
+    const times = performanceTracker.serverResponseTimes.slice(-5); // Last 5 requests
+    return times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+  },
+  shouldUseClientSide: () => {
+    const avgTime = performanceTracker.getAverageServerTime();
+    return avgTime > 1000; // If server is consistently slow (>1s), consider client-side
+  }
+};
+
+// Add request cache at module level
+const requestCache = new Map<string, { data: any; timestamp: number; promise?: Promise<any> }>();
+const CACHE_TTL = 30 * 1000; // 30 seconds
+
+// Client-side fallback function
+const fetchDataClientSide = async (id: string, user: any) => {
+  console.log('Falling back to client-side query...');
+  
+  const { data: list, error: listError } = await supabase
+    .from('lists')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (listError) throw listError;
+  if (!list) throw new Error('List not found');
+
+  // Check access permissions
+  if (!list.is_public && (!user || user.id !== list.user_id)) {
+    throw new Error('Access denied to private list');
+  }
+
+  const { data: listPlaces, error: placesError } = await supabase
+    .from('list_places')
+    .select(`
+      *,
+      places (*)
+    `)
+    .eq('list_id', id);
+
+  if (placesError) throw placesError;
+
+  return { list, places: listPlaces || [] };
+};
+
 export default function ListContent({ id }: ListContentProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -111,41 +159,122 @@ export default function ListContent({ id }: ListContentProps) {
       authStabilized 
     });
     
+    const cacheKey = `list-${id}`;
+    const startTime = Date.now();
+    
+    // Check cache first for faster perceived performance
+    const cached = requestCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('Using cached data for list:', id);
+      const { list: listData, places: placesData } = cached.data;
+      setList(listData);
+      setIsNotFound(false);
+      
+      const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
+        id: lp.places.id,
+        googlePlaceId: lp.places.google_place_id,
+        name: lp.places.name,
+        address: lp.places.address,
+        latitude: lp.places.latitude,
+        longitude: lp.places.longitude,
+        rating: lp.places.rating || 0,
+        photoUrl: lp.places.photo_url || '',
+        placeTypes: lp.places.place_types || [],
+        notes: lp.notes || '',
+        listPlaceId: lp.id,
+        addedAt: new Date(lp.added_at || '')
+      }));
+      setPlaces(transformedPlaces);
+      setIsLoading(false);
+      return;
+    }
+    
+    // If there's an ongoing request for this list, wait for it
+    if (cached?.promise) {
+      console.log('Waiting for ongoing request for list:', id);
+      try {
+        await cached.promise;
+        return;
+      } catch (error) {
+        // If the ongoing request failed, continue with new request
+        requestCache.delete(cacheKey);
+      }
+    }
+    
     setIsLoading(true);
     setError(null);
     setQueryStartTime(Date.now());
     
     try {
-      // Use server-side API route for reliable list fetching
-      console.log('Fetching list via server-side API...');
+      let responseData;
+      let fetchMethod = 'server-side';
       
-      // Get the current session token to send with the request
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
-      };
+      // Decide whether to use server-side or client-side based on performance
+      const shouldUseClientSide = performanceTracker.shouldUseClientSide() && user;
       
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
+      if (shouldUseClientSide) {
+        console.log('Using client-side query for better performance...');
+        fetchMethod = 'client-side';
+        responseData = await fetchDataClientSide(id, user);
+      } else {
+        // Use server-side API route
+        console.log('Fetching list via server-side API...');
+        
+        // Get the current session token to send with the request
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+        
+        // Create and cache the promise to prevent duplicate requests
+        const fetchPromise = fetch(`/api/lists/${id}`, { headers });
+        requestCache.set(cacheKey, { 
+          data: null, 
+          timestamp: Date.now(), 
+          promise: fetchPromise.then(r => r.json()) 
+        });
+        
+        const apiResponse = await fetchPromise;
+        
+        if (!apiResponse.ok) {
+          if (apiResponse.status === 404) {
+            console.log('List not found:', id);
+            setIsNotFound(true);
+            return;
+          }
+          if (apiResponse.status === 401 || apiResponse.status === 403) {
+            const errorData = await apiResponse.json();
+            throw new Error(errorData.error || `Access denied: ${apiResponse.status}`);
+          }
+          throw new Error(`API request failed: ${apiResponse.status}`);
+        }
+        
+        responseData = await apiResponse.json();
+        
+        // Track server performance
+        const responseTime = apiResponse.headers.get('X-Response-Time');
+        const actualTime = responseTime ? parseInt(responseTime) : Date.now() - startTime;
+        performanceTracker.serverResponseTimes.push(actualTime);
+        if (performanceTracker.serverResponseTimes.length > 10) {
+          performanceTracker.serverResponseTimes.shift(); // Keep only last 10
+        }
+        
+        console.log(`Server response time: ${actualTime}ms (avg: ${performanceTracker.getAverageServerTime().toFixed(0)}ms)`);
       }
       
-      const apiResponse = await fetch(`/api/lists/${id}`, { headers });
+      const { list: listData, places: placesData } = responseData;
+      console.log(`Successfully fetched list via ${fetchMethod}: ${listData.name}`);
       
-      if (!apiResponse.ok) {
-        if (apiResponse.status === 404) {
-          console.log('List not found:', id);
-          setIsNotFound(true);
-          return;
-        }
-        if (apiResponse.status === 401 || apiResponse.status === 403) {
-          const errorData = await apiResponse.json();
-          throw new Error(errorData.error || `Access denied: ${apiResponse.status}`);
-        }
-        throw new Error(`API request failed: ${apiResponse.status}`);
-      }
-      
-      const { list: listData, places: placesData } = await apiResponse.json();
-      console.log('Successfully fetched list:', listData.name);
+      // Cache the successful response
+      requestCache.set(cacheKey, { 
+        data: responseData, 
+        timestamp: Date.now(),
+        promise: undefined
+      });
       
       setList(listData);
       setIsNotFound(false);
@@ -184,6 +313,9 @@ export default function ListContent({ id }: ListContentProps) {
 
     } catch (error) {
       console.error('Error fetching list:', error);
+      
+      // Remove failed request from cache
+      requestCache.delete(cacheKey);
       
       if (currentRetryCount < 2) {
         console.log(`Retrying... attempt ${currentRetryCount + 1}`);

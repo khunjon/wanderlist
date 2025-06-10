@@ -14,40 +14,85 @@ const supabaseAdmin = createClient(
   }
 );
 
-// Create a client for user authentication
-const createUserClient = (request: NextRequest) => {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      global: {
-        headers: {
-          Authorization: request.headers.get('Authorization') || ''
-        }
-      }
+// Cache for user verification (in-memory, resets on cold start)
+const userCache = new Map<string, { userId: string; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function verifyUserToken(authToken: string): Promise<string | null> {
+  // Check cache first
+  const cached = userCache.get(authToken);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.userId;
+  }
+
+  try {
+    const userSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    const { data: { user }, error } = await userSupabase.auth.getUser(authToken);
+    
+    if (error || !user) {
+      return null;
     }
-  );
-};
+    
+    // Cache the result
+    userCache.set(authToken, { userId: user.id, timestamp: Date.now() });
+    return user.id;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const startTime = Date.now();
+  
   try {
     const { id } = await params;
     
-    console.log('Server-side: Fetching list with ID:', id);
+    // Get auth token early for potential parallel processing
+    const cookieStore = await cookies();
+    let authToken = request.headers.get('Authorization')?.replace('Bearer ', '');
     
-    // Use service role to fetch the list first
-    const { data: list, error: listError } = await supabaseAdmin
-      .from('lists')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    if (!authToken) {
+      // Quick cookie check - only check the most common Supabase cookie patterns
+      const sbCookies = cookieStore.getAll().filter(c => c.name.startsWith('sb-'));
+      for (const cookie of sbCookies) {
+        if (cookie.name.includes('auth-token')) {
+          try {
+            const parsed = JSON.parse(cookie.value);
+            authToken = parsed.access_token || parsed;
+            break;
+          } catch {
+            authToken = cookie.value;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Fetch list and places in parallel for better performance
+    const [listResult, placesResult] = await Promise.all([
+      supabaseAdmin
+        .from('lists')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('list_places')
+        .select(`
+          *,
+          places (*)
+        `)
+        .eq('list_id', id)
+    ]);
+    
+    const { data: list, error: listError } = listResult;
+    const { data: listPlaces, error: placesError } = placesResult;
     
     if (listError) {
       console.error('Server-side list error:', listError);
@@ -55,89 +100,37 @@ export async function GET(
     }
     
     if (!list) {
-      console.log('Server-side: No list found for ID:', id);
       return NextResponse.json({ error: 'List not found' }, { status: 404 });
     }
     
-    console.log('Server-side: Found list:', list.name, 'Public:', list.is_public);
-    
-    // If list is not public, check if user has access
-    if (!list.is_public) {
-      // Get user from session - try multiple sources
-      const cookieStore = await cookies();
-      let authToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    // Fast path for public lists - skip auth entirely
+    if (list.is_public) {
+      const response = {
+        list,
+        places: listPlaces || []
+      };
       
-      // If no Authorization header, try to get from cookies
-      if (!authToken) {
-        // Debug: log all available cookies
-        const allCookies = cookieStore.getAll();
-        console.log('Server-side: Available cookies:', allCookies.map(c => c.name));
-        
-        // Try different cookie names that Supabase might use
-        const possibleCookies = [
-          'sb-access-token',
-          'supabase-auth-token',
-          `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`
-        ];
-        
-        for (const cookieName of possibleCookies) {
-          const cookie = cookieStore.get(cookieName);
-          if (cookie?.value) {
-            console.log(`Server-side: Found cookie ${cookieName}`);
-            try {
-              // Cookie might be JSON stringified
-              const parsed = JSON.parse(cookie.value);
-              authToken = parsed.access_token || parsed;
-              break;
-            } catch {
-              // If not JSON, use as-is
-              authToken = cookie.value;
-              break;
-            }
-          }
-        }
-      }
+      // Add performance header
+      const responseHeaders = new Headers();
+      responseHeaders.set('X-Response-Time', `${Date.now() - startTime}ms`);
+      responseHeaders.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
       
-      if (!authToken) {
-        console.log('Server-side: No auth token found for private list');
-        return NextResponse.json({ error: 'Authentication required for private list' }, { status: 401 });
-      }
-      
-      // Create user client to verify the token and get user
-      const userSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      
-      // Try to get user from the token
-      const { data: { user }, error: authError } = await userSupabase.auth.getUser(authToken);
-      
-      if (authError || !user) {
-        console.log('Server-side: Invalid auth token for private list:', authError?.message);
-        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
-      }
-      
-      // Check if user owns the list
-      if (user.id !== list.user_id) {
-        console.log('Server-side: User does not own private list');
-        return NextResponse.json({ error: 'Access denied to private list' }, { status: 403 });
-      }
-      
-      console.log('Server-side: User authenticated and owns private list');
+      return NextResponse.json(response, { headers: responseHeaders });
     }
     
-    // Fetch places for this list
-    const { data: listPlaces, error: placesError } = await supabaseAdmin
-      .from('list_places')
-      .select(`
-        *,
-        places (*)
-      `)
-      .eq('list_id', id);
+    // For private lists, verify authentication
+    if (!authToken) {
+      return NextResponse.json({ error: 'Authentication required for private list' }, { status: 401 });
+    }
     
-    if (placesError) {
-      console.error('Server-side places error:', placesError);
-      // Continue without places if there's an error
+    const userId = await verifyUserToken(authToken);
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
+    }
+    
+    if (userId !== list.user_id) {
+      return NextResponse.json({ error: 'Access denied to private list' }, { status: 403 });
     }
     
     const response = {
@@ -145,9 +138,12 @@ export async function GET(
       places: listPlaces || []
     };
     
-    console.log('Server-side: Returning response with', listPlaces?.length || 0, 'places');
+    // Add performance headers
+    const responseHeaders = new Headers();
+    responseHeaders.set('X-Response-Time', `${Date.now() - startTime}ms`);
+    responseHeaders.set('Cache-Control', 'private, max-age=30');
     
-    return NextResponse.json(response);
+    return NextResponse.json(response, { headers: responseHeaders });
     
   } catch (error) {
     console.error('Server-side API error:', error);
