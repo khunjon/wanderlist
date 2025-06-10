@@ -691,49 +691,90 @@ export default function ListContent({ id }: ListContentProps) {
                             Notes
                           </label>
                           {editingNotes[place.id] ? (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <textarea
                                 value={noteValues[place.id] || ''}
                                 onChange={(e) => setNoteValues(prev => ({ ...prev, [place.id]: e.target.value }))}
-                                className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                 rows={3}
                                 placeholder="Add your notes about this place..."
+                                autoFocus
                               />
-                              <div className="flex space-x-2">
+                              <div className="flex justify-between items-center">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleSaveNotes(place.id)}
+                                    disabled={savingNotes[place.id]}
+                                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    {savingNotes[place.id] ? 'Saving...' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancelEditNotes(place.id)}
+                                    className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel
+                                  </button>
+                                </div>
+                                
+                                {/* Delete place option in edit mode */}
                                 <button
-                                  onClick={() => handleSaveNotes(place.id)}
-                                  disabled={savingNotes[place.id]}
-                                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                                  onClick={() => {
+                                    if (window.confirm('Are you sure you want to remove this place from the list?')) {
+                                      handleRemovePlace(place.id);
+                                    }
+                                  }}
+                                  className="inline-flex items-center px-2 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-md transition-colors text-sm"
+                                  title="Remove place from list"
                                 >
-                                  {savingNotes[place.id] ? 'Saving...' : 'Save'}
-                                </button>
-                                <button
-                                  onClick={() => handleCancelEditNotes(place.id)}
-                                  className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
-                                >
-                                  Cancel
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                  Remove
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="space-y-2">
-                              <p className="text-sm text-gray-300 min-h-[3rem] p-2 bg-gray-700 rounded">
-                                {place.notes || 'No notes yet'}
-                              </p>
-                              {isOwner && (
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => handleEditNotes(place.id, place.notes || '')}
-                                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
-                                  >
-                                    Edit Notes
-                                  </button>
-                                  <button
-                                    onClick={() => handleRemovePlace(place.id)}
-                                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                                  >
-                                    Remove
-                                  </button>
+                            <div className="relative group">
+                              {isOwner ? (
+                                <div
+                                  onClick={() => handleEditNotes(place.id, place.notes || '')}
+                                  className="text-sm text-gray-300 min-h-[3rem] p-3 bg-gray-700 rounded-md cursor-text hover:bg-gray-600 transition-colors border-2 border-transparent hover:border-gray-500 focus-within:border-blue-500"
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      handleEditNotes(place.id, place.notes || '');
+                                    }
+                                  }}
+                                >
+                                  {place.notes ? (
+                                    <span className="whitespace-pre-wrap">{place.notes}</span>
+                                  ) : (
+                                    <span className="text-gray-400 italic">Click to add notes...</span>
+                                  )}
+                                  
+                                  {/* Edit indicator */}
+                                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-sm text-gray-300 min-h-[3rem] p-3 bg-gray-700 rounded-md">
+                                  {place.notes ? (
+                                    <span className="whitespace-pre-wrap">{place.notes}</span>
+                                  ) : (
+                                    <span className="text-gray-400 italic">No notes</span>
+                                  )}
                                 </div>
                               )}
                             </div>
