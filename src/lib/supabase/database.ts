@@ -261,14 +261,21 @@ export async function searchPublicListsAdvanced(
 
 export async function getListById(listId: string): Promise<List | null> {
   try {
-    const { data, error } = await supabase
+    // Add timeout to prevent hanging queries
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), 10000);
+    });
+
+    const queryPromise = supabase
       .from('lists')
       .select(`
         *,
-        users!inner(display_name, photo_url)
+        users(display_name, photo_url)
       `)
       .eq('id', listId)
-      .limit(1)
+      .limit(1);
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     if (error) {
       handleDatabaseError(error, 'getListById')
@@ -277,6 +284,10 @@ export async function getListById(listId: string): Promise<List | null> {
     return data && data.length > 0 ? data[0] : null
   } catch (error) {
     if (error instanceof DatabaseError) throw error
+    if (error instanceof Error && error.message === 'Query timeout') {
+      console.error('getListById query timed out for ID:', listId);
+      return null; // Treat timeout as "not found"
+    }
     handleDatabaseError(error, 'getListById')
   }
 }

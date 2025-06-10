@@ -118,12 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loadingTimeout = setTimeout(() => {
       setLoading(currentLoading => {
         if (currentLoading) {
-          console.warn('Auth loading timeout - forcing loading to false');
+          console.warn('Auth loading timeout after 10 seconds - forcing loading to false');
           return false;
         }
         return currentLoading;
       });
-    }, 5000);
+    }, 10000); // Increased from 5 to 10 seconds
 
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
