@@ -300,29 +300,13 @@ export default function ProfilePage() {
                 <h1 className="text-3xl font-bold text-white">Profile Settings</h1>
                 <p className="mt-2 text-blue-100">Manage your account and preferences</p>
               </div>
-              {profileCompletion && (
-                <div className="text-right">
-                  <div className="text-white text-sm font-medium">
-                    Profile Completion
-                  </div>
-                  <div className="text-2xl font-bold text-white">
-                    {profileCompletion.completion_percentage}%
-                  </div>
-                  <div className="w-24 bg-blue-200 rounded-full h-2 mt-1">
-                    <div 
-                      className="bg-white h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${profileCompletion.completion_percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Profile Statistics */}
           {profile && (
             <div className="bg-gray-700 px-6 py-4 border-b border-gray-600">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <div className="text-2xl font-bold text-white">{profile.total_lists}</div>
                   <div className="text-sm text-gray-300">Total Lists</div>
@@ -334,10 +318,6 @@ export default function ProfilePage() {
                 <div>
                   <div className="text-2xl font-bold text-white">{profile.total_views}</div>
                   <div className="text-sm text-gray-300">Total Views</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-white">{profile.engagement_score}</div>
-                  <div className="text-sm text-gray-300">Engagement Score</div>
                 </div>
               </div>
             </div>
@@ -369,7 +349,7 @@ export default function ProfilePage() {
               />
 
               {/* Profile Photo Section */}
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+              <div className="flex items-center space-x-6">
                 <div className="flex-shrink-0">
                   <div className="relative">
                     {getDisplayImageUrl() ? (
@@ -389,36 +369,30 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="flex-1">
-                  <h3 className="text-lg font-medium text-white mb-2">Profile Photo</h3>
-                  <p className="text-sm text-gray-400 mb-4">
-                    Upload a photo to help others recognize you. Images are automatically optimized and old photos are cleaned up.
+                  <h3 className="text-lg font-medium text-white mb-4">Profile Photo</h3>
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-colors"
+                    onClick={handleSelectPhoto}
+                    disabled={loading || uploadingPhoto}
+                  >
+                    {uploadingPhoto ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
+                        </svg>
+                        {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-xs text-gray-400">
+                    JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
                   </p>
-                  
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      className="inline-flex items-center px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-colors"
-                      onClick={handleSelectPhoto}
-                      disabled={loading || uploadingPhoto}
-                    >
-                      {uploadingPhoto ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
-                          </svg>
-                          {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
-                        </>
-                      )}
-                    </button>
-                    <p className="mt-2 text-xs text-gray-400">
-                      JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
-                    </p>
-                  </div>
                 </div>
               </div>
 
