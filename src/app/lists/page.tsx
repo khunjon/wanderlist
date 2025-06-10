@@ -97,50 +97,31 @@ export default function ListsPage() {
   // Fetch user's lists
   const fetchLists = useCallback(async () => {
     if (!user || hasFetched) {
-      console.log('🔄 fetchLists skipped:', { hasUser: !!user, hasFetched });
       return;
     }
-    
-    console.log('🚀 Starting fetchLists for user:', user.id);
+
     try {
       setLoading(true);
-      setHasFetched(true);
-      console.log('📡 Calling getUserLists...');
       const userLists = await getUserLists(user.id);
-      console.log('✅ getUserLists completed, got', userLists.length, 'lists');
       setAllLists(userLists);
+      setHasFetched(true);
     } catch (error) {
-      console.error('❌ Error fetching lists:', error);
-      setHasFetched(false); // Reset on error so it can be retried
+      console.error('Error fetching lists:', error);
     } finally {
-      console.log('🏁 fetchLists completed, setting loading to false');
       setLoading(false);
     }
   }, [user, hasFetched]);
 
   useEffect(() => {
-    console.log('🔄 Lists page useEffect:', { user: !!user, authLoading, hasFetched });
-    
-    // Redirect if not authenticated
-    if (!authLoading && !user) {
-      console.log('🔄 Redirecting to home - no user');
+    if (!user && !authLoading) {
       router.push('/');
       return;
     }
 
-    // Fetch lists when user is available and we haven't fetched yet
     if (user && !authLoading && !hasFetched) {
-      console.log('🚀 Conditions met, scheduling fetchLists');
-      // Use setTimeout to defer the expensive operation
-      const timeoutId = setTimeout(() => {
-        fetchLists();
-      }, 0);
-      
-      return () => clearTimeout(timeoutId);
-    } else {
-      console.log('⏳ Waiting for conditions:', { hasUser: !!user, authLoading, hasFetched });
+      fetchLists();
     }
-  }, [user, authLoading, router, fetchLists, hasFetched]);
+  }, [user, authLoading, hasFetched, fetchLists, router]);
 
   // Reset fetch flag when user changes
   useEffect(() => {
@@ -160,23 +141,22 @@ export default function ListsPage() {
   }, []);
 
   // Memoized list click handler
-  const handleListClick = useCallback((list: List) => {
+  const handleListClick = (list: List) => {
     // Track with Google Analytics
     trackListViewGA(list.name, list.id);
     
-    // Temporarily disable Mixpanel tracking to debug hanging issue
-    // trackListView({
-    //   list_id: list.id,
-    //   list_name: list.name,
-    //   list_author: user?.displayName || user?.email || 'Unknown',
-    //   list_creation_date: list.created_at || new Date().toISOString(),
-    //   is_public: list.is_public || false,
-    //   view_count: list.view_count || 0,
-    //   place_count: 0 // Place count not available on list overview page
-    // });
+    // Track with Mixpanel
+         trackListView({
+       list_id: list.id,
+       list_name: list.name,
+       list_author: user?.displayName || 'Unknown',
+       list_creation_date: list.created_at || new Date().toISOString(),
+       place_count: 0, // Not loaded on overview page
+       is_public: list.is_public || false
+     });
     
     router.push(`/lists/${list.id}`);
-  }, [router, user]);
+  };
 
   // Memoized sort change handler
   const handleSortChange = useCallback((newSort: SortState) => {

@@ -259,22 +259,10 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
-  // Debug function to test storage (commented out for production)
-  // const handleDebugStorage = async () => {
-  //   if (!authUser) return;
-  //   
-  //   console.log('=== STORAGE DEBUG TEST ===');
-  //   
-  //   // Test current user info
-  //   const userInfo = await getCurrentUserInfo();
-  //   console.log('User info test:', userInfo);
-  //   
-  //   // Test storage upload
-  //   const storageTest = await testStorageUpload(authUser.id);
-  //   console.log('Storage test:', storageTest);
-  //   
-  //   alert(`Debug complete. Check console for details. Storage test: ${storageTest.success ? 'SUCCESS' : 'FAILED'}`);
-  // };
+  // Debug function to test storage
+  const testStorage = async () => {
+    // Debug logging removed for production
+  };
 
   if (authLoading || loading) {
     return (

@@ -116,135 +116,72 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [id]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = useCallback(async () => {
+    if (!id) return;
 
-        // Fetch list data
-        console.log('🔍 Fetching list for ID:', id);
-        let listData;
-        try {
-          listData = await getListById(id);
-          console.log('📊 List data result:', listData ? 'Found' : 'Not found');
-        } catch (err) {
-          console.error('❌ Error fetching list:', err);
-          // If there's an error fetching, treat as not found
-          console.log('🚨 Setting 404 state due to error');
-          setIsNotFound(true);
-          setLoading(false);
-          return;
-        }
-        
-        if (!listData) {
-          // Set not found state for client-side 404 handling
-          console.log('🚨 List not found, setting 404 state');
-          setIsNotFound(true);
-          setLoading(false);
-          return;
-        }
-        
-        console.log('✅ List found, proceeding with normal flow');
+    try {
+      setLoading(true);
+      setError(null);
+      setIsNotFound(false);
 
-        // Check if user has permission to view this list
-        if (!listData.is_public && (!user || listData.user_id !== user.id)) {
-          setError('You do not have permission to view this list');
-          return;
-        }
+      const listData = await getListById(id);
 
-        setList(listData);
-
-        // Set edit form values
-        setEditName(listData.name);
-        setEditTags(listData.tags?.join(', ') || '');
-        setEditIsPublic(listData.is_public || false);
-
-        // Fetch author profile first
-        let authorData: User | null = null;
-        try {
-          const authorProfile = await getUserProfile(listData.user_id);
-          // Transform to match User interface
-          if (authorProfile) {
-            const transformedAuthor: User = {
-              id: authorProfile.id,
-              email: authorProfile.email,
-              displayName: authorProfile.display_name || '',
-              photo_url: authorProfile.photo_url || '',
-              createdAt: new Date(authorProfile.created_at || ''),
-              created_at: authorProfile.created_at,
-              updated_at: authorProfile.updated_at,
-              is_admin: authorProfile.is_admin || false,
-              bio: authorProfile.bio || '',
-              instagram: authorProfile.instagram || '',
-              tiktok: authorProfile.tiktok || ''
-            };
-            setAuthor(transformedAuthor);
-            authorData = transformedAuthor;
-          }
-        } catch (err) {
-          console.error('Error fetching author profile:', err);
-        }
-
-        // Fetch places in the list first
-        const placesData = await getListPlaces(id);
-        // Transform the data to match PlaceWithNotes interface
-        const transformedPlaces: PlaceWithNotes[] = placesData.map(item => ({
-          // Map Supabase place properties to expected interface
-          id: item.places.id,
-          googlePlaceId: item.places.google_place_id,
-          name: item.places.name,
-          address: item.places.address,
-          latitude: item.places.latitude,
-          longitude: item.places.longitude,
-          rating: item.places.rating || 0,
-          photoUrl: item.places.photo_url || '',
-          placeTypes: item.places.place_types || [],
-          // Map list place properties
-          listPlaceId: item.id,
-          addedAt: new Date(item.added_at || ''),
-          notes: item.notes || ''
-        }));
-        setPlaces(transformedPlaces);
-
-        // Track list view and increment view count (after both author and places data are available)
-        if (user) {
-          // Track with Google Analytics
-          trackListViewGA(listData.name, listData.id);
-          
-          // Track with Mixpanel - now with proper author information and place count
-          trackListView({
-            list_id: listData.id,
-            list_name: listData.name,
-            list_author: authorData?.displayName || authorData?.email || 'Unknown',
-            list_creation_date: listData.created_at || new Date().toISOString(),
-            is_public: listData.is_public || false,
-            view_count: listData.view_count || 0,
-            place_count: transformedPlaces.length
-          });
-          
-          // Only increment view count if user is not the owner
-          if (listData.user_id !== user.id) {
-            await incrementListViewCount(id);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching list:', err);
-        setError('Failed to load list. Please try again.');
-      } finally {
-        setLoading(false);
+      if (!listData) {
+        setIsNotFound(true);
+        return;
       }
-    };
 
-    // Only fetch if we have the ID and auth loading is complete
-    console.log('🔄 useEffect triggered:', { id, authLoading, user: !!user });
-    if (id && !authLoading) {
-      console.log('🚀 Starting fetchData...');
-      fetchData();
-    } else {
-      console.log('⏳ Waiting for conditions:', { hasId: !!id, authLoading });
+      setList(listData);
+
+      // Fetch places for this list
+      const listPlaces = await getListPlaces(id);
+      const transformedPlaces: PlaceWithNotes[] = listPlaces.map(lp => ({
+        id: lp.places.id,
+        googlePlaceId: lp.places.google_place_id,
+        name: lp.places.name,
+        address: lp.places.address,
+        latitude: lp.places.latitude,
+        longitude: lp.places.longitude,
+        rating: lp.places.rating || 0,
+        photoUrl: lp.places.photo_url || '',
+        placeTypes: lp.places.place_types || [],
+        notes: lp.notes || '',
+        listPlaceId: lp.id,
+        addedAt: new Date(lp.added_at || '')
+      }));
+      setPlaces(transformedPlaces);
+
+      // Track list view with complete data
+      if (listData && transformedPlaces) {
+        // Track with Google Analytics
+        trackListViewGA(listData.name, listData.id);
+        
+        // Track with Mixpanel - now with author and place count
+        trackListView({
+          list_id: listData.id,
+          list_name: listData.name,
+          list_author: (listData as any).users?.display_name || 'Unknown',
+          list_creation_date: listData.created_at || new Date().toISOString(),
+          is_public: listData.is_public || false,
+          view_count: listData.view_count || 0,
+          place_count: transformedPlaces.length
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching list data:', error);
+      setError('Failed to load list');
+      setIsNotFound(true);
+    } finally {
+      setLoading(false);
     }
-  }, [id, user, authLoading]);
+  }, [id]);
+
+  useEffect(() => {
+    if (!authLoading && id) {
+      fetchData();
+    }
+  }, [id, authLoading, fetchData]);
 
   // Memoized save handler
   const handleSave = useCallback(async () => {
@@ -368,15 +305,17 @@ export default function ListContent({ id }: ListContentProps) {
 
   // Handle not found state with proper 404 page
   if (isNotFound) {
-    console.log('🚨 Rendering 404 page');
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">404 - List Not Found</h1>
-          <p className="text-gray-300 mb-4">The list you're looking for doesn't exist or has been deleted.</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center px-4 py-10 bg-gray-800 rounded-lg shadow-md max-w-md w-full">
+          <h1 className="text-4xl font-bold text-white mb-4">404</h1>
+          <h2 className="text-2xl font-semibold text-white mb-2">List Not Found</h2>
+          <p className="text-gray-300 mb-6">
+            The list you are looking for doesn't exist or has been removed.
+          </p>
           <Link
             href="/lists"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Back to Lists
           </Link>
@@ -386,7 +325,6 @@ export default function ListContent({ id }: ListContentProps) {
   }
 
   if (loading) {
-    console.log('⏳ Rendering loading state');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">

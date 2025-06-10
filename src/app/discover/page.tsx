@@ -125,23 +125,23 @@ export default function DiscoverPage() {
   }, []);
 
   // Memoized list click handler
-  const handleListClick = useCallback((list: any) => {
+  const handleListClick = (list: List) => {
     // Track with Google Analytics
     trackListViewGA(list.name, list.id);
     
-    // Temporarily disable Mixpanel tracking to debug hanging issue
-    // trackListView({
-    //   list_id: list.id,
-    //   list_name: list.name,
-    //   list_author: list.users?.display_name || 'Unknown',
-    //   list_creation_date: list.created_at || new Date().toISOString(),
-    //   is_public: list.is_public || false,
-    //   view_count: list.view_count || 0,
-    //   place_count: 0 // Place count not available on discover page overview
-    // });
+    // Track with Mixpanel
+         trackListView({
+       list_id: list.id,
+       list_name: list.name,
+       list_author: (list as any).users?.display_name || 'Unknown',
+       list_creation_date: list.created_at || new Date().toISOString(),
+       is_public: list.is_public || false,
+       view_count: list.view_count || 0,
+       place_count: 0 // Place count not available on overview page
+     });
     
     router.push(`/lists/${list.id}`);
-  }, [router]);
+  };
 
   // Memoized sort change handler
   const handleSortChange = useCallback((newSort: SortState) => {
