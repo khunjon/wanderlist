@@ -675,15 +675,16 @@ export default function ListContent({ id }: ListContentProps) {
                       
                       {/* Place Content */}
                       <div className="p-4">
-                        <h3 className="text-lg font-medium text-white mb-2">{place.name}</h3>
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-medium text-white flex-1 min-w-0 pr-2">{place.name}</h3>
+                          {place.rating > 0 && (
+                            <div className="flex items-center flex-shrink-0">
+                              <span className="text-yellow-400">★</span>
+                              <span className="text-sm text-gray-300 ml-1">{place.rating}</span>
+                            </div>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-300 mb-2">{place.address}</p>
-                        
-                        {place.rating > 0 && (
-                          <div className="flex items-center mb-2">
-                            <span className="text-yellow-400">★</span>
-                            <span className="text-sm text-gray-300 ml-1">{place.rating}</span>
-                          </div>
-                        )}
                         
                         {/* Notes Section */}
                         <div className="mt-4">
