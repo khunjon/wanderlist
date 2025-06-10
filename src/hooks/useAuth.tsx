@@ -8,6 +8,7 @@ import { User } from '@/types';
 import { convertToUser } from '@/lib/supabase/typeUtils';
 import { useRouter } from 'next/navigation';
 import { identifyUser, trackEvent, mixpanel } from '@/lib/mixpanelClient';
+import { addCacheBuster } from '@/lib/utils/imageUtils';
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const updatedProfile = await syncUserProfile(supabaseUser);
         const appUser = convertToUser(supabaseUser, updatedProfile);
+        // Apply cache busting to photo URL for immediate display updates
+        if (appUser.photo_url) {
+          appUser.photo_url = addCacheBuster(appUser.photo_url);
+        }
         setUser(appUser);
       } catch (err) {
         console.error('Error refreshing profile:', err);
@@ -93,6 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ]);
           
           const appUser = convertToUser(session.user, userProfile);
+          // Apply cache busting to photo URL for immediate display updates
+          if (appUser.photo_url) {
+            appUser.photo_url = addCacheBuster(appUser.photo_url);
+          }
           setUser(appUser);
 
           // Identify user with Mixpanel
@@ -146,6 +155,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ]);
           
           const appUser = convertToUser(session.user, userProfile);
+          // Apply cache busting to photo URL for immediate display updates
+          if (appUser.photo_url) {
+            appUser.photo_url = addCacheBuster(appUser.photo_url);
+          }
           setUser(appUser);
 
           // Identify user with Mixpanel

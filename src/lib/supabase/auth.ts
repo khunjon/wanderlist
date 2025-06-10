@@ -596,6 +596,19 @@ export async function syncUserProfile(user: SupabaseUser): Promise<User> {
       .eq('id', user.id)
       .single()
 
+    // Determine photo URL priority:
+    // 1. Always preserve existing uploaded photo (Supabase storage URLs)
+    // 2. Only use Google avatar if no existing photo exists
+    let photoUrl = null
+    if (existingUser?.photo_url) {
+      // If there's an existing photo_url, always preserve it
+      // This includes uploaded photos (Supabase storage) and any previously set photos
+      photoUrl = existingUser.photo_url
+    } else if (user.user_metadata?.avatar_url) {
+      // Only use Google avatar URL if no existing photo exists
+      photoUrl = user.user_metadata.avatar_url
+    }
+
     // Use direct upsert instead of RPC, preserving existing data
     const { data, error } = await supabase
       .from('users')
@@ -603,7 +616,7 @@ export async function syncUserProfile(user: SupabaseUser): Promise<User> {
         id: user.id,
         email: user.email!,
         display_name: existingUser?.display_name || user.user_metadata?.display_name || user.user_metadata?.full_name || null,
-        photo_url: existingUser?.photo_url || user.user_metadata?.avatar_url || null, // Preserve existing photo_url
+        photo_url: photoUrl, // Use the carefully determined photo URL
         updated_at: new Date().toISOString(),
         last_active_at: new Date().toISOString()
       }, {
