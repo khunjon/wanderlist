@@ -308,46 +308,61 @@ export async function updateUserProfileLegacy(userId: string, updates: UserUpdat
 
 // Compress image utility function
 async function compressImage(file: File, maxWidth: number = 800, quality: number = 0.8): Promise<File> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = new Image()
     
     img.onload = () => {
-      // Calculate new dimensions
-      let { width, height } = img
-      if (width > height) {
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
-        }
-      } else {
-        if (height > maxWidth) {
-          width = (width * maxWidth) / height
-          height = maxWidth
-        }
-      }
-      
-      canvas.width = width
-      canvas.height = height
-      
-      // Draw and compress
-      ctx?.drawImage(img, 0, 0, width, height)
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            })
-            resolve(compressedFile)
-          } else {
-            resolve(file)
+      try {
+        // Calculate new dimensions
+        let { width, height } = img
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
           }
-        },
-        'image/jpeg',
-        quality
-      )
+        } else {
+          if (height > maxWidth) {
+            width = (width * maxWidth) / height
+            height = maxWidth
+          }
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height)
+        
+        // Determine output format based on original file type
+        const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+        const fileName = file.name.replace(/\.[^/.]+$/, '') + (outputType === 'image/png' ? '.png' : '.jpg')
+        
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], fileName, {
+                type: outputType,
+                lastModified: Date.now(),
+              })
+              resolve(compressedFile)
+            } else {
+              resolve(file) // Fallback to original file
+            }
+          },
+          outputType,
+          outputType === 'image/jpeg' ? quality : undefined
+        )
+      } catch (error) {
+        console.error('Error in image compression:', error)
+        resolve(file) // Fallback to original file
+      }
+    }
+    
+    img.onerror = () => {
+      console.error('Error loading image for compression')
+      resolve(file) // Fallback to original file
     }
     
     img.src = URL.createObjectURL(file)
@@ -357,13 +372,19 @@ async function compressImage(file: File, maxWidth: number = 800, quality: number
 // Enhanced profile photo upload with compression and cleanup
 export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
   try {
+    console.log('Starting photo upload for user:', userId)
+    console.log('Original file:', { name: file.name, size: file.size, type: file.type })
+    
     // Compress image before upload
     const compressedFile = await compressImage(file, 800, 0.8)
+    console.log('Compressed file:', { name: compressedFile.name, size: compressedFile.size, type: compressedFile.type })
     
-    // Generate unique filename
-    const fileExt = compressedFile.name.split('.').pop()
-    const fileName = `${userId}-${Date.now()}.${fileExt}`
-    const filePath = `profile-photos/${fileName}`
+    // Generate unique filename with proper extension
+    const fileExt = compressedFile.name.split('.').pop() || 'jpg'
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `${userId}/${fileName}` // Use userId folder structure for policies
+    
+    console.log('Upload path:', filePath)
 
     // Upload to storage
     const { error: uploadError } = await supabase.storage
@@ -374,7 +395,8 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
       })
 
     if (uploadError) {
-      throw uploadError
+      console.error('Storage upload error:', uploadError)
+      throw new Error(`Storage upload failed: ${uploadError.message}`)
     }
 
     // Get public URL
@@ -382,9 +404,13 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
       .from('profile-photos')
       .getPublicUrl(filePath)
 
+    console.log('Upload successful, public URL:', data.publicUrl)
     return data.publicUrl
   } catch (error) {
     console.error('Error uploading profile photo:', error)
+    if (error instanceof Error) {
+      throw error
+    }
     throw new Error('Failed to upload profile photo. Please try again with a different image.')
   }
 }
@@ -396,8 +422,12 @@ export async function updateProfilePhoto(
   oldPhotoUrl?: string
 ): Promise<PhotoUpdateResult> {
   try {
+    console.log('Starting profile photo update for user:', userId)
+    console.log('File details:', { name: file.name, size: file.size, type: file.type })
+    
     // Upload new photo
     const newPhotoUrl = await uploadProfilePhoto(userId, file)
+    console.log('Photo uploaded successfully:', newPhotoUrl)
     
     // Update database directly
     const { data, error } = await supabase
@@ -411,6 +441,7 @@ export async function updateProfilePhoto(
       .single()
 
     if (error) {
+      console.error('Database update error:', error)
       throw error
     }
 
@@ -423,6 +454,7 @@ export async function updateProfilePhoto(
     // Clean up old photo if update was successful
     if (result.success && oldPhotoUrl && oldPhotoUrl !== newPhotoUrl) {
       try {
+        console.log('Cleaning up old photo:', oldPhotoUrl)
         await deleteProfilePhoto(oldPhotoUrl)
       } catch (cleanupError) {
         console.warn('Failed to cleanup old profile photo:', cleanupError)
@@ -433,7 +465,17 @@ export async function updateProfilePhoto(
     return result
   } catch (error) {
     console.error('Error updating profile photo:', error)
-    throw error
+    // Return a more specific error message based on the error type
+    if (error instanceof Error) {
+      return {
+        success: false,
+        message: error.message
+      }
+    }
+    return {
+      success: false,
+      message: 'Failed to upload profile photo. Please try again with a different image.'
+    }
   }
 }
 
@@ -443,13 +485,19 @@ export async function deleteProfilePhoto(photoUrl: string): Promise<void> {
     // Extract file path from URL
     const url = new URL(photoUrl)
     const pathParts = url.pathname.split('/')
-    const filePath = pathParts.slice(-2).join('/') // Get 'profile-photos/filename'
+    // Find the profile-photos bucket part and get everything after it
+    const bucketIndex = pathParts.findIndex(part => part === 'profile-photos')
+    if (bucketIndex === -1) {
+      throw new Error('Invalid photo URL format')
+    }
+    const filePath = pathParts.slice(bucketIndex + 1).join('/') // Get 'userId/filename'
 
     const { error } = await supabase.storage
       .from('profile-photos')
       .remove([filePath])
 
     if (error) {
+      console.error('Storage delete error:', error)
       throw error
     }
   } catch (error) {

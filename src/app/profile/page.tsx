@@ -9,6 +9,7 @@ import {
   validateProfileCompleteness,
   updateUserActivity
 } from '@/lib/supabase/auth';
+import { testStorageUpload, getCurrentUserInfo } from '@/lib/debug/storage-test';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { EnhancedProfileData, ProfileUpdateResult, PhotoUpdateResult } from '@/lib/supabase/auth';
@@ -242,6 +243,23 @@ export default function ProfilePage() {
     return previewUrl || currentPhotoUrl;
   };
 
+  // Debug function to test storage
+  const handleDebugStorage = async () => {
+    if (!authUser) return;
+    
+    console.log('=== STORAGE DEBUG TEST ===');
+    
+    // Test current user info
+    const userInfo = await getCurrentUserInfo();
+    console.log('User info test:', userInfo);
+    
+    // Test storage upload
+    const storageTest = await testStorageUpload(authUser.id);
+    console.log('Storage test:', storageTest);
+    
+    alert(`Debug complete. Check console for details. Storage test: ${storageTest.success ? 'SUCCESS' : 'FAILED'}`);
+  };
+
   if (authLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -389,6 +407,15 @@ export default function ProfilePage() {
                     <p className="mt-2 text-xs text-gray-400">
                       JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
                     </p>
+                    
+                    {/* Debug button - remove in production */}
+                    <button
+                      type="button"
+                      onClick={handleDebugStorage}
+                      className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
+                    >
+                      Debug Storage (Dev Only)
+                    </button>
                   </div>
                 </div>
               </div>
