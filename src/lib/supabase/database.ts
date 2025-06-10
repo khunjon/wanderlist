@@ -261,18 +261,30 @@ export async function searchPublicListsAdvanced(
 
 export async function getListById(listId: string): Promise<List | null> {
   try {
-    const { data, error } = await supabase
+    // Very aggressive timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), 2000); // 2 seconds max
+    });
+
+    const queryPromise = supabase
       .from('lists')
       .select('*')
       .eq('id', listId)
       .maybeSingle();
 
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
     if (error) {
+      console.error('getListById error:', error);
       handleDatabaseError(error, 'getListById')
     }
 
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Query timeout') {
+      console.error('getListById timed out for:', listId);
+      return null; // Treat timeout as "not found"
+    }
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getListById')
   }
