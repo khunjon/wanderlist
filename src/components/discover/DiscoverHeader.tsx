@@ -1,25 +1,33 @@
 import React from 'react';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 
+// Optimized props interface - combine related state and reduce prop count
+interface SearchProps {
+  value: string;
+  onChange: (value: string) => void;
+  onClear: () => void;
+  disabled?: boolean;
+}
+
+interface SortProps {
+  state: SortState;
+  options: SortOption[];
+  onChange: (newSort: SortState) => void;
+}
+
 interface DiscoverHeaderProps {
-  searchInput: string;
-  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearSearch: () => void;
-  sortState: SortState;
-  onSortChange: (newSort: SortState) => void;
-  sortOptions: SortOption[];
+  search: SearchProps;
+  sort: SortProps;
   hasLists: boolean;
 }
 
-export default function DiscoverHeader({
-  searchInput,
-  onSearchChange,
-  onClearSearch,
-  sortState,
-  onSortChange,
-  sortOptions,
-  hasLists
-}: DiscoverHeaderProps) {
+// Memoized component to prevent unnecessary re-renders
+const DiscoverHeader = React.memo<DiscoverHeaderProps>(({ search, sort, hasLists }) => {
+  // Internal handler to convert input event to string value
+  const handleSearchInputChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    search.onChange(e.target.value);
+  }, [search.onChange]);
+
   return (
     <>
       <header className="bg-gray-900 shadow">
@@ -31,14 +39,15 @@ export default function DiscoverHeader({
                 <input
                   type="text"
                   placeholder="Search public lists..."
-                  value={searchInput}
-                  onChange={onSearchChange}
+                  value={search.value}
+                  onChange={handleSearchInputChange}
                   className="w-full md:w-64 px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={search.disabled}
                 />
-                {searchInput && (
+                {search.value && (
                   <button
                     type="button"
-                    onClick={onClearSearch}
+                    onClick={search.onClear}
                     className="absolute right-3 text-gray-400 hover:text-white"
                     aria-label="Clear search"
                   >
@@ -58,9 +67,9 @@ export default function DiscoverHeader({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-3 sm:pt-6">
           <div className="mb-3 sm:mb-6">
             <SortControl
-              options={sortOptions}
-              currentSort={sortState}
-              onSortChange={onSortChange}
+              options={sort.options}
+              currentSort={sort.state}
+              onSortChange={sort.onChange}
               className="w-full sm:w-auto"
               listId="discover-page"
             />
@@ -69,4 +78,9 @@ export default function DiscoverHeader({
       )}
     </>
   );
-} 
+});
+
+DiscoverHeader.displayName = 'DiscoverHeader';
+
+export default DiscoverHeader;
+export type { SearchProps, SortProps, DiscoverHeaderProps }; 

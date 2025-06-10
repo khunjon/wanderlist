@@ -1,37 +1,32 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getPublicLists } from '@/lib/supabase/database';
-import { List } from '@/types';
+import { getPublicListsForDiscovery } from '@/lib/supabase/database';
 import { useRouter } from 'next/navigation';
+import { SortState } from '@/components/ui/SortControl';
 import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
 import { trackListView } from '@/lib/mixpanelClient';
-import { SortState, SortOption } from '@/components/ui/SortControl';
+import { DiscoverHeader, DiscoverGrid, DiscoverLoading, DiscoverEmptyState } from '@/components/discover';
+import type { ListWithPlaceCountAndAuthor } from '@/components/discover/DiscoverGrid';
 
-// Import extracted components
-import { 
-  DiscoverHeader, 
-  DiscoverGrid, 
-  DiscoverEmptyState, 
-  DiscoverLoading 
-} from '@/components/discover';
-
-const sortOptions: SortOption[] = [
-  { value: 'updatedAt', label: 'Last Edited' },
-  { value: 'name', label: 'Name' },
-  { value: 'createdAt', label: 'Created Date' },
-  { value: 'viewCount', label: 'Views' },
+// Sort options for discover page
+const sortOptions = [
+  { value: 'view_count', label: 'Most Popular', field: 'view_count', direction: 'desc' as const },
+  { value: 'created_at_desc', label: 'Newest', field: 'created_at', direction: 'desc' as const },
+  { value: 'created_at_asc', label: 'Oldest', field: 'created_at', direction: 'asc' as const },
+  { value: 'name_asc', label: 'Name A-Z', field: 'name', direction: 'asc' as const },
+  { value: 'name_desc', label: 'Name Z-A', field: 'name', direction: 'desc' as const },
 ];
 
 export default function DiscoverPage() {
   const { user } = useAuth();
-  const [allLists, setAllLists] = useState<List[]>([]);
+  const [allLists, setAllLists] = useState<ListWithPlaceCountAndAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
-  const [displayLists, setDisplayLists] = useState<List[]>([]);
+  const [sortState, setSortState] = useState<SortState>({ field: 'view_count', direction: 'desc' });
+  const [displayLists, setDisplayLists] = useState<ListWithPlaceCountAndAuthor[]>([]);
   const router = useRouter();
 
   // Debounce search input with 300ms delay
@@ -54,12 +49,13 @@ export default function DiscoverPage() {
         // Search in list name
         const nameMatch = list.name.toLowerCase().includes(searchTerm);
         
-        // Search in tags
-        const tagMatch = list.tags && list.tags.some(tag => 
-          tag.toLowerCase().includes(searchTerm)
-        );
+        // Search in description
+        const descriptionMatch = list.description?.toLowerCase().includes(searchTerm);
         
-        return nameMatch || tagMatch;
+        // Search in city
+        const cityMatch = list.city?.toLowerCase().includes(searchTerm);
+        
+        return nameMatch || descriptionMatch || cityMatch;
       });
     }
 
@@ -73,15 +69,11 @@ export default function DiscoverPage() {
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-        case 'createdAt':
+        case 'created_at':
           aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
           bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
           break;
-        case 'updatedAt':
-          aValue = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-          bValue = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-          break;
-        case 'viewCount':
+        case 'view_count':
           aValue = a.view_count || 0;
           bValue = b.view_count || 0;
           break;
@@ -99,14 +91,24 @@ export default function DiscoverPage() {
     setDisplayLists(sorted);
   }, [allLists, debouncedSearch, sortState]);
 
-  // Simplified data fetching - no auth checks needed for public lists
+  // Fetch public lists
   useEffect(() => {
-    const fetchPublicLists = async () => {
+    const fetchLists = async () => {
       try {
         setLoading(true);
-        // Use enhanced getPublicLists with better sorting and pagination
-        const publicLists = await getPublicLists(50, 0, undefined, undefined, 'view_count', 'desc');
-        setAllLists(publicLists);
+        const lists = await getPublicListsForDiscovery(50, 0, undefined, undefined, 'view_count', 'desc');
+        
+        // Transform the data to match our expected type
+        const transformedLists: ListWithPlaceCountAndAuthor[] = lists.map((list: any) => ({
+          ...list,
+          place_count: list.place_count || 0,
+          author: list.users ? {
+            display_name: list.users.display_name,
+            avatar_url: list.users.photo_url
+          } : undefined
+        }));
+        
+        setAllLists(transformedLists);
       } catch (error) {
         console.error('Error fetching public lists:', error);
       } finally {
@@ -114,13 +116,12 @@ export default function DiscoverPage() {
       }
     };
 
-    // Fetch public lists immediately - no auth required
-    fetchPublicLists();
-  }, []); // Empty dependency array since this doesn't depend on auth
+    fetchLists();
+  }, []);
 
   // Memoized search input change handler
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchInput(e.target.value);
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
   }, []);
 
   // Memoized clear search handler
@@ -129,7 +130,7 @@ export default function DiscoverPage() {
   }, []);
 
   // Memoized list click handler
-  const handleListClick = useCallback((list: List) => {
+  const handleListClick = useCallback((list: ListWithPlaceCountAndAuthor) => {
     // Track with Google Analytics
     trackListViewGA(list.name, list.id);
     
@@ -137,11 +138,10 @@ export default function DiscoverPage() {
     trackListView({
       list_id: list.id,
       list_name: list.name,
-      list_author: (list as any).users?.display_name || 'Unknown',
+      list_author: list.author?.display_name || 'Unknown',
       list_creation_date: list.created_at || new Date().toISOString(),
-      is_public: list.is_public || false,
-      view_count: list.view_count || 0,
-      place_count: 0 // Place count not available on overview page
+      place_count: list.place_count || 0,
+      is_public: true
     });
     
     router.push(`/lists/${list.id}`);
@@ -152,15 +152,25 @@ export default function DiscoverPage() {
     setSortState(newSort);
   }, []);
 
+  // Memoized search props object
+  const searchProps = useMemo(() => ({
+    value: searchInput,
+    onChange: handleSearchChange,
+    onClear: handleClearSearch
+  }), [searchInput, handleSearchChange, handleClearSearch]);
+
+  // Memoized sort props object
+  const sortProps = useMemo(() => ({
+    state: sortState,
+    options: sortOptions,
+    onChange: handleSortChange
+  }), [sortState, handleSortChange]);
+
   return (
     <div className="min-h-screen bg-background">
       <DiscoverHeader
-        searchInput={searchInput}
-        onSearchChange={handleSearchChange}
-        onClearSearch={handleClearSearch}
-        sortState={sortState}
-        onSortChange={handleSortChange}
-        sortOptions={sortOptions}
+        search={searchProps}
+        sort={sortProps}
         hasLists={displayLists.length > 0}
       />
       <main>

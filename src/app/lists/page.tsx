@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getUserListsWithPlaceCounts } from '@/lib/supabase/database';
 import { useRouter } from 'next/navigation';
@@ -160,8 +160,8 @@ export default function ListsPage() {
   }, [user, authLoading, router]);
 
   // Memoized search input change handler
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchInput(e.target.value);
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
   }, []);
 
   // Memoized clear search handler
@@ -192,6 +192,21 @@ export default function ListsPage() {
     setSortState(newSort);
   }, []);
 
+  // Memoized search props object
+  const searchProps = useMemo(() => ({
+    value: searchInput,
+    onChange: handleSearchChange,
+    onClear: handleClearSearch,
+    disabled: loading
+  }), [searchInput, handleSearchChange, handleClearSearch, loading]);
+
+  // Memoized sort props object
+  const sortProps = useMemo(() => ({
+    state: sortState,
+    options: sortOptions,
+    onChange: handleSortChange
+  }), [sortState, handleSortChange]);
+
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -207,13 +222,8 @@ export default function ListsPage() {
   return (
     <div className="min-h-screen bg-background">
       <ListsHeader
-        searchInput={searchInput}
-        onSearchChange={handleSearchChange}
-        onClearSearch={handleClearSearch}
-        sortState={sortState}
-        onSortChange={handleSortChange}
-        sortOptions={sortOptions}
-        loading={loading}
+        search={searchProps}
+        sort={sortProps}
         hasLists={displayLists.length > 0}
       />
       <main>

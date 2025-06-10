@@ -74,7 +74,8 @@ interface ListsGridProps {
   onListClick: (list: ListWithPlaceCount) => void;
 }
 
-export default function ListsGrid({ lists, onListClick }: ListsGridProps) {
+// Memoized grid component to prevent unnecessary re-renders
+const ListsGrid = React.memo<ListsGridProps>(({ lists, onListClick }) => {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -93,7 +94,11 @@ export default function ListsGrid({ lists, onListClick }: ListsGridProps) {
       </div>
     </div>
   );
-}
+});
+
+ListsGrid.displayName = 'ListsGrid';
+
+export default ListsGrid;
 
 // Export the type for use in other components
 export type { ListWithPlaceCount }; 
