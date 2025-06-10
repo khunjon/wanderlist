@@ -260,24 +260,41 @@ export async function searchPublicListsAdvanced(
 // =============================================
 
 export async function getListById(listId: string): Promise<List | null> {
+  console.log('🔍 getListById starting for:', listId);
+  
   try {
+    // Add a reasonable timeout to prevent infinite hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        console.log('⏰ Query timeout after 30 seconds for:', listId);
+        reject(new Error('Query timeout'));
+      }, 30000); // 30 seconds - much more reasonable
+    });
+
     // First, get the list data without user join to avoid RLS issues
-    const { data, error } = await supabase
+    console.log('📡 Starting list query for:', listId);
+    const queryPromise = supabase
       .from('lists')
       .select('*')
       .eq('id', listId)
       .single();
 
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+    console.log('📊 List query completed for:', listId, 'Success:', !!data, 'Error:', !!error);
+
     if (error && error.code === 'PGRST116') {
+      console.log('📭 List not found (PGRST116):', listId);
       return null; // List not found
     }
 
     if (error) {
+      console.error('❌ List query error:', error);
       handleDatabaseError(error, 'getListById')
     }
 
     // If we found a list, fetch the user data separately
     if (data) {
+      console.log('✅ List found, fetching user data for user_id:', data.user_id);
       try {
         const { data: userData } = await supabase
           .from('users')
@@ -287,16 +304,25 @@ export async function getListById(listId: string): Promise<List | null> {
         
         if (userData) {
           (data as any).users = userData;
+          console.log('👤 User data attached:', userData.display_name);
+        } else {
+          console.log('👤 No user data found for:', data.user_id);
         }
       } catch (userError) {
         // If user fetch fails, continue without user data
-        console.warn('Failed to fetch user data for list:', userError);
+        console.warn('⚠️ Failed to fetch user data for list:', userError);
       }
     }
 
+    console.log('🏁 getListById completed for:', listId);
     return data;
   } catch (error) {
+    console.error('💥 Exception in getListById:', error);
     if (error instanceof DatabaseError) throw error
+    if (error instanceof Error && error.message === 'Query timeout') {
+      console.error('⏰ getListById timed out for:', listId);
+      return null; // Treat timeout as "not found"
+    }
     handleDatabaseError(error, 'getListById')
   }
 }
