@@ -1,21 +1,34 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function NotFound() {
-  const { user, loading } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     // Set document title for 404 tracking - MixpanelProvider detects "404" in title
     document.title = '404 - Page Not Found | Placemarks';
+
+    // Check auth status directly with Supabase
+    const checkAuthStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsAuthenticated(!!session?.user);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuthStatus();
   }, []);
 
   // Don't render navigation until we know auth status
-  if (!mounted || loading) {
+  if (!mounted || isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center px-4 py-10 bg-gray-800 rounded-lg shadow-md max-w-md w-full">
@@ -31,8 +44,8 @@ export default function NotFound() {
   }
 
   // Determine the appropriate back link based on auth status
-  const backLink = user ? '/lists' : '/';
-  const backText = user ? 'Back to Lists' : 'Go back home';
+  const backLink = isAuthenticated ? '/lists' : '/';
+  const backText = isAuthenticated ? 'Back to Lists' : 'Go back home';
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
