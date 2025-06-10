@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 // Create a server-side Supabase client with service role key
 const supabaseAdmin = createClient(
@@ -13,6 +14,25 @@ const supabaseAdmin = createClient(
   }
 );
 
+// Create a client for user authentication
+const createUserClient = (request: NextRequest) => {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          Authorization: request.headers.get('Authorization') || ''
+        }
+      }
+    }
+  );
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +42,7 @@ export async function GET(
     
     console.log('Server-side: Fetching list with ID:', id);
     
-    // Use service role to bypass RLS for debugging
+    // Use service role to fetch the list first
     const { data: list, error: listError } = await supabaseAdmin
       .from('lists')
       .select('*')
@@ -43,9 +63,67 @@ export async function GET(
     
     // If list is not public, check if user has access
     if (!list.is_public) {
-      // For now, just return 403 for private lists
-      // In a full implementation, you'd check the user's auth token
-      return NextResponse.json({ error: 'List is private' }, { status: 403 });
+      // Get user from session - try multiple sources
+      const cookieStore = await cookies();
+      let authToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+      
+      // If no Authorization header, try to get from cookies
+      if (!authToken) {
+        // Debug: log all available cookies
+        const allCookies = cookieStore.getAll();
+        console.log('Server-side: Available cookies:', allCookies.map(c => c.name));
+        
+        // Try different cookie names that Supabase might use
+        const possibleCookies = [
+          'sb-access-token',
+          'supabase-auth-token',
+          `sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}-auth-token`
+        ];
+        
+        for (const cookieName of possibleCookies) {
+          const cookie = cookieStore.get(cookieName);
+          if (cookie?.value) {
+            console.log(`Server-side: Found cookie ${cookieName}`);
+            try {
+              // Cookie might be JSON stringified
+              const parsed = JSON.parse(cookie.value);
+              authToken = parsed.access_token || parsed;
+              break;
+            } catch {
+              // If not JSON, use as-is
+              authToken = cookie.value;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (!authToken) {
+        console.log('Server-side: No auth token found for private list');
+        return NextResponse.json({ error: 'Authentication required for private list' }, { status: 401 });
+      }
+      
+      // Create user client to verify the token and get user
+      const userSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      
+      // Try to get user from the token
+      const { data: { user }, error: authError } = await userSupabase.auth.getUser(authToken);
+      
+      if (authError || !user) {
+        console.log('Server-side: Invalid auth token for private list:', authError?.message);
+        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 });
+      }
+      
+      // Check if user owns the list
+      if (user.id !== list.user_id) {
+        console.log('Server-side: User does not own private list');
+        return NextResponse.json({ error: 'Access denied to private list' }, { status: 403 });
+      }
+      
+      console.log('Server-side: User authenticated and owns private list');
     }
     
     // Fetch places for this list

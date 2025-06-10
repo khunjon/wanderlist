@@ -102,7 +102,7 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [queryStartTime, authStabilized, isLoading, router]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (currentRetryCount = 0) => {
     if (!authStabilized) return;
     
     console.log('Starting fetchData with auth state:', { 
@@ -118,13 +118,28 @@ export default function ListContent({ id }: ListContentProps) {
     try {
       // Use server-side API route for reliable list fetching
       console.log('Fetching list via server-side API...');
-      const apiResponse = await fetch(`/api/lists/${id}`);
+      
+      // Get the current session token to send with the request
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
+      const apiResponse = await fetch(`/api/lists/${id}`, { headers });
       
       if (!apiResponse.ok) {
         if (apiResponse.status === 404) {
           console.log('List not found:', id);
           setIsNotFound(true);
           return;
+        }
+        if (apiResponse.status === 401 || apiResponse.status === 403) {
+          const errorData = await apiResponse.json();
+          throw new Error(errorData.error || `Access denied: ${apiResponse.status}`);
         }
         throw new Error(`API request failed: ${apiResponse.status}`);
       }
@@ -134,6 +149,7 @@ export default function ListContent({ id }: ListContentProps) {
       
       setList(listData);
       setIsNotFound(false);
+      setRetryCount(0); // Reset retry count on success
       
       // Transform places data
       const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
@@ -169,10 +185,10 @@ export default function ListContent({ id }: ListContentProps) {
     } catch (error) {
       console.error('Error fetching list:', error);
       
-      if (retryCount < 2) {
-        console.log(`Retrying... attempt ${retryCount + 1}`);
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchData(), 1000 * (retryCount + 1));
+      if (currentRetryCount < 2) {
+        console.log(`Retrying... attempt ${currentRetryCount + 1}`);
+        setRetryCount(currentRetryCount + 1);
+        setTimeout(() => fetchData(currentRetryCount + 1), 1000 * (currentRetryCount + 1));
         return;
       }
       
@@ -182,7 +198,7 @@ export default function ListContent({ id }: ListContentProps) {
       setIsLoading(false);
       setQueryStartTime(null);
     }
-  }, [id, authStabilized, authLoading, user, retryCount]);
+  }, [id, authStabilized, authLoading, user]);
 
   useEffect(() => {
     // Only fetch data when auth has truly stabilized
@@ -238,8 +254,18 @@ export default function ListContent({ id }: ListContentProps) {
   const handlePlaceAdded = useCallback(async () => {
     if (!id) return;
     try {
+      // Get the current session token to send with the request
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
       // Refetch from server-side API to get updated places
-      const apiResponse = await fetch(`/api/lists/${id}`);
+      const apiResponse = await fetch(`/api/lists/${id}`, { headers });
       if (apiResponse.ok) {
         const { places: placesData } = await apiResponse.json();
         const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
