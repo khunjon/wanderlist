@@ -46,6 +46,12 @@ export const initMixpanel = () => {
 
 export const trackPageView = (url: string) => {
   if (MIXPANEL_TOKEN && typeof window !== 'undefined') {
+    // Skip tracking for bots and crawlers
+    if (isBotUserAgent(navigator.userAgent)) {
+      console.log('Skipping Mixpanel tracking for bot:', navigator.userAgent);
+      return;
+    }
+
     // Check if this is a 404 page by looking at the document title
     const is404Page = document.title.includes('404') || document.title.includes('Not Found');
     
@@ -88,6 +94,108 @@ export const trackPageView = (url: string) => {
   }
 };
 
+// Helper function to detect bot user agents
+function isBotUserAgent(userAgent: string): boolean {
+  if (!userAgent) return false;
+  
+  const botPatterns = [
+    // Vercel bots
+    /vercel-screenshot/i,
+    /vercel-og/i,
+    
+    // Search engine crawlers
+    /googlebot/i,
+    /bingbot/i,
+    /slurp/i, // Yahoo
+    /duckduckbot/i,
+    /baiduspider/i,
+    /yandexbot/i,
+    /facebookexternalhit/i,
+    /twitterbot/i,
+    /linkedinbot/i,
+    /whatsapp/i,
+    /telegrambot/i,
+    
+    // SEO and monitoring tools
+    /ahrefsbot/i,
+    /semrushbot/i,
+    /mj12bot/i,
+    /dotbot/i,
+    /rogerbot/i, // Moz
+    /screaming frog/i,
+    /sitebulb/i,
+    
+    // Uptime monitoring
+    /pingdom/i,
+    /uptimerobot/i,
+    /statuscake/i,
+    /site24x7/i,
+    /newrelic/i,
+    
+    // Security scanners
+    /nessus/i,
+    /nikto/i,
+    /nmap/i,
+    /masscan/i,
+    /nuclei/i,
+    
+    // Generic bot indicators
+    /bot/i,
+    /crawler/i,
+    /spider/i,
+    /scraper/i,
+    /curl/i,
+    /wget/i,
+    /python-requests/i,
+    /node-fetch/i,
+    /axios/i,
+    /postman/i,
+    /insomnia/i,
+    
+    // Headless browsers (often used by bots)
+    /headlesschrome/i,
+    /phantomjs/i,
+    /slimerjs/i,
+    /htmlunit/i,
+    
+    // Preview/thumbnail generators
+    /preview/i,
+    /thumbnail/i,
+    /screenshot/i,
+    /capture/i,
+    
+    // Feed readers
+    /feedfetcher/i,
+    /rssreader/i,
+    /feedparser/i,
+    
+    // Archive services
+    /archive\.org/i,
+    /wayback/i,
+    /ia_archiver/i,
+    
+    // Other common bots
+    /applebot/i,
+    /discordbot/i,
+    /slackbot/i,
+    /skypeuripreview/i,
+    /vkshare/i,
+    /redditbot/i,
+    /pinterestbot/i,
+    /tumblr/i,
+    
+    // Development/testing tools
+    /jest/i,
+    /cypress/i,
+    /selenium/i,
+    /webdriver/i,
+    /playwright/i,
+    /puppeteer/i
+  ];
+  
+  return botPatterns.some(pattern => pattern.test(userAgent));
+}
+
 // Helper function to categorize 404 paths for better analytics
 function categorize404Path(path: string): string {
   if (!path) return 'unknown';
@@ -115,6 +223,12 @@ function categorize404Path(path: string): string {
 
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
   if (MIXPANEL_TOKEN) {
+    // Skip tracking for bots and crawlers
+    if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+      console.log('Skipping Mixpanel event tracking for bot:', navigator.userAgent);
+      return;
+    }
+
     mixpanel.track(eventName, {
       ...properties,
       timestamp: new Date().toISOString(),
@@ -136,6 +250,12 @@ export const trackListView = (listData: {
   view_count?: number;
 }) => {
   if (MIXPANEL_TOKEN) {
+    // Skip tracking for bots and crawlers
+    if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+      console.log('Skipping Mixpanel list view tracking for bot:', navigator.userAgent);
+      return;
+    }
+
     mixpanel.track('List View', {
       list_id: listData.list_id,
       list_name: listData.list_name,
@@ -166,6 +286,12 @@ export const trackListCreate = (listData: {
     return;
   }
 
+  // Skip tracking for bots and crawlers
+  if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+    console.log('Skipping Mixpanel list create tracking for bot:', navigator.userAgent);
+    return;
+  }
+
   const eventData = {
     list_id: listData.list_id,
     list_name: listData.list_name,
@@ -191,6 +317,12 @@ export const trackListCreate = (listData: {
 
 export const identifyUser = (userId: string, userProperties?: Record<string, any>) => {
   if (MIXPANEL_TOKEN) {
+    // Skip tracking for bots and crawlers
+    if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+      console.log('Skipping Mixpanel user identification for bot:', navigator.userAgent);
+      return;
+    }
+
     mixpanel.identify(userId);
     if (userProperties) {
       mixpanel.people.set(userProperties);
@@ -200,6 +332,12 @@ export const identifyUser = (userId: string, userProperties?: Record<string, any
 
 export const setUserProperties = (properties: Record<string, any>) => {
   if (MIXPANEL_TOKEN) {
+    // Skip tracking for bots and crawlers
+    if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+      console.log('Skipping Mixpanel user properties for bot:', navigator.userAgent);
+      return;
+    }
+
     mixpanel.people.set(properties);
   }
 };

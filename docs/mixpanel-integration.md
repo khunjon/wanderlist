@@ -181,6 +181,7 @@ const handleUserProfileUpdate = (user: User) => {
 
 - **Smart Page Tracking**: Page views are tracked manually for better Next.js integration (no duplicates)
 - **Manual Event Tracking**: All events are tracked manually for precise control (autocapture disabled)
+- **Bot Filtering**: Automatically filters out bot traffic including Vercel screenshot service, search crawlers, and monitoring tools
 - **User Identification**: Link events to specific users
 - **Custom Properties**: Add context to your events
 - **TypeScript Support**: Full TypeScript support with proper types
@@ -259,6 +260,33 @@ const handleFormSubmit = (formData: any) => {
   });
 };
 ```
+
+## Bot Filtering
+
+The integration automatically filters out bot traffic to ensure clean analytics data. Blocked bots include:
+
+### Vercel Services
+- `vercel-screenshot/1.0` - Vercel's screenshot service
+- `vercel-og` - Vercel's Open Graph image generation
+
+### Search Engine Crawlers
+- Google, Bing, Yahoo, DuckDuckGo, Baidu, Yandex
+- Social media crawlers (Facebook, Twitter, LinkedIn, etc.)
+
+### SEO & Monitoring Tools
+- Ahrefs, SEMrush, Moz, Screaming Frog
+- Uptime monitors (Pingdom, UptimeRobot, StatusCake)
+- Security scanners and development tools
+
+### Custom Bot Detection
+If you need to add custom bot detection:
+
+```tsx
+// The bot detection function is internal, but you can extend it
+// by modifying the botPatterns array in mixpanelClient.ts
+```
+
+All blocked requests are logged to the console in development for debugging.
 
 ## Privacy Considerations
 
