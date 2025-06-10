@@ -383,14 +383,14 @@ export default function ListContent({ id }: ListContentProps) {
     <div className="min-h-screen bg-background">
       {/* Sticky Header - Mobile Optimized */}
       <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 shadow-lg">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-2 sm:py-3 sm:px-6 lg:px-8">
           {/* Top row with back button and action buttons */}
-          <div className="flex items-center justify-between mb-3 sm:mb-2">
+          <div className="flex items-center justify-between mb-2 sm:mb-1">
             <Link
               href="/lists"
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
@@ -402,10 +402,10 @@ export default function ListContent({ id }: ListContentProps) {
                   <>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                       title="Edit list"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                       <span className="hidden sm:inline text-sm font-medium">Edit</span>
@@ -413,10 +413,10 @@ export default function ListContent({ id }: ListContentProps) {
                     <button
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50"
                       title="Delete list"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                       <span className="hidden sm:inline text-sm font-medium">
@@ -429,10 +429,10 @@ export default function ListContent({ id }: ListContentProps) {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50"
                       title="Save changes"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       <span className="hidden sm:inline text-sm font-medium">
@@ -442,10 +442,10 @@ export default function ListContent({ id }: ListContentProps) {
                     <button
                       onClick={() => setIsEditing(false)}
                       disabled={saving}
-                      className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-gray-600 hover:bg-gray-700 text-white transition-colors"
                       title="Cancel editing"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                       <span className="hidden sm:inline text-sm font-medium">Cancel</span>
@@ -456,55 +456,44 @@ export default function ListContent({ id }: ListContentProps) {
             )}
           </div>
           
-          {/* Title and description - Mobile optimized */}
-          <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight">
-              {list.name}
-            </h1>
-            {list.description && (
-              <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
-                {list.description}
-              </p>
-            )}
-            
-            {/* Quick info badges */}
-            <div className="flex items-center space-x-3 pt-2">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                list.is_public 
-                  ? 'bg-green-900/50 text-green-200 border border-green-800' 
-                  : 'bg-purple-900/50 text-purple-200 border border-purple-800'
-              }`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {list.is_public ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  )}
-                </svg>
-                {list.is_public ? 'Public' : 'Private'}
-              </span>
-              
-              {list.city && (
-                <span className="inline-flex items-center text-xs text-blue-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {list.city}
-                </span>
-              )}
-              
-              <span className="text-xs text-gray-400">
-                {places.length} {places.length === 1 ? 'place' : 'places'}
-              </span>
-              
-              {list.view_count !== undefined && (
-                <span className="text-xs text-gray-400">
-                  {list.view_count} views
-                </span>
+          {/* Title row with privacy indicator */}
+          <div className="flex items-start justify-between mb-1">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-tight truncate">
+                  {list.name}
+                </h1>
+                {/* Private indicator - only show for private lists */}
+                {!list.is_public && (
+                  <div className="flex-shrink-0" title="Private list">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {list.description && (
+                <p className="text-sm text-gray-300 leading-relaxed mt-1 line-clamp-2">
+                  {list.description}
+                </p>
               )}
             </div>
           </div>
+          
+          {/* Author info - integrated into header, de-emphasized */}
+          {author && (
+            <div className="flex items-center space-x-2 text-xs text-gray-400">
+              {author.photo_url && (
+                <img
+                  src={author.photo_url}
+                  alt={author.displayName}
+                  className="h-5 w-5 sm:h-6 sm:w-6 rounded-full"
+                  key={author.photo_url}
+                />
+              )}
+              <span>by {author.displayName}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -581,20 +570,6 @@ export default function ListContent({ id }: ListContentProps) {
       {/* Main Content */}
       <main>
         <div className="mx-auto max-w-7xl py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-          {/* Author info - moved up and simplified */}
-          {author && (
-            <div className="flex items-center space-x-3 mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
-              {author.photo_url && (
-                <img
-                  src={author.photo_url}
-                  alt={author.displayName}
-                  className="h-8 w-8 rounded-full"
-                  key={author.photo_url}
-                />
-              )}
-              <span className="text-sm text-gray-300">Created by {author.displayName}</span>
-            </div>
-          )}
 
           {/* View Mode Controls */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
@@ -778,25 +753,59 @@ export default function ListContent({ id }: ListContentProps) {
             </>
           )}
 
-          {/* Tags section - moved to bottom for better mobile UX */}
-          {list.tags && list.tags.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-gray-700">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {list.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-700 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    {tag}
-                  </span>
-                ))}
+          {/* Bottom info section - location, stats, and tags */}
+          <div className="mt-8 pt-6 border-t border-gray-700 space-y-6">
+            {/* Location and stats */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+              {list.city && (
+                <div className="flex items-center space-x-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>{list.city}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{places.length} {places.length === 1 ? 'place' : 'places'}</span>
               </div>
+              
+              {list.view_count !== undefined && (
+                <div className="flex items-center space-x-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>{list.view_count} views</span>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Tags section */}
+            {list.tags && list.tags.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-400 mb-3">Tags</h3>
+                <div className="flex flex-wrap gap-2">
+                  {list.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-700 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
