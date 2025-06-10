@@ -288,6 +288,38 @@ If you need to add custom bot detection:
 
 All blocked requests are logged to the console in development for debugging.
 
+## Custom 404 Tracking
+
+The system automatically detects 404 pages using multiple methods and tracks them as special "404 Page View" events instead of normal page views. This provides better analytics for understanding user navigation issues.
+
+### 404 Detection Methods
+1. **Document Title**: Checks if the page title contains "404" or "Not Found"
+2. **Route Detection**: Identifies when users are on the `/not-found` route
+3. **Unknown Route Analysis**: Detects URLs that don't match any known application routes
+
+### 404 Event Properties
+- `incorrect_path`: The failed URL path that was requested
+- `path_category`: Categorized type of 404 (list_page, api_endpoint, file_request, etc.)
+- `detection_method`: Which method(s) detected the 404 (title, not_found_route, unknown_route)
+- `full_url`: Complete URL including domain
+- `referrer`: Where the user came from
+- Standard tracking properties (timestamp, user agent, screen dimensions)
+
+### Path Categories
+- `list_page`: Failed list access (e.g., `/lists/invalid-id`)
+- `profile_page`: Profile-related 404s
+- `api_endpoint`: API calls to non-existent endpoints
+- `file_request`: Requests for missing files (contains file extensions)
+- `uuid_direct_access`: Direct access attempts with UUID patterns
+- `numeric_id`: Numeric ID-based access attempts
+- `other`: Uncategorized 404s
+
+### Testing 404 Tracking
+To test the 404 tracking:
+1. Visit a non-existent URL like `/likj` or `/lists/invalid-id`
+2. Check your browser console for debug logs showing 404 detection
+3. Verify the "404 Page View" event appears in Mixpanel Live View
+
 ## Privacy Considerations
 
 - Only track events that provide value for analytics

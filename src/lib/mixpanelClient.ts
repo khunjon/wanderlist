@@ -52,13 +52,22 @@ export const trackPageView = (url: string) => {
       return;
     }
 
-    // Check if this is a 404 page by looking at the document title
-    const is404Page = document.title.includes('404') || document.title.includes('Not Found');
+    // Enhanced 404 detection
+    const is404Page = detect404Page(url);
+    
+    // Debug logging for 404 detection
+    console.log('404 Detection Debug:', {
+      url,
+      title: document.title,
+      is404Page,
+      pathname: window.location.pathname
+    });
     
     // Ensure we're tracking the full URL with the correct domain
     const fullUrl = `${window.location.origin}${url}`;
     
     if (is404Page) {
+      console.log('🚨 Tracking 404 Page View:', url);
       // Track as a special 404 event instead of normal page view
       mixpanel.track('404 Page View', {
         incorrect_path: url,
@@ -71,7 +80,9 @@ export const trackPageView = (url: string) => {
         screen_width: window.screen.width,
         screen_height: window.screen.height,
         // Categorize the type of 404 for better analysis
-        path_category: categorize404Path(url)
+        path_category: categorize404Path(url),
+        // Additional debug info
+        detection_method: get404DetectionMethod(url)
       });
     } else {
       // Normal page view tracking
@@ -194,6 +205,49 @@ function isBotUserAgent(userAgent: string): boolean {
   ];
   
   return botPatterns.some(pattern => pattern.test(userAgent));
+}
+
+// Enhanced 404 detection function
+function detect404Page(url: string): boolean {
+  // Method 1: Check document title
+  const titleContains404 = document.title.includes('404') || document.title.includes('Not Found');
+  
+  // Method 2: Check if we're on the not-found route
+  const isNotFoundRoute = window.location.pathname === '/not-found';
+  
+  // Method 3: Check if the URL doesn't match any known routes
+  const knownRoutes = ['/lists', '/discover', '/search', '/profile', '/auth'];
+  const isUnknownRoute = !knownRoutes.some(route => url.startsWith(route)) && 
+                         url !== '/' && 
+                         !url.startsWith('/api/') &&
+                         url.length > 1; // Exclude root path
+  
+  return titleContains404 || isNotFoundRoute || isUnknownRoute;
+}
+
+// Helper function to determine which method detected the 404
+function get404DetectionMethod(url: string): string {
+  const methods = [];
+  
+  if (document.title.includes('404') || document.title.includes('Not Found')) {
+    methods.push('title');
+  }
+  
+  if (window.location.pathname === '/not-found') {
+    methods.push('not_found_route');
+  }
+  
+  const knownRoutes = ['/lists', '/discover', '/search', '/profile', '/auth'];
+  const isUnknownRoute = !knownRoutes.some(route => url.startsWith(route)) && 
+                         url !== '/' && 
+                         !url.startsWith('/api/') &&
+                         url.length > 1;
+  
+  if (isUnknownRoute) {
+    methods.push('unknown_route');
+  }
+  
+  return methods.join(',') || 'none';
 }
 
 // Helper function to categorize 404 paths for better analytics

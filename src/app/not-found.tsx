@@ -1,4 +1,10 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '404 - Page Not Found | Placemarks',
+  description: 'The page you are looking for could not be found.',
+};
 
 export default function NotFound() {
   // Note: 404 tracking is handled automatically by the MixpanelProvider
