@@ -167,29 +167,7 @@ export default function ListContent({ id }: ListContentProps) {
           console.error('Error fetching author profile:', err);
         }
 
-        // Track list view and increment view count (after author data is available)
-        if (user) {
-          // Track with Google Analytics
-          trackListViewGA(listData.name, listData.id);
-          
-          // Track with Mixpanel - now with proper author information
-          trackListView({
-            list_id: listData.id,
-            list_name: listData.name,
-            list_author: authorData?.displayName || authorData?.email || 'Unknown',
-            list_creation_date: listData.created_at || new Date().toISOString(),
-            is_public: listData.is_public || false,
-            view_count: listData.view_count || 0,
-            place_count: places.length
-          });
-          
-          // Only increment view count if user is not the owner
-          if (listData.user_id !== user.id) {
-            await incrementListViewCount(id);
-          }
-        }
-
-        // Fetch places in the list
+        // Fetch places in the list first
         const placesData = await getListPlaces(id);
         // Transform the data to match PlaceWithNotes interface
         const transformedPlaces: PlaceWithNotes[] = placesData.map(item => ({
@@ -209,6 +187,28 @@ export default function ListContent({ id }: ListContentProps) {
           notes: item.notes || ''
         }));
         setPlaces(transformedPlaces);
+
+        // Track list view and increment view count (after both author and places data are available)
+        if (user) {
+          // Track with Google Analytics
+          trackListViewGA(listData.name, listData.id);
+          
+          // Track with Mixpanel - now with proper author information and place count
+          trackListView({
+            list_id: listData.id,
+            list_name: listData.name,
+            list_author: authorData?.displayName || authorData?.email || 'Unknown',
+            list_creation_date: listData.created_at || new Date().toISOString(),
+            is_public: listData.is_public || false,
+            view_count: listData.view_count || 0,
+            place_count: transformedPlaces.length
+          });
+          
+          // Only increment view count if user is not the owner
+          if (listData.user_id !== user.id) {
+            await incrementListViewCount(id);
+          }
+        }
       } catch (err) {
         console.error('Error fetching list:', err);
         setError('Failed to load list. Please try again.');

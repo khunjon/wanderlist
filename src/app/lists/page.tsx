@@ -158,7 +158,8 @@ export default function ListsPage() {
       list_author: user?.displayName || user?.email || 'Unknown',
       list_creation_date: list.created_at || new Date().toISOString(),
       is_public: list.is_public || false,
-      view_count: list.view_count || 0
+      view_count: list.view_count || 0,
+      place_count: 0 // Place count not available on list overview page
     });
     
     router.push(`/lists/${list.id}`);
