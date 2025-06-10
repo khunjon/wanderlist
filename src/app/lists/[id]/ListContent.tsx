@@ -359,14 +359,16 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [list]);
 
+  // Set document title when in 404 state
+  useEffect(() => {
+    if (isNotFound) {
+      document.title = '404 - List Not Found | Placemarks';
+    }
+  }, [isNotFound]);
+
   // Handle not found state with proper 404 page
   if (isNotFound) {
     console.log('🚨 Rendering 404 page');
-    // Set document title for 404 detection
-    useEffect(() => {
-      document.title = '404 - List Not Found | Placemarks';
-    }, []);
-
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
