@@ -283,38 +283,56 @@ export default function ProfilePage() {
               {/* Profile Photo Section */}
               <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
                 <div className="flex-shrink-0">
-                  <ProfilePhotoUpload
-                    userId={authUser!.id}
-                    currentPhotoUrl={currentPhotoUrl || undefined}
-                    onPhotoUpdated={(newUrl) => {
-                      setCurrentPhotoUrl(addCacheBuster(newUrl));
-                      setSuccessMessage('Profile photo updated successfully!');
-                      // Update the profile state
-                      if (profile) {
-                        setProfile({ ...profile, photo_url: newUrl });
-                      }
-                    }}
-                    onPhotoDeleted={() => {
-                      setCurrentPhotoUrl(null);
-                      setSuccessMessage('Profile photo deleted successfully!');
-                      // Update the profile state
-                      if (profile) {
-                        setProfile({ ...profile, photo_url: '' });
-                      }
-                    }}
-                    size="lg"
-                    className="ring-4 ring-gray-600"
-                  />
+                  <div className="relative">
+                    {getDisplayImageUrl() ? (
+                      <img
+                        className="h-24 w-24 rounded-full object-cover ring-4 ring-gray-600"
+                        src={getDisplayImageUrl()!}
+                        alt="Profile"
+                      />
+                    ) : (
+                      <div className="h-24 w-24 rounded-full bg-gray-600 flex items-center justify-center ring-4 ring-gray-600">
+                        <svg className="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex-1">
                   <h3 className="text-lg font-medium text-white mb-2">Profile Photo</h3>
                   <p className="text-sm text-gray-400 mb-4">
-                    Upload a photo to help others recognize you. Drag & drop or click to upload. Images are automatically optimized and old photos are cleaned up.
+                    Upload a photo to help others recognize you. Images are automatically optimized and old photos are cleaned up.
                   </p>
-                  <p className="text-xs text-gray-400">
-                    JPG, PNG, GIF, or WebP. Max 5MB. Cache-busting ensures immediate updates.
-                  </p>
+                  
+                  <div className="mt-4">
+                    <ProfilePhotoUpload
+                      userId={authUser!.id}
+                      currentPhotoUrl={currentPhotoUrl || undefined}
+                      onPhotoUpdated={(newUrl) => {
+                        setCurrentPhotoUrl(addCacheBuster(newUrl));
+                        setSuccessMessage('Profile photo updated successfully!');
+                        // Update the profile state
+                        if (profile) {
+                          setProfile({ ...profile, photo_url: newUrl });
+                        }
+                      }}
+                      onPhotoDeleted={() => {
+                        setCurrentPhotoUrl(null);
+                        setSuccessMessage('Profile photo deleted successfully!');
+                        // Update the profile state
+                        if (profile) {
+                          setProfile({ ...profile, photo_url: '' });
+                        }
+                      }}
+                      size="sm"
+                      className="inline-flex"
+                    />
+                    <p className="mt-2 text-xs text-gray-400">
+                      JPG, PNG, GIF, or WebP. Max 5MB. Cache-busting ensures immediate updates.
+                    </p>
+                  </div>
                 </div>
               </div>
 
