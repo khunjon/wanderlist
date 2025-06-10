@@ -21,18 +21,28 @@ export default function DiscoverPage() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
   const [displayLists, setDisplayLists] = useState<List[]>([]);
   const router = useRouter();
 
-  // Update display lists whenever allLists, searchQuery, or sortState changes
+  // Debounce search input with 300ms delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Update display lists whenever allLists, debouncedSearch, or sortState changes
   useEffect(() => {
     let filtered = allLists;
 
     // Apply search filter
-    if (searchQuery.trim()) {
-      const searchTerm = searchQuery.toLowerCase().trim();
+    if (debouncedSearch.trim()) {
+      const searchTerm = debouncedSearch.toLowerCase().trim();
       filtered = allLists.filter((list) => {
         // Search in list name
         const nameMatch = list.name.toLowerCase().includes(searchTerm);
@@ -80,7 +90,7 @@ export default function DiscoverPage() {
     });
 
     setDisplayLists(sorted);
-  }, [allLists, searchQuery, sortState]);
+  }, [allLists, debouncedSearch, sortState]);
 
   // Fetch public lists
   const fetchLists = useCallback(async () => {
@@ -106,12 +116,12 @@ export default function DiscoverPage() {
 
   // Memoized search input change handler
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    setSearchInput(e.target.value);
   }, []);
 
   // Memoized clear search handler
   const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
+    setSearchInput('');
   }, []);
 
   // Memoized list click handler
@@ -160,11 +170,11 @@ export default function DiscoverPage() {
                 <input
                   type="text"
                   placeholder="Search public lists..."
-                  value={searchQuery}
+                  value={searchInput}
                   onChange={handleSearchChange}
                   className="w-full md:w-64 px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {searchQuery && (
+                {searchInput && (
                   <button
                     type="button"
                     onClick={handleClearSearch}
