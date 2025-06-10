@@ -18,7 +18,7 @@ const sortOptions: SortOption[] = [
 ];
 
 export default function DiscoverPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [allLists, setAllLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
@@ -92,27 +92,24 @@ export default function DiscoverPage() {
     setDisplayLists(sorted);
   }, [allLists, debouncedSearch, sortState]);
 
-  // Fetch public lists
-  const fetchLists = useCallback(async () => {
-    try {
-      setLoading(true);
-      // Use enhanced getPublicLists with better sorting and pagination
-      const publicLists = await getPublicLists(50, 0, undefined, undefined, 'view_count', 'desc');
-      setAllLists(publicLists);
-    } catch (error) {
-      console.error('Error fetching public lists:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Simplified data fetching - no auth checks needed for public lists
   useEffect(() => {
-    // Don't redirect unauthenticated users - they can view public lists
-    // Authentication will be required for future features like liking/favoriting
-    
-    // Fetch public lists regardless of authentication status
-    fetchLists();
-  }, [fetchLists]);
+    const fetchPublicLists = async () => {
+      try {
+        setLoading(true);
+        // Use enhanced getPublicLists with better sorting and pagination
+        const publicLists = await getPublicLists(50, 0, undefined, undefined, 'view_count', 'desc');
+        setAllLists(publicLists);
+      } catch (error) {
+        console.error('Error fetching public lists:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Fetch public lists immediately - no auth required
+    fetchPublicLists();
+  }, []); // Empty dependency array since this doesn't depend on auth
 
   // Memoized search input change handler
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +122,7 @@ export default function DiscoverPage() {
   }, []);
 
   // Memoized list click handler
-  const handleListClick = (list: List) => {
+  const handleListClick = useCallback((list: List) => {
     // Track with Google Analytics
     trackListViewGA(list.name, list.id);
     
@@ -141,23 +138,12 @@ export default function DiscoverPage() {
      });
     
     router.push(`/lists/${list.id}`);
-  };
+  }, [router]);
 
   // Memoized sort change handler
   const handleSortChange = useCallback((newSort: SortState) => {
     setSortState(newSort);
   }, []);
-
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-white">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

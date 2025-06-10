@@ -94,7 +94,6 @@ export default function ListsPage() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<ListWithPlaceCount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasFetched, setHasFetched] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
@@ -170,63 +169,56 @@ export default function ListsPage() {
     setDisplayLists(sorted);
   }, [allLists, debouncedSearch, sortState]);
 
-  // Fetch user's lists
-  const fetchLists = useCallback(async () => {
-    if (!user || hasFetched) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      // Check cache first
-      const cacheKey = user.id;
-      const cached = listsCache.get(cacheKey);
-      const now = Date.now();
-      
-      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-        // Use cached data
-        setAllLists(cached.data);
-        setHasFetched(true);
-        setLoading(false);
+  // Simplified auth and data fetching logic - single useEffect
+  useEffect(() => {
+    // Handle authentication and data fetching in one place
+    const handleAuthAndData = async () => {
+      // If still loading auth, wait
+      if (authLoading) {
         return;
       }
-      
-      // Fetch fresh data
-      const userLists = await getUserListsWithPlaceCounts(user.id);
-      
-      // Update cache
-      listsCache.set(cacheKey, {
-        data: userLists,
-        timestamp: now
-      });
-      
-      setAllLists(userLists);
-      setHasFetched(true);
-    } catch (error) {
-      console.error('Error fetching lists:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, hasFetched]);
 
-  useEffect(() => {
-    if (!user && !authLoading) {
-      router.push('/');
-      return;
-    }
+      // If no user after auth loading is complete, redirect to home
+      if (!user) {
+        router.push('/');
+        return;
+      }
 
-    if (user && !authLoading && !hasFetched) {
-      fetchLists();
-    }
-  }, [user, authLoading, hasFetched, fetchLists, router]);
+      // User is authenticated, fetch their lists
+      try {
+        setLoading(true);
+        
+        // Check cache first
+        const cacheKey = user.id;
+        const cached = listsCache.get(cacheKey);
+        const now = Date.now();
+        
+        if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+          // Use cached data
+          setAllLists(cached.data);
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch fresh data
+        const userLists = await getUserListsWithPlaceCounts(user.id);
+        
+        // Update cache
+        listsCache.set(cacheKey, {
+          data: userLists,
+          timestamp: now
+        });
+        
+        setAllLists(userLists);
+      } catch (error) {
+        console.error('Error fetching lists:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Reset fetch flag when user changes
-  useEffect(() => {
-    if (user) {
-      setHasFetched(false);
-    }
-  }, [user?.id]); // Only reset when user ID changes
+    handleAuthAndData();
+  }, [user, authLoading, router]);
 
   // Memoized search input change handler
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
