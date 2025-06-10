@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getListById, getListPlaces, deleteList, updateList, updateListPlaceNotes, removePlaceFromList, incrementListViewCount } from '@/lib/supabase';
+import { debugListQuery } from '@/lib/supabase/database';
 import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -116,6 +117,10 @@ export default function ListContent({ id }: ListContentProps) {
     setQueryStartTime(Date.now());
     
     try {
+      // Debug: Test different query approaches
+      console.log('Running debug queries...');
+      await debugListQuery(id);
+      
       const result = await Promise.race([
         getListById(id),
         new Promise<never>((_, reject) => {

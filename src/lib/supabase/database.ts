@@ -261,6 +261,8 @@ export async function searchPublicListsAdvanced(
 
 export async function getListById(listId: string): Promise<List | null> {
   try {
+    console.log('getListById: Starting query for ID:', listId);
+    
     // Very aggressive timeout to prevent hanging
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Query timeout')), 2000); // 2 seconds max
@@ -272,7 +274,10 @@ export async function getListById(listId: string): Promise<List | null> {
       .eq('id', listId)
       .maybeSingle();
 
+    console.log('getListById: Query created, waiting for result...');
     const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+    console.log('getListById: Query completed', { data, error, hasData: !!data });
 
     if (error) {
       console.error('getListById error:', error);
@@ -285,8 +290,81 @@ export async function getListById(listId: string): Promise<List | null> {
       console.error('getListById timed out for:', listId);
       return null; // Treat timeout as "not found"
     }
+    console.error('getListById caught error:', error);
     if (error instanceof DatabaseError) throw error
     handleDatabaseError(error, 'getListById')
+  }
+}
+
+// Specialized function for public lists that bypasses potential RLS issues
+export async function getPublicListById(listId: string): Promise<List | null> {
+  try {
+    // Use a more direct approach for public lists
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), 3000); // 3 seconds for public lists
+    });
+
+    const queryPromise = supabase
+      .from('lists')
+      .select('*')
+      .eq('id', listId)
+      .eq('is_public', true) // Only fetch if public
+      .maybeSingle();
+
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+    if (error) {
+      console.error('getPublicListById error:', error);
+      handleDatabaseError(error, 'getPublicListById')
+    }
+
+    return data;
+  } catch (error: any) {
+    if (error.message === 'Query timeout') {
+      console.error('getPublicListById timed out for:', listId);
+      return null;
+    }
+    if (error instanceof DatabaseError) throw error
+    handleDatabaseError(error, 'getPublicListById')
+  }
+}
+
+// Debug function to test different query approaches
+export async function debugListQuery(listId: string): Promise<any> {
+  console.log('=== DEBUG LIST QUERY START ===');
+  
+  try {
+    // Test 1: Basic query without RLS considerations
+    console.log('Test 1: Basic query');
+    const test1 = await supabase
+      .from('lists')
+      .select('id, name, is_public')
+      .eq('id', listId)
+      .maybeSingle();
+    console.log('Test 1 result:', test1);
+
+    // Test 2: Query with explicit public filter
+    console.log('Test 2: Public filter');
+    const test2 = await supabase
+      .from('lists')
+      .select('id, name, is_public')
+      .eq('id', listId)
+      .eq('is_public', true)
+      .maybeSingle();
+    console.log('Test 2 result:', test2);
+
+    // Test 3: Count query to see if list exists at all
+    console.log('Test 3: Count query');
+    const test3 = await supabase
+      .from('lists')
+      .select('id', { count: 'exact' })
+      .eq('id', listId);
+    console.log('Test 3 result:', test3);
+
+    return { test1, test2, test3 };
+  } catch (error) {
+    console.error('Debug query error:', error);
+    return { error };
   }
 }
 
