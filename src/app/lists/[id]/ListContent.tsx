@@ -117,6 +117,56 @@ export default function ListContent({ id }: ListContentProps) {
     setQueryStartTime(Date.now());
     
     try {
+      // Try server-side API first as it should be more reliable
+      console.log('Trying server-side API route...');
+      const apiResponse = await fetch(`/api/lists/${id}`);
+      
+      if (apiResponse.ok) {
+        const { list: listData, places: placesData } = await apiResponse.json();
+        console.log('Server-side API success:', listData.name);
+        
+        setList(listData);
+        setIsNotFound(false);
+        
+        // Transform places data
+        const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
+          id: lp.places.id,
+          googlePlaceId: lp.places.google_place_id,
+          name: lp.places.name,
+          address: lp.places.address,
+          latitude: lp.places.latitude,
+          longitude: lp.places.longitude,
+          rating: lp.places.rating || 0,
+          photoUrl: lp.places.photo_url || '',
+          placeTypes: lp.places.place_types || [],
+          notes: lp.notes || '',
+          listPlaceId: lp.id,
+          addedAt: new Date(lp.added_at || '')
+        }));
+        setPlaces(transformedPlaces);
+        
+        // Track analytics
+        if (listData && transformedPlaces) {
+          trackListViewGA(listData.name, listData.id);
+          trackListView({
+            list_id: listData.id,
+            list_name: listData.name,
+            list_author: 'Unknown', // Server API doesn't include user info yet
+            list_creation_date: listData.created_at || new Date().toISOString(),
+            is_public: listData.is_public || false,
+            view_count: listData.view_count || 0,
+            place_count: transformedPlaces.length
+          });
+        }
+        
+        return; // Success, exit early
+      } else {
+        console.log('Server-side API failed:', apiResponse.status);
+      }
+      
+      // Fallback to direct Supabase query (this is what was hanging)
+      console.log('Falling back to direct Supabase query...');
+      
       // Debug: Test different query approaches
       console.log('Running debug queries...');
       await debugListQuery(id);
