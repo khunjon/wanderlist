@@ -329,44 +329,7 @@ export async function getPublicListById(listId: string): Promise<List | null> {
   }
 }
 
-// Debug function to test different query approaches
-export async function debugListQuery(listId: string): Promise<any> {
-  console.log('=== DEBUG LIST QUERY START ===');
-  
-  try {
-    // Test 1: Basic query without RLS considerations
-    console.log('Test 1: Basic query');
-    const test1 = await supabase
-      .from('lists')
-      .select('id, name, is_public')
-      .eq('id', listId)
-      .maybeSingle();
-    console.log('Test 1 result:', test1);
 
-    // Test 2: Query with explicit public filter
-    console.log('Test 2: Public filter');
-    const test2 = await supabase
-      .from('lists')
-      .select('id, name, is_public')
-      .eq('id', listId)
-      .eq('is_public', true)
-      .maybeSingle();
-    console.log('Test 2 result:', test2);
-
-    // Test 3: Count query to see if list exists at all
-    console.log('Test 3: Count query');
-    const test3 = await supabase
-      .from('lists')
-      .select('id', { count: 'exact' })
-      .eq('id', listId);
-    console.log('Test 3 result:', test3);
-
-    return { test1, test2, test3 };
-  } catch (error) {
-    console.error('Debug query error:', error);
-    return { error };
-  }
-}
 
 export async function getListWithPlaces(listId: string): Promise<any[]> {
   try {

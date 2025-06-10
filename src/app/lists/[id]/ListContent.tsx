@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getListById, getListPlaces, deleteList, updateList, updateListPlaceNotes, removePlaceFromList, incrementListViewCount } from '@/lib/supabase';
-import { debugListQuery } from '@/lib/supabase/database';
+import { deleteList, updateList, updateListPlaceNotes, removePlaceFromList, incrementListViewCount } from '@/lib/supabase';
 import { List, PlaceWithNotes, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -117,83 +116,27 @@ export default function ListContent({ id }: ListContentProps) {
     setQueryStartTime(Date.now());
     
     try {
-      // Try server-side API first as it should be more reliable
-      console.log('Trying server-side API route...');
+      // Use server-side API route for reliable list fetching
+      console.log('Fetching list via server-side API...');
       const apiResponse = await fetch(`/api/lists/${id}`);
       
-      if (apiResponse.ok) {
-        const { list: listData, places: placesData } = await apiResponse.json();
-        console.log('Server-side API success:', listData.name);
-        
-        setList(listData);
-        setIsNotFound(false);
-        
-        // Transform places data
-        const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
-          id: lp.places.id,
-          googlePlaceId: lp.places.google_place_id,
-          name: lp.places.name,
-          address: lp.places.address,
-          latitude: lp.places.latitude,
-          longitude: lp.places.longitude,
-          rating: lp.places.rating || 0,
-          photoUrl: lp.places.photo_url || '',
-          placeTypes: lp.places.place_types || [],
-          notes: lp.notes || '',
-          listPlaceId: lp.id,
-          addedAt: new Date(lp.added_at || '')
-        }));
-        setPlaces(transformedPlaces);
-        
-        // Track analytics
-        if (listData && transformedPlaces) {
-          trackListViewGA(listData.name, listData.id);
-          trackListView({
-            list_id: listData.id,
-            list_name: listData.name,
-            list_author: 'Unknown', // Server API doesn't include user info yet
-            list_creation_date: listData.created_at || new Date().toISOString(),
-            is_public: listData.is_public || false,
-            view_count: listData.view_count || 0,
-            place_count: transformedPlaces.length
-          });
+      if (!apiResponse.ok) {
+        if (apiResponse.status === 404) {
+          console.log('List not found:', id);
+          setIsNotFound(true);
+          return;
         }
-        
-        return; // Success, exit early
-      } else {
-        console.log('Server-side API failed:', apiResponse.status);
+        throw new Error(`API request failed: ${apiResponse.status}`);
       }
       
-      // Fallback to direct Supabase query (this is what was hanging)
-      console.log('Falling back to direct Supabase query...');
+      const { list: listData, places: placesData } = await apiResponse.json();
+      console.log('Successfully fetched list:', listData.name);
       
-      // Debug: Test different query approaches
-      console.log('Running debug queries...');
-      await debugListQuery(id);
-      
-      const result = await Promise.race([
-        getListById(id),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error('Query timed out'));
-          }, 5000);
-        })
-      ]);
-      
-      if (!result) {
-        console.log('No list found for ID:', id);
-        setIsNotFound(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('Successfully fetched list:', result.name);
-      setList(result);
+      setList(listData);
       setIsNotFound(false);
-
-      // Fetch places for this list
-      const listPlaces = await getListPlaces(id);
-      const transformedPlaces: PlaceWithNotes[] = listPlaces.map(lp => ({
+      
+      // Transform places data
+      const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
         id: lp.places.id,
         googlePlaceId: lp.places.google_place_id,
         name: lp.places.name,
@@ -208,20 +151,17 @@ export default function ListContent({ id }: ListContentProps) {
         addedAt: new Date(lp.added_at || '')
       }));
       setPlaces(transformedPlaces);
-
-      // Track list view with complete data
-      if (result && transformedPlaces) {
-        // Track with Google Analytics
-        trackListViewGA(result.name, result.id);
-        
-        // Track with Mixpanel - now with author and place count
+      
+      // Track analytics
+      if (listData && transformedPlaces) {
+        trackListViewGA(listData.name, listData.id);
         trackListView({
-          list_id: result.id,
-          list_name: result.name,
-          list_author: (result as any).users?.display_name || 'Unknown',
-          list_creation_date: result.created_at || new Date().toISOString(),
-          is_public: result.is_public || false,
-          view_count: result.view_count || 0,
+          list_id: listData.id,
+          list_name: listData.name,
+          list_author: 'Unknown', // Server API doesn't include user info yet
+          list_creation_date: listData.created_at || new Date().toISOString(),
+          is_public: listData.is_public || false,
+          view_count: listData.view_count || 0,
           place_count: transformedPlaces.length
         });
       }
@@ -233,13 +173,6 @@ export default function ListContent({ id }: ListContentProps) {
         console.log(`Retrying... attempt ${retryCount + 1}`);
         setRetryCount(prev => prev + 1);
         setTimeout(() => fetchData(), 1000 * (retryCount + 1));
-        return;
-      }
-      
-      // If all retries failed and this looks like a timeout, redirect to lists page
-      if (error instanceof Error && error.message.includes('timed out')) {
-        console.log('Query timed out, redirecting to lists page');
-        router.push('/lists');
         return;
       }
       
@@ -305,25 +238,26 @@ export default function ListContent({ id }: ListContentProps) {
   const handlePlaceAdded = useCallback(async () => {
     if (!id) return;
     try {
-      const placesData = await getListPlaces(id);
-      // Transform the data to match PlaceWithNotes interface
-      const transformedPlaces: PlaceWithNotes[] = placesData.map(item => ({
-        // Map Supabase place properties to expected interface
-        id: item.places.id,
-        googlePlaceId: item.places.google_place_id,
-        name: item.places.name,
-        address: item.places.address,
-        latitude: item.places.latitude,
-        longitude: item.places.longitude,
-        rating: item.places.rating || 0,
-        photoUrl: item.places.photo_url || '',
-        placeTypes: item.places.place_types || [],
-        // Map list place properties
-        listPlaceId: item.id,
-        addedAt: new Date(item.added_at || ''),
-        notes: item.notes || ''
-      }));
-      setPlaces(transformedPlaces);
+      // Refetch from server-side API to get updated places
+      const apiResponse = await fetch(`/api/lists/${id}`);
+      if (apiResponse.ok) {
+        const { places: placesData } = await apiResponse.json();
+        const transformedPlaces: PlaceWithNotes[] = placesData.map((lp: any) => ({
+          id: lp.places.id,
+          googlePlaceId: lp.places.google_place_id,
+          name: lp.places.name,
+          address: lp.places.address,
+          latitude: lp.places.latitude,
+          longitude: lp.places.longitude,
+          rating: lp.places.rating || 0,
+          photoUrl: lp.places.photo_url || '',
+          placeTypes: lp.places.place_types || [],
+          notes: lp.notes || '',
+          listPlaceId: lp.id,
+          addedAt: new Date(lp.added_at || '')
+        }));
+        setPlaces(transformedPlaces);
+      }
     } catch (err) {
       console.error('Error refreshing places:', err);
     }
