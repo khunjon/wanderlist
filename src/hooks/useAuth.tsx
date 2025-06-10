@@ -75,12 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('getSession timeout')), 2000)
-          )
-        ]);
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error getting session:', error);
@@ -90,12 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           setSupabaseUser(session.user);
           
-          const userProfile = await Promise.race([
-            syncUserProfile(session.user),
-            new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('syncUserProfile timeout')), 3000)
-            )
-          ]);
+          const userProfile = await syncUserProfile(session.user);
           
           const appUser = convertToUser(session.user, userProfile);
           // Apply cache busting to photo URL for immediate display updates
@@ -116,10 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error('Error getting initial session:', err);
-        // Don't set error for timeout - let auth state change handle it
-        if (!(err instanceof Error && err.message.includes('timeout'))) {
-          setError(err as Error);
-        }
+        setError(err as Error);
       } finally {
         setLoading(false);
       }
@@ -147,12 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           setSupabaseUser(session.user);
           
-          const userProfile = await Promise.race([
-            syncUserProfile(session.user),
-            new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('syncUserProfile timeout in auth change')), 3000)
-            )
-          ]);
+          const userProfile = await syncUserProfile(session.user);
           
           const appUser = convertToUser(session.user, userProfile);
           // Apply cache busting to photo URL for immediate display updates

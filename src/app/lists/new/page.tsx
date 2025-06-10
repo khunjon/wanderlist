@@ -60,11 +60,10 @@ export default function NewListPage() {
       const listId = newList.id;
       
       // Track list creation event with Google Analytics
-      console.log('📈 Tracking list creation with GA:', { name: name.trim(), listId });
       trackListCreateGA(name.trim(), listId);
       
       // Track list creation event with Mixpanel
-      const mixpanelData = {
+      trackListCreate({
         list_id: listId,
         list_name: name.trim(),
         list_author: user.displayName || user.email || 'Unknown',
@@ -73,9 +72,7 @@ export default function NewListPage() {
         city: city.trim(),
         tags: tagArray,
         description: description.trim()
-      };
-      console.log('🎯 About to track list creation with Mixpanel:', mixpanelData);
-      trackListCreate(mixpanelData);
+      });
       
       router.push(`/lists/${listId}`);
     } catch (err) {

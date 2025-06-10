@@ -136,34 +136,13 @@ export default function ListContent({ id }: ListContentProps) {
 
         setList(listData);
 
-        // Track list view and increment view count
-        if (user) {
-          // Track with Google Analytics
-          trackListViewGA(listData.name, listData.id);
-          
-          // Track with Mixpanel
-          trackListView({
-            list_id: listData.id,
-            list_name: listData.name,
-            list_author: author?.displayName || author?.email || 'Unknown',
-            list_creation_date: listData.created_at || new Date().toISOString(),
-            is_public: listData.is_public || false,
-            view_count: listData.view_count || 0,
-            place_count: places.length
-          });
-          
-          // Only increment view count if user is not the owner
-          if (listData.user_id !== user.id) {
-            await incrementListViewCount(id);
-          }
-        }
-
         // Set edit form values
         setEditName(listData.name);
         setEditTags(listData.tags?.join(', ') || '');
         setEditIsPublic(listData.is_public || false);
 
-        // Fetch author profile
+        // Fetch author profile first
+        let authorData: User | null = null;
         try {
           const authorProfile = await getUserProfile(listData.user_id);
           // Transform to match User interface
@@ -182,9 +161,32 @@ export default function ListContent({ id }: ListContentProps) {
               tiktok: authorProfile.tiktok || ''
             };
             setAuthor(transformedAuthor);
+            authorData = transformedAuthor;
           }
         } catch (err) {
           console.error('Error fetching author profile:', err);
+        }
+
+        // Track list view and increment view count (after author data is available)
+        if (user) {
+          // Track with Google Analytics
+          trackListViewGA(listData.name, listData.id);
+          
+          // Track with Mixpanel - now with proper author information
+          trackListView({
+            list_id: listData.id,
+            list_name: listData.name,
+            list_author: authorData?.displayName || authorData?.email || 'Unknown',
+            list_creation_date: listData.created_at || new Date().toISOString(),
+            is_public: listData.is_public || false,
+            view_count: listData.view_count || 0,
+            place_count: places.length
+          });
+          
+          // Only increment view count if user is not the owner
+          if (listData.user_id !== user.id) {
+            await incrementListViewCount(id);
+          }
         }
 
         // Fetch places in the list

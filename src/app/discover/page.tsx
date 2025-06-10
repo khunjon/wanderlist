@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { getPublicLists } from '@/lib/supabase/database';
 import { List } from '@/types';
 import { useRouter } from 'next/navigation';
-import { trackListView } from '@/lib/analytics/gtag';
+import { trackListView as trackListViewGA } from '@/lib/analytics/gtag';
+import { trackListView } from '@/lib/mixpanelClient';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
 
 const sortOptions: SortOption[] = [
@@ -124,8 +125,20 @@ export default function DiscoverPage() {
   }, []);
 
   // Memoized list click handler
-  const handleListClick = useCallback((list: List) => {
-    trackListView(list.name, list.id);
+  const handleListClick = useCallback((list: any) => {
+    // Track with Google Analytics
+    trackListViewGA(list.name, list.id);
+    
+    // Track with Mixpanel - use author information from the joined user data
+    trackListView({
+      list_id: list.id,
+      list_name: list.name,
+      list_author: list.users?.display_name || 'Unknown',
+      list_creation_date: list.created_at || new Date().toISOString(),
+      is_public: list.is_public || false,
+      view_count: list.view_count || 0
+    });
+    
     router.push(`/lists/${list.id}`);
   }, [router]);
 

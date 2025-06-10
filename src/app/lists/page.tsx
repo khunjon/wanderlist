@@ -151,7 +151,7 @@ export default function ListsPage() {
     // Track with Google Analytics
     trackListViewGA(list.name, list.id);
     
-    // Track with Mixpanel
+    // Track with Mixpanel - for user's own lists, the author is the current user
     trackListView({
       list_id: list.id,
       list_name: list.name,
