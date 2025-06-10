@@ -275,12 +275,12 @@ export default function SearchContent() {
       {/* Sticky Header - Mobile Optimized */}
       <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 shadow-lg">
         <div className="mx-auto max-w-7xl px-4 py-2 sm:py-3 sm:px-6 lg:px-8">
-          {/* Top row with back button and list info */}
-          <div className="flex items-center justify-between mb-2 sm:mb-1">
+          {/* Top row with back button */}
+          <div className="flex items-center mb-3">
             {selectedList && (
               <Link
                 href={`/lists/${selectedList.id}`}
-                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors mr-3"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -288,38 +288,37 @@ export default function SearchContent() {
               </Link>
             )}
             
-            {/* List indicator */}
-            {selectedList && (
-              <div className="flex items-center space-x-2 text-xs text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <span className="truncate max-w-32 sm:max-w-none">{selectedList.name}</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Title */}
-          <div className="mb-3">
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-tight">
-              Add Places
-            </h1>
-            {selectedListCity && (
-              <p className="text-sm text-blue-300 mt-1">
-                Searching in {selectedListCity}
-              </p>
-            )}
+            {/* Title and List info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-tight">
+                Add Places
+              </h1>
+              {selectedList && (
+                <div className="flex items-center space-x-2 mt-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <span className="text-sm sm:text-base font-medium text-blue-300 truncate">{selectedList.name}</span>
+                </div>
+              )}
+              {selectedListCity && (
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  Searching in {selectedListCity}
+                </p>
+              )}
+            </div>
           </div>
           
           {/* Search bar - integrated into header */}
-          <form onSubmit={handleSearch} className="mb-2">
+          <form onSubmit={handleSearch}>
             <div className="flex space-x-2">
               <div className="flex-1 relative">
                 <input
                   type="text"
                   name="search"
                   id="search"
-                  className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 text-sm h-10 px-4 pr-10"
+                  className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 h-11 px-4 pr-10"
+                  style={{ fontSize: '16px' }} // Prevents iOS zoom
                   placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search restaurants, cafes, attractions..."}
                   value={query}
                   onChange={handleInputChange}
@@ -334,7 +333,7 @@ export default function SearchContent() {
               <button
                 type="submit"
                 disabled={loading || !query.trim()}
-                className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
