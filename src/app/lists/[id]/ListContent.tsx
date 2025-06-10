@@ -230,40 +230,54 @@ export default function ListContent({ id }: ListContentProps) {
           headers['Authorization'] = `Bearer ${session.access_token}`;
         }
         
-        // Create and cache the promise to prevent duplicate requests
+        // Create the fetch promise
         const fetchPromise = fetch(`/api/lists/${id}`, { headers });
+        
+        // Create a promise that handles the full response processing
+        const responsePromise = fetchPromise.then(async (apiResponse) => {
+          if (!apiResponse.ok) {
+            if (apiResponse.status === 404) {
+              throw new Error('List not found');
+            }
+            if (apiResponse.status === 401 || apiResponse.status === 403) {
+              const errorData = await apiResponse.json();
+              throw new Error(errorData.error || `Access denied: ${apiResponse.status}`);
+            }
+            throw new Error(`API request failed: ${apiResponse.status}`);
+          }
+          
+          const data = await apiResponse.json();
+          
+          // Track server performance
+          const responseTime = apiResponse.headers.get('X-Response-Time');
+          const actualTime = responseTime ? parseInt(responseTime) : Date.now() - startTime;
+          performanceTracker.serverResponseTimes.push(actualTime);
+          if (performanceTracker.serverResponseTimes.length > 10) {
+            performanceTracker.serverResponseTimes.shift(); // Keep only last 10
+          }
+          
+          console.log(`Server response time: ${actualTime}ms (avg: ${performanceTracker.getAverageServerTime().toFixed(0)}ms)`);
+          
+          return data;
+        });
+        
+        // Cache the promise to prevent duplicate requests
         requestCache.set(cacheKey, { 
           data: null, 
           timestamp: Date.now(), 
-          promise: fetchPromise.then(r => r.json()) 
+          promise: responsePromise
         });
         
-        const apiResponse = await fetchPromise;
-        
-        if (!apiResponse.ok) {
-          if (apiResponse.status === 404) {
+        try {
+          responseData = await responsePromise;
+        } catch (error: any) {
+          if (error.message === 'List not found') {
             console.log('List not found:', id);
             setIsNotFound(true);
             return;
           }
-          if (apiResponse.status === 401 || apiResponse.status === 403) {
-            const errorData = await apiResponse.json();
-            throw new Error(errorData.error || `Access denied: ${apiResponse.status}`);
-          }
-          throw new Error(`API request failed: ${apiResponse.status}`);
+          throw error; // Re-throw other errors
         }
-        
-        responseData = await apiResponse.json();
-        
-        // Track server performance
-        const responseTime = apiResponse.headers.get('X-Response-Time');
-        const actualTime = responseTime ? parseInt(responseTime) : Date.now() - startTime;
-        performanceTracker.serverResponseTimes.push(actualTime);
-        if (performanceTracker.serverResponseTimes.length > 10) {
-          performanceTracker.serverResponseTimes.shift(); // Keep only last 10
-        }
-        
-        console.log(`Server response time: ${actualTime}ms (avg: ${performanceTracker.getAverageServerTime().toFixed(0)}ms)`);
       }
       
       const { list: listData, places: placesData } = responseData;
