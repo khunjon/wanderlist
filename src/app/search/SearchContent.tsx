@@ -272,241 +272,240 @@ export default function SearchContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-gray-900 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              {selectedList ? `Add Places to "${selectedList.name}"` : 'Add Places to List'}
-            </h1>
+      {/* Sticky Header - Mobile Optimized */}
+      <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 shadow-lg">
+        <div className="mx-auto max-w-7xl px-4 py-2 sm:py-3 sm:px-6 lg:px-8">
+          {/* Top row with back button and list info */}
+          <div className="flex items-center justify-between mb-2 sm:mb-1">
             {selectedList && (
               <Link
                 href={`/lists/${selectedList.id}`}
-                className="self-start inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-transparent hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span className="sm:hidden">Back</span>
-                <span className="hidden sm:inline">Back to List</span>
               </Link>
             )}
+            
+            {/* List indicator */}
+            {selectedList && (
+              <div className="flex items-center space-x-2 text-xs text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span className="truncate max-w-32 sm:max-w-none">{selectedList.name}</span>
+              </div>
+            )}
           </div>
+          
+          {/* Title */}
+          <div className="mb-3">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-tight">
+              Add Places
+            </h1>
+            {selectedListCity && (
+              <p className="text-sm text-blue-300 mt-1">
+                Searching in {selectedListCity}
+              </p>
+            )}
+          </div>
+          
+          {/* Search bar - integrated into header */}
+          <form onSubmit={handleSearch} className="mb-2">
+            <div className="flex space-x-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  name="search"
+                  id="search"
+                  className="block w-full rounded-lg bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 text-sm h-10 px-4 pr-10"
+                  placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search restaurants, cafes, attractions..."}
+                  value={query}
+                  onChange={handleInputChange}
+                  disabled={loading}
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !query.trim()}
+                className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="hidden sm:inline text-sm font-medium">Search</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </header>
-      <main>
-        <div className="mx-auto max-w-7xl py-3 sm:py-6 sm:px-6 lg:px-8">
-          <div className="bg-gray-800 px-4 py-5 shadow sm:rounded-lg sm:p-6">
-            {error && (
-              <div className="mb-4 bg-red-900 border-l-4 border-red-600 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-500"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-300">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            <form onSubmit={handleSearch} className="space-y-6">
-              <div>
-                <label htmlFor="search" className="block text-sm font-medium text-white">
-                  Search for places
-                </label>
-                <div className="mt-1 flex rounded-md shadow-sm">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      name="search"
-                      id="search"
-                      className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-10 px-3 pr-10"
-                      placeholder={selectedListCity ? `Search in ${selectedListCity}...` : "Search for restaurants, cafes, attractions..."}
-                      value={query}
-                      onChange={handleInputChange}
-                      disabled={loading}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading || !query.trim()}
-                    className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
-                  >
-                    {loading ? 'Searching...' : 'Search'}
-                  </button>
-                </div>
-                {selectedListCity && (
-                  <p className="mt-2 text-sm text-blue-300">
-                    Searching in: {selectedListCity}
-                  </p>
-                )}
-              </div>
-            </form>
-
-            {/* Search Results */}
-            {loading && (
-              <div className="mt-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-2 text-white">Searching...</p>
-              </div>
-            )}
-
-            {searchPerformed && !loading && processedSearchResults.length === 0 && (
-              <div className="mt-8 text-center">
-                <p className="text-white">No places found. Try a different search term.</p>
-              </div>
-            )}
-
-            {processedSearchResults.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-medium text-white mb-4">
-                  Search Results ({processedSearchResults.length})
-                </h3>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {processedSearchResults.map((place) => (
-                    <div
-                      key={place.place_id}
-                      className="bg-gray-700 overflow-hidden shadow rounded-lg"
-                    >
-                      <div className="px-4 py-5 sm:p-6">
-                        <h4 className="text-lg font-medium text-white truncate">{place.name}</h4>
-                        <p className="mt-1 text-sm text-gray-300">{place.formatted_address}</p>
-                        {place.rating && (
-                          <div className="mt-2 flex items-center">
-                            <div className="flex items-center">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <svg
-                                  key={i}
-                                  className={`h-4 w-4 ${
-                                    i < Math.floor(place.rating || 0)
-                                      ? 'text-yellow-400'
-                                      : 'text-gray-400'
-                                  }`}
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                              ))}
-                            </div>
-                            <span className="ml-2 text-sm text-gray-300">
-                              {place.rating}
-                            </span>
-                          </div>
-                        )}
-                        {place.types && place.types.length > 0 && (
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {place.types.slice(0, 3).map((type, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-200"
-                              >
-                                {type.replace(/_/g, ' ')}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="mt-5">
-                          <button
-                            onClick={(e) => {
-                              handleAddToList(place);
-                            }}
-                            disabled={
-                              addingToList[place.place_id] ||
-                              addedToList[place.place_id] ||
-                              !selectedListId ||
-                              !user
-                            }
-                            className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
-                              addedToList[place.place_id]
-                                ? 'text-white bg-green-600 hover:bg-green-700 focus:ring-green-500'
-                                : 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300'
-                            }`}
-                          >
-                            {addingToList[place.place_id] ? (
-                              <>
-                                <svg
-                                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                                Adding...
-                              </>
-                            ) : addedToList[place.place_id] ? (
-                              <>
-                                <svg
-                                  className="-ml-1 mr-2 h-5 w-5"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                Added to List!
-                              </>
-                            ) : (
-                              <>
-                                <svg
-                                  className="-ml-1 mr-2 h-5 w-5"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  aria-hidden="true"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                Add to List
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-900 border-l-4 border-red-600 p-4 mx-auto max-w-7xl">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-300">{error}</p>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main>
+        <div className="mx-auto max-w-7xl py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-4 text-white">Searching for places...</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {searchPerformed && !loading && processedSearchResults.length === 0 && (
+            <div className="text-center py-12">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-white">No places found</h3>
+              <p className="mt-2 text-gray-300">Try searching with different keywords or check your spelling.</p>
+            </div>
+          )}
+
+          {/* Initial State */}
+          {!searchPerformed && !loading && (
+            <div className="text-center py-12">
+              <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-white">Search for places to add</h3>
+              <p className="mt-2 text-gray-300">Find restaurants, cafes, attractions, and more to add to your list.</p>
+            </div>
+          )}
+
+          {/* Search Results */}
+          {processedSearchResults.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-medium text-white">
+                  Found {processedSearchResults.length} {processedSearchResults.length === 1 ? 'place' : 'places'}
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {processedSearchResults.map((place) => (
+                  <div
+                    key={place.place_id}
+                    className="bg-gray-800 shadow rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors"
+                  >
+                    {/* Place Image Placeholder */}
+                    <div className="h-32 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Place Content */}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-lg font-medium text-white flex-1 min-w-0 pr-2 leading-tight">{place.name}</h3>
+                        {place.rating && (
+                          <div className="flex items-center flex-shrink-0">
+                            <span className="text-yellow-400">★</span>
+                            <span className="text-sm text-gray-300 ml-1">{place.rating}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-300 mb-3 line-clamp-2">{place.formatted_address}</p>
+                      
+                      {/* Place Types */}
+                      {place.types && place.types.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {place.types.slice(0, 2).map((type, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-900/50 text-blue-200 border border-blue-800"
+                            >
+                              {type.replace(/_/g, ' ')}
+                            </span>
+                          ))}
+                          {place.types.length > 2 && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-700 text-gray-300">
+                              +{place.types.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Add Button */}
+                      <button
+                        onClick={() => handleAddToList(place)}
+                        disabled={
+                          addingToList[place.place_id] ||
+                          addedToList[place.place_id] ||
+                          !selectedListId ||
+                          !user
+                        }
+                        className={`w-full inline-flex justify-center items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                          addedToList[place.place_id]
+                            ? 'text-white bg-green-600 hover:bg-green-700 border border-green-500'
+                            : 'text-white bg-blue-600 hover:bg-blue-700 border border-blue-500 disabled:bg-gray-600 disabled:border-gray-600 disabled:cursor-not-allowed'
+                        }`}
+                      >
+                        {addingToList[place.place_id] ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Adding...
+                          </>
+                        ) : addedToList[place.place_id] ? (
+                          <>
+                            <svg className="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            Added to List!
+                          </>
+                        ) : (
+                          <>
+                            <svg className="-ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                            </svg>
+                            Add to List
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
