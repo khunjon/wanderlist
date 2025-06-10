@@ -597,14 +597,7 @@ export default function ListContent({ id }: ListContentProps) {
                 </button>
               </div>
               
-              {isOwner && (
-                <Link
-                  href={`/search?listId=${list.id}`}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Add Places
-                </Link>
-              )}
+
             </div>
 
             {viewMode === 'grid' && places.length > 0 && (
@@ -852,8 +845,12 @@ export default function ListContent({ id }: ListContentProps) {
       </main>
 
       {/* Floating Action Button for adding places */}
-      {isOwner && places.length > 0 && (
-        <FloatingActionButton onPlaceAdded={handlePlaceAdded} />
+      {isOwner && (
+        <FloatingActionButton 
+          listId={list.id}
+          listCity={list.city || undefined}
+          onPlaceAdded={handlePlaceAdded} 
+        />
       )}
     </div>
   );
