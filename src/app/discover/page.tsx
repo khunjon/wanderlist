@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { getPublicLists } from '@/lib/supabase/database';
@@ -23,15 +23,35 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortState, setSortState] = useState<SortState>({ field: 'updatedAt', direction: 'desc' });
+  const [displayLists, setDisplayLists] = useState<List[]>([]);
   const router = useRouter();
 
-  // Memoized sort function
-  const sortLists = useCallback((listsToSort: List[], sort: SortState) => {
-    const sorted = [...listsToSort].sort((a, b) => {
+  // Update display lists whenever allLists, searchQuery, or sortState changes
+  useEffect(() => {
+    let filtered = allLists;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const searchTerm = searchQuery.toLowerCase().trim();
+      filtered = allLists.filter((list) => {
+        // Search in list name
+        const nameMatch = list.name.toLowerCase().includes(searchTerm);
+        
+        // Search in tags
+        const tagMatch = list.tags && list.tags.some(tag => 
+          tag.toLowerCase().includes(searchTerm)
+        );
+        
+        return nameMatch || tagMatch;
+      });
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
       let aValue: any;
       let bValue: any;
 
-      switch (sort.field) {
+      switch (sortState.field) {
         case 'name':
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
@@ -52,45 +72,15 @@ export default function DiscoverPage() {
           return 0;
       }
 
-      if (sort.direction === 'asc') {
+      if (sortState.direction === 'asc') {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
         return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
       }
     });
 
-    return sorted;
-  }, []);
-
-  // Memoized filter function
-  const filterLists = useCallback((listsToFilter: List[], query: string) => {
-    if (!query.trim()) {
-      return listsToFilter;
-    }
-
-    const searchTerm = query.toLowerCase().trim();
-    return listsToFilter.filter((list) => {
-      // Search in list name
-      const nameMatch = list.name.toLowerCase().includes(searchTerm);
-      
-      // Search in tags
-      const tagMatch = list.tags && list.tags.some(tag => 
-        tag.toLowerCase().includes(searchTerm)
-      );
-      
-      return nameMatch || tagMatch;
-    });
-  }, []);
-
-  // Memoized filtered lists
-  const filteredLists = useMemo(() => {
-    return filterLists(allLists, searchQuery);
-  }, [allLists, searchQuery, filterLists]);
-
-  // Memoized sorted lists
-  const sortedLists = useMemo(() => {
-    return sortLists(filteredLists, sortState);
-  }, [filteredLists, sortState, sortLists]);
+    setDisplayLists(sorted);
+  }, [allLists, searchQuery, sortState]);
 
   // Fetch public lists
   const fetchLists = useCallback(async () => {
@@ -198,7 +188,7 @@ export default function DiscoverPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
               <p className="mt-4 text-white">Loading public lists...</p>
             </div>
-          ) : sortedLists.length > 0 ? (
+          ) : displayLists.length > 0 ? (
             <>
               <div className="mb-3 sm:mb-6">
                 <SortControl
@@ -210,7 +200,7 @@ export default function DiscoverPage() {
                 />
               </div>
               <div className="grid grid-cols-1 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {sortedLists.map((list) => (
+                {displayLists.map((list: List) => (
                   <div
                     key={list.id}
                     onClick={() => handleListClick(list)}
@@ -250,7 +240,7 @@ export default function DiscoverPage() {
               </div>
               <div className="mt-8 text-center">
                 <p className="text-sm text-gray-300">
-                  {sortedLists.length} public {sortedLists.length === 1 ? 'list' : 'lists'}
+                  {displayLists.length} public {displayLists.length === 1 ? 'list' : 'lists'}
                 </p>
               </div>
             </>
