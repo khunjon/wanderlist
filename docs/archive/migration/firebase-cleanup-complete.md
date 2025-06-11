@@ -40,7 +40,7 @@ This document summarizes the complete removal of Firebase packages, imports, and
 - ✅ Updated deployment instructions to reference Supabase domains
 
 #### Security Documentation
-- ✅ **`docs/architecture/security-model.md`** - Created comprehensive Supabase RLS documentation
+- ✅ **`docs/security/README.md`** - Created comprehensive Supabase RLS documentation
 - ✅ Documented migration from Firebase Security Rules to RLS policies
 - ✅ Included security testing framework and compliance information
 
@@ -248,7 +248,7 @@ This migration was implemented as a **fresh start** rather than data migration b
 ## Next Steps
 
 ### For New Developers
-1. **Follow Setup Guide**: Use `docs/setup/environment-setup.md`
+1. **Follow Setup Guide**: Use `docs/setup/development-environment.md`
 2. **Run Setup Script**: Execute `./setup-supabase.sh`
 3. **Configure Environment**: Add Supabase credentials to `.env.local`
 4. **Test Application**: Verify all functionality works

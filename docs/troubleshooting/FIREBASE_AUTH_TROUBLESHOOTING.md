@@ -1,3 +1,57 @@
+# 🔥 Firebase Auth Troubleshooting (ARCHIVED)
+
+> **⚠️ ARCHIVED DOCUMENTATION**  
+> This guide is for legacy Firebase authentication issues. Wanderlist has migrated to Supabase Auth.  
+> For current authentication troubleshooting, see **[Authentication Troubleshooting](./auth.md)**.
+
+---
+
+## Migration Notice
+
+This project has migrated from Firebase Auth to Supabase Auth. This documentation is preserved for reference but is no longer actively maintained.
+
+### Current Authentication System
+- **Provider**: Supabase Auth
+- **OAuth**: Google OAuth 2.0 via Supabase
+- **Session Management**: Supabase JWT tokens
+- **Troubleshooting**: See [Authentication Troubleshooting](./auth.md)
+
+---
+
+## Legacy Firebase Auth Issues
+
+The following issues were common with the previous Firebase Auth implementation:
+
+### Firebase Configuration Issues
+- API key configuration problems
+- Firebase project setup issues
+- Authentication provider configuration
+
+### Google OAuth with Firebase
+- OAuth client configuration in Google Cloud Console
+- Firebase Auth provider setup
+- Redirect URI configuration
+
+### Session Management
+- Firebase Auth state persistence
+- Token refresh handling
+- Cross-tab authentication sync
+
+---
+
+## Migration Resources
+
+For information about the Firebase to Supabase migration:
+- **[Migration History](../history/firebase-to-supabase.md)** - Complete migration documentation
+- **[Migration Decisions](../history/decisions.md)** - Why we migrated from Firebase
+- **[Authentication Migration](../history/firebase-to-supabase.md#authentication-migration)** - Specific auth migration details
+
+---
+
+*🔥 This documentation is archived and no longer maintained. Use the current Supabase Auth troubleshooting guides for active issues.*
+
+*Archived: June 10, 2025*
+
 # Firebase Auth 404 Troubleshooting Guide
 
 ## The Problem ✅ IDENTIFIED
