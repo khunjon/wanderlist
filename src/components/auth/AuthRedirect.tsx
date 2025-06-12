@@ -13,34 +13,24 @@ export default function AuthRedirect({ redirectTo, message = 'Redirecting...' }:
 
   useEffect(() => {
     if (user && !loading) {
-      console.log('[AUTH REDIRECT] Force redirecting to:', redirectTo);
+      console.log('[AUTH REDIRECT] User authenticated, will redirect to:', redirectTo);
+      console.log('[AUTH REDIRECT] Current URL:', window.location.href);
+      console.log('[AUTH REDIRECT] User details:', { id: user.id, email: user.email });
       
-      // Try multiple redirect methods
-      const redirect = () => {
+      // Wait a moment to see what's happening, then redirect
+      const timer = setTimeout(() => {
+        console.log('[AUTH REDIRECT] Executing redirect now...');
+        console.log('[AUTH REDIRECT] Target URL:', redirectTo);
+        
         try {
-          // Method 1: window.location.href (most reliable)
-          window.location.href = redirectTo;
+          // Use replace to avoid adding to browser history
+          window.location.replace(redirectTo);
         } catch (error) {
-          console.error('[AUTH REDIRECT] window.location.href failed:', error);
-          
-          // Method 2: window.location.replace (fallback)
-          try {
-            window.location.replace(redirectTo);
-          } catch (error2) {
-            console.error('[AUTH REDIRECT] window.location.replace failed:', error2);
-            
-            // Method 3: Manual page reload with new URL
-            window.history.pushState({}, '', redirectTo);
-            window.location.reload();
-          }
+          console.error('[AUTH REDIRECT] Redirect failed:', error);
+          // Fallback to href
+          window.location.href = redirectTo;
         }
-      };
-
-      // Immediate redirect
-      redirect();
-      
-      // Backup redirect after 1 second
-      const timer = setTimeout(redirect, 1000);
+      }, 1500); // Wait 1.5 seconds so we can see the logs
       
       return () => clearTimeout(timer);
     }
@@ -57,7 +47,7 @@ export default function AuthRedirect({ redirectTo, message = 'Redirecting...' }:
         <p className="text-white text-sm">{message}</p>
         <p className="text-gray-400 text-xs mt-2">Taking you to {redirectTo}</p>
         <button
-          onClick={() => window.location.href = redirectTo}
+          onClick={() => window.location.replace(redirectTo)}
           className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-500"
         >
           Click here if not redirected

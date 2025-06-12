@@ -25,12 +25,19 @@ function LoginPageContent() {
       setLoading(false);
       
       console.log('[LOGIN] User authenticated, preparing redirect to:', redirectTo);
+      console.log('[LOGIN] Current URL:', window.location.href);
+      console.log('[LOGIN] User state:', { id: user?.id, email: user?.email });
+      console.log('[LOGIN] Auth loading state:', authLoading);
       
-      // Use window.location.href for more reliable redirect
+      // Wait longer to debug what's happening
       const timer = setTimeout(() => {
-        console.log('[LOGIN] Executing redirect to:', redirectTo);
-        window.location.href = redirectTo;
-      }, 200);
+        console.log('[LOGIN] About to redirect...');
+        console.log('[LOGIN] Final redirect URL:', redirectTo);
+        console.log('[LOGIN] User still authenticated?', !!user);
+        
+        // Don't redirect immediately, let AuthRedirect component handle it
+        console.log('[LOGIN] Letting AuthRedirect component handle the redirect');
+      }, 1000);
       
       return () => clearTimeout(timer);
     }

@@ -17,14 +17,26 @@ export default function Navbar() {
   const closeMenu = () => setIsMenuOpen(false);
 
   // Redirect logged-in users from home page to their lists
+  // But avoid redirecting if they just came from auth pages to prevent conflicts
   useEffect(() => {
     if (!loading && user && pathname === '/') {
-      // Add a small delay to ensure auth state is fully settled
-      const timeoutId = setTimeout(() => {
-        router.push('/lists');
-      }, 100);
+      // Check if user came from auth pages - if so, don't redirect to avoid conflicts
+      const referrer = document.referrer;
+      const isFromAuthPage = referrer.includes('/login') || 
+                            referrer.includes('/signup') || 
+                            referrer.includes('/auth/callback');
       
-      return () => clearTimeout(timeoutId);
+      if (!isFromAuthPage) {
+        console.log('[NAVBAR] Redirecting authenticated user from home to /lists');
+        // Add a small delay to ensure auth state is fully settled
+        const timeoutId = setTimeout(() => {
+          router.push('/lists');
+        }, 100);
+        
+        return () => clearTimeout(timeoutId);
+      } else {
+        console.log('[NAVBAR] User came from auth page, skipping home redirect to avoid conflicts');
+      }
     }
   }, [user, loading, pathname, router]);
 
