@@ -118,7 +118,7 @@ export const VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)} as const;
 export const APP_VERSION = '${versionInfo.version}';
 export const BUILD_TIME = '${versionInfo.buildTime}';
 export const GIT_HASH = ${versionInfo.gitHash ? `'${versionInfo.gitHash}'` : 'undefined'};
-export const ENVIRONMENT = '${versionInfo.environment}';
+export const ENVIRONMENT = '${versionInfo.environment}' as 'development' | 'production' | 'test';
 
 // Version checking utilities
 export function isVersionOutdated(serverVersion: string): boolean {
