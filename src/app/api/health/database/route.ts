@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkDatabaseHealth } from '@/lib/database/monitoring'
+import { createNoCacheResponse } from '@/lib/utils/cache'
 
 export async function GET(request: NextRequest) {
   try {
     const health = await checkDatabaseHealth()
     
-    return NextResponse.json({
+    const responseData = {
       status: health.healthy ? 'healthy' : 'degraded',
       timestamp: health.timestamp,
       details: {
@@ -27,11 +28,14 @@ export async function GET(request: NextRequest) {
         size: table.total_size,
         status: table.maintenance_status
       }))
-    })
+    }
+    
+    // Use cache utility for consistent no-cache response with security headers
+    return createNoCacheResponse(responseData)
   } catch (error) {
     console.error('Database health check API error:', error)
     
-    return NextResponse.json({
+    const errorData = {
       status: 'error',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -45,6 +49,9 @@ export async function GET(request: NextRequest) {
         recommendations: []
       },
       tables: []
-    }, { status: 500 })
+    }
+    
+    // Use cache utility for error responses too
+    return createNoCacheResponse(errorData, 500)
   }
 } 
