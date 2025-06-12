@@ -40,6 +40,15 @@ export function createCacheBustedUrl(url: string): string {
   return `${url}${separator}cb=${Date.now()}`;
 }
 
+// Rate limiting for version checks
+let lastVersionCheck = 0;
+let versionCheckCache: {
+  isLatest: boolean;
+  currentVersion: string;
+  latestVersion: string;
+  shouldRefresh: boolean;
+} | null = null;
+
 /**
  * Check if current version matches server version
  */
@@ -50,6 +59,15 @@ export async function checkVersionMatch(): Promise<{
   shouldRefresh: boolean;
 }> {
   try {
+    const now = Date.now();
+    const minInterval = 60 * 1000; // 1 minute minimum between checks
+    
+    // Return cached result if within rate limit
+    if (versionCheckCache && (now - lastVersionCheck) < minInterval) {
+      console.log('⏳ Using cached version check result');
+      return versionCheckCache;
+    }
+    
     const currentVersion = getCurrentVersion().version;
     
     // Fetch latest version from server
@@ -62,20 +80,33 @@ export async function checkVersionMatch(): Promise<{
     });
     
     if (!response.ok) {
-      throw new Error('Failed to fetch version info');
+      throw new Error(`Failed to fetch version info: ${response.status}`);
     }
     
     const serverVersion: AppVersion = await response.json();
     const isLatest = currentVersion === serverVersion.version;
     
-    return {
+    const result = {
       isLatest,
       currentVersion,
       latestVersion: serverVersion.version,
       shouldRefresh: !isLatest,
     };
+    
+    // Cache the result and update timestamp
+    versionCheckCache = result;
+    lastVersionCheck = now;
+    
+    return result;
   } catch (error) {
     console.error('Version check failed:', error);
+    
+    // Return cached result if available, otherwise assume latest
+    if (versionCheckCache) {
+      console.log('🔄 Using cached version check result due to error');
+      return versionCheckCache;
+    }
+    
     return {
       isLatest: true, // Assume latest if check fails
       currentVersion: getCurrentVersion().version,

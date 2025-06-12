@@ -27,7 +27,7 @@ export interface VersionCheckOptions {
  */
 export function useVersionCheck(options: VersionCheckOptions = {}) {
   const {
-    checkInterval = 5 * 60 * 1000, // 5 minutes default
+    checkInterval = 15 * 60 * 1000, // 15 minutes default - more conservative
     autoRefresh = false,
     showNotifications = true,
     onVersionMismatch,
@@ -46,15 +46,39 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasNotifiedRef = useRef(false);
+  const lastCheckTimeRef = useRef<number>(0);
+  const errorCountRef = useRef<number>(0);
 
   /**
-   * Perform version check
+   * Perform version check with rate limiting
    */
   const checkVersion = useCallback(async () => {
+    // Rate limiting: don't check more than once per minute
+    const now = Date.now();
+    const minInterval = 60 * 1000; // 1 minute minimum
+    
+    if (now - lastCheckTimeRef.current < minInterval) {
+      console.log('⏳ Version check rate limited');
+      return null;
+    }
+
+    // Exponential backoff on errors
+    if (errorCountRef.current > 0) {
+      const backoffDelay = Math.min(1000 * Math.pow(2, errorCountRef.current), 30000); // Max 30 seconds
+      if (now - lastCheckTimeRef.current < backoffDelay) {
+        console.log(`⏳ Version check backing off for ${backoffDelay}ms`);
+        return null;
+      }
+    }
+
+    lastCheckTimeRef.current = now;
     setState(prev => ({ ...prev, isChecking: true, error: null }));
 
     try {
       const result = await checkVersionMatch();
+      
+      // Reset error count on success
+      errorCountRef.current = 0;
       
       setState(prev => ({
         ...prev,
@@ -101,6 +125,9 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
 
       return result;
     } catch (error) {
+      // Increment error count for backoff
+      errorCountRef.current = Math.min(errorCountRef.current + 1, 5);
+      
       const errorMessage = error instanceof Error ? error.message : 'Version check failed';
       
       setState(prev => ({
@@ -110,7 +137,14 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
         lastChecked: new Date(),
       }));
 
-      console.error('Version check error:', error);
+      console.error('Version check error (attempt', errorCountRef.current, '):', error);
+      
+      // Stop checking after too many errors
+      if (errorCountRef.current >= 5) {
+        console.warn('🚫 Version checking disabled due to repeated errors');
+        stopChecking();
+      }
+      
       return null;
     }
   }, [autoRefresh, onVersionMismatch, onRefreshRequired, showNotifications, state]);

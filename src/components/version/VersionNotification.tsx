@@ -11,8 +11,8 @@ interface VersionNotificationProps {
 }
 
 export default function VersionNotification({
-  autoCheck = true,
-  checkInterval = 5 * 60 * 1000, // 5 minutes
+  autoCheck = false,
+  checkInterval = 15 * 60 * 1000, // 15 minutes - much more conservative
   position = 'top',
   showVersionInfo = false,
 }: VersionNotificationProps) {
