@@ -7,6 +7,8 @@ import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
 import MixpanelProvider from "@/components/analytics/MixpanelProvider";
 import Navbar from "@/components/layout/Navbar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import VersionNotification from "@/components/version/VersionNotification";
+import { VersionMeta, VersionWatcher } from "@/components/version/VersionedAssets";
 // Using Supabase for authentication and database
 
 const inter = Inter({ subsets: ["latin"] });
@@ -29,12 +31,15 @@ export default function RootLayout({
         <AuthWrapper>
           <AnalyticsProvider>
             <MixpanelProvider>
+              <VersionMeta />
+              <VersionWatcher />
               <Navbar />
               <div className="flex-grow pb-16 md:pb-0">
                 {children}
               </div>
               <Footer />
               <MobileBottomNav />
+              <VersionNotification />
               {/* Using Supabase for all backend services */}
             </MixpanelProvider>
           </AnalyticsProvider>
