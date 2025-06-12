@@ -190,6 +190,52 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 ```
 
+### **Issue: Redirect Loop After Google OAuth**
+
+**Symptoms:**
+- User completes Google OAuth successfully
+- Gets redirected back to login page repeatedly
+- Console shows authentication is successful but page keeps redirecting
+
+**Root Cause:**
+Race condition between middleware session checking and OAuth callback processing.
+
+**Solution:**
+Enhanced middleware with OAuth callback detection:
+
+```typescript
+// Skip auth checks for auth-related routes to prevent redirect loops
+if (pathname.startsWith('/auth/') || 
+    pathname.startsWith('/login') || 
+    pathname.startsWith('/signup')) {
+  return response;
+}
+
+// Check for recent auth activity to avoid premature redirects
+const hasRecentAuthActivity = request.headers.get('referer')?.includes('/auth/callback') ||
+                             request.cookies.get('sb-auth-token') ||
+                             request.cookies.get('sb-refresh-token');
+
+if (hasRecentAuthActivity) {
+  console.log('Detected recent auth activity, allowing client-side auth handling');
+  return response;
+}
+```
+
+**Emergency Fix:**
+```bash
+# 1. Clear all browser storage
+localStorage.clear()
+sessionStorage.clear()
+
+# 2. Hard refresh the page
+Ctrl+Shift+R (or Cmd+Shift+R on Mac)
+
+# 3. Test in incognito/private mode
+
+# 4. Check browser console for [AUTH CALLBACK] logs
+```
+
 ### **Issue: Auth Errors Not Handled Gracefully**
 
 **Solution:**

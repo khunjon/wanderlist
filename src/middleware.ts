@@ -8,6 +8,13 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
   
+  // Skip auth checks for auth-related routes to prevent redirect loops
+  if (pathname.startsWith('/auth/') || 
+      pathname.startsWith('/login') || 
+      pathname.startsWith('/signup')) {
+    return response;
+  }
+  
   // Handle auth session refresh for authenticated routes
   if (pathname.startsWith('/lists') || 
       pathname.startsWith('/profile') || 
@@ -43,7 +50,19 @@ export async function middleware(request: NextRequest) {
       }
       
       // If no session and trying to access protected route, redirect to login
+      // But add a small delay check to handle OAuth callback timing issues
       if (!session && (pathname.startsWith('/lists') || pathname.startsWith('/profile') || pathname.startsWith('/admin'))) {
+        // Check if this might be coming from an OAuth callback by looking for recent auth activity
+        const hasRecentAuthActivity = request.headers.get('referer')?.includes('/auth/callback') ||
+                                     request.cookies.get('sb-auth-token') ||
+                                     request.cookies.get('sb-refresh-token');
+        
+        // If there's recent auth activity, let the client handle the redirect to avoid loops
+        if (hasRecentAuthActivity) {
+          console.log('Detected recent auth activity, allowing client-side auth handling');
+          return response;
+        }
+        
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(redirectUrl);

@@ -22,7 +22,13 @@ export default function SignupPage() {
       // Clear any error states when user is successfully authenticated
       setError(null);
       setLoading(false);
-      router.push('/lists');
+      
+      // Add a small delay to prevent redirect loops during OAuth flow
+      const timer = setTimeout(() => {
+        router.push('/lists');
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, authLoading, router]);
 
