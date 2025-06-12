@@ -54,18 +54,25 @@ export async function middleware(request: NextRequest) {
       if (!session && (pathname.startsWith('/lists') || pathname.startsWith('/profile') || pathname.startsWith('/admin'))) {
         // Check if this might be coming from an OAuth callback by looking for recent auth activity
         const hasRecentAuthActivity = request.headers.get('referer')?.includes('/auth/callback') ||
+                                     request.headers.get('referer')?.includes('/login') ||
                                      request.cookies.get('sb-auth-token') ||
                                      request.cookies.get('sb-refresh-token');
         
         // If there's recent auth activity, let the client handle the redirect to avoid loops
         if (hasRecentAuthActivity) {
-          console.log('Detected recent auth activity, allowing client-side auth handling');
+          console.log('[MIDDLEWARE] Detected recent auth activity, allowing client-side auth handling for:', pathname);
           return response;
         }
         
+        console.log('[MIDDLEWARE] No session found, redirecting to login for:', pathname);
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(redirectUrl);
+      }
+      
+      // If we have a session, log success
+      if (session) {
+        console.log('[MIDDLEWARE] Session found for user:', session.user.id, 'accessing:', pathname);
       }
       
       // Add session info to response headers for debugging

@@ -5,6 +5,7 @@ import { signIn, signInWithGoogle } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import AuthRedirect from '@/components/auth/AuthRedirect';
 
 function LoginPageContent() {
   const [email, setEmail] = useState('');
@@ -14,6 +15,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const redirectTo = searchParams.get('redirect') || '/lists';
   
   // Redirect if already authenticated
   useEffect(() => {
@@ -22,18 +24,17 @@ function LoginPageContent() {
       setError(null);
       setLoading(false);
       
-      // Get redirect URL from query params, default to /lists
-      const redirectTo = searchParams.get('redirect') || '/lists';
+      console.log('[LOGIN] User authenticated, preparing redirect to:', redirectTo);
       
-      // Add a small delay to prevent redirect loops during OAuth flow
+      // Use window.location.href for more reliable redirect
       const timer = setTimeout(() => {
-        console.log('[LOGIN] Redirecting authenticated user to:', redirectTo);
-        router.push(redirectTo);
-      }, 100);
+        console.log('[LOGIN] Executing redirect to:', redirectTo);
+        window.location.href = redirectTo;
+      }, 200);
       
       return () => clearTimeout(timer);
     }
-  }, [user, authLoading, router, searchParams]);
+  }, [user, authLoading, searchParams]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +93,17 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="w-full max-w-md space-y-8">
+    <>
+      {/* Show redirect overlay if user is authenticated */}
+      {user && !authLoading && (
+        <AuthRedirect 
+          redirectTo={redirectTo} 
+          message="You're already signed in! Redirecting..." 
+        />
+      )}
+      
+      <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
+        <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
             Sign in to your account
@@ -230,6 +240,7 @@ function LoginPageContent() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

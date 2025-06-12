@@ -27,15 +27,17 @@ function SignupPageContent() {
       // Get redirect URL from query params, default to /lists
       const redirectTo = searchParams.get('redirect') || '/lists';
       
-      // Add a small delay to prevent redirect loops during OAuth flow
+      console.log('[SIGNUP] User authenticated, preparing redirect to:', redirectTo);
+      
+      // Use window.location.href for more reliable redirect
       const timer = setTimeout(() => {
-        console.log('[SIGNUP] Redirecting authenticated user to:', redirectTo);
-        router.push(redirectTo);
-      }, 100);
+        console.log('[SIGNUP] Executing redirect to:', redirectTo);
+        window.location.href = redirectTo;
+      }, 200);
       
       return () => clearTimeout(timer);
     }
-  }, [user, authLoading, router, searchParams]);
+  }, [user, authLoading, searchParams]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
