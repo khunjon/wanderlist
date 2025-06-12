@@ -246,7 +246,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       try {
-        authLogger.debug('Auth state change event:', event, {
+        authLogger.debug('Auth state change event:', {
+          event,
           hasSession: !!session,
           userId: session?.user?.id
         });
