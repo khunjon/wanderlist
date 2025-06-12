@@ -17,12 +17,12 @@ const nextConfig = {
     return [
       // Prevent caching of HTML files (app shell)
       {
-        source: '/(.*)',
+        source: '/:path*',
         has: [
           {
             type: 'header',
             key: 'accept',
-            value: '(.*text/html.*)',
+            value: '.*text/html.*',
           },
         ],
         headers: [
@@ -111,10 +111,6 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
-          {
-            key: 'ETag',
-            value: `"${Date.now()}"`,
-          },
         ],
       },
       
@@ -131,7 +127,7 @@ const nextConfig = {
       
       // Cache control for other public assets
       {
-        source: '/(.*\\.(png|jpg|jpeg|gif|webp|svg|ico))$',
+        source: '/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico)',
         headers: [
           {
             key: 'Cache-Control',

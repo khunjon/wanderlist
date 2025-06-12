@@ -15,7 +15,7 @@ The cache busting system consists of three main components:
 
 ### 1. Next.js Configuration
 
-The `next.config.js` file includes comprehensive cache headers:
+The `next.config.js` file includes comprehensive cache headers using Next.js 15 compatible route patterns:
 
 #### App Shell (HTML/JS/CSS) - No Caching
 - **HTML files**: `no-cache, no-store, must-revalidate, max-age=0`
@@ -33,6 +33,8 @@ The `next.config.js` file includes comprehensive cache headers:
 #### Service Workers - No Caching
 - **Service worker files**: `no-cache, no-store, must-revalidate, max-age=0`
 - **Workbox files**: `no-cache, no-store, must-revalidate, max-age=0`
+
+**Note**: The configuration uses Next.js 15 compatible route patterns (`/:path*` instead of regex capturing groups) to ensure build compatibility.
 
 ### 2. Mobile Browser Compatibility
 
