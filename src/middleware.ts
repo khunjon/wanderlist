@@ -1,22 +1,67 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { addStaticAssetHeaders, setCacheHeaders, CACHE_CONFIGS } from './lib/utils/cache';
+import { createServerClient } from '@supabase/ssr';
 
 // This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
-  // Note: We cannot directly access Supabase auth in middleware
-  // since it runs on the edge and requires browser/Node.js environment
-  // We can use cookies or token approach instead
-  
-  // For demonstration purposes, this is a placeholder
-  // In a real implementation, you would check for authentication tokens/cookies
-  // and redirect accordingly
-  
-  // The actual redirection is handled in the home page component itself
-  // This middleware is a placeholder for future server-side auth checks
-  
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
+  
+  // Handle auth session refresh for authenticated routes
+  if (pathname.startsWith('/lists') || 
+      pathname.startsWith('/profile') || 
+      pathname.startsWith('/admin')) {
+    
+    try {
+      // Create a Supabase client configured to use cookies
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll().map(cookie => ({
+                name: cookie.name,
+                value: cookie.value
+              }));
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response.cookies.set(name, value, options);
+              });
+            },
+          },
+        }
+      );
+
+      // Attempt to refresh the session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.warn('Middleware session check error:', error);
+      }
+      
+      // If no session and trying to access protected route, redirect to login
+      if (!session && (pathname.startsWith('/lists') || pathname.startsWith('/profile') || pathname.startsWith('/admin'))) {
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
+      
+      // Add session info to response headers for debugging
+      if (session) {
+        response.headers.set('X-Auth-Status', 'authenticated');
+        response.headers.set('X-User-ID', session.user.id);
+      } else {
+        response.headers.set('X-Auth-Status', 'unauthenticated');
+      }
+      
+    } catch (error) {
+      console.error('Middleware auth error:', error);
+      // Don't block the request on auth errors, let the client handle it
+    }
+  }
   
   // Add cache control headers based on request type
   
