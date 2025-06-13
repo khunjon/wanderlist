@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 import { identifyUser, trackEvent, mixpanel } from '@/lib/mixpanelClient';
 import { addCacheBuster } from '@/lib/utils/imageUtils';
 import { 
-  authLogger, 
   validateSessionOnStartup, 
   refreshSessionWithRetry, 
   classifyAuthError, 
@@ -56,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(async () => {
     if (supabaseUser) {
       try {
-        authLogger.debug('Refreshing user profile...');
         const updatedProfile = await syncUserProfile(supabaseUser);
         const appUser = convertToUser(supabaseUser, updatedProfile);
         
@@ -65,9 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           appUser.photo_url = addCacheBuster(appUser.photo_url);
         }
         setUser(appUser);
-        authLogger.debug('Profile refreshed successfully');
       } catch (err) {
-        authLogger.error('Error refreshing profile:', err);
         setError(err as Error);
       }
     }
@@ -75,8 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleSignOut = useCallback(async () => {
     try {
-      authLogger.info('Signing out user...');
-      
       // Stop session monitoring
       if (sessionMonitorRef.current) {
         sessionMonitorRef.current.stop();
@@ -92,22 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      authLogger.info('Sign out successful');
     } catch (err) {
-      authLogger.error('Error signing out:', err);
       setError(err as Error);
     }
   }, []);
 
   const retryAuth = useCallback(async () => {
     if (retryCount >= 3) {
-      authLogger.warn('Max retry attempts reached, clearing session');
       await clearStaleSessionData();
       setError(new Error('Authentication failed after multiple attempts. Please sign in again.'));
       return;
     }
 
-    authLogger.info(`Retrying authentication (attempt ${retryCount + 1}/3)...`);
     setRetryCount(prev => prev + 1);
     setError(null);
     
@@ -120,26 +110,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw refreshResult.error || new Error('Session refresh failed');
         }
       } catch (err) {
-        authLogger.error('Retry auth failed:', err);
         setError(err as Error);
       }
     }, delay);
   }, [retryCount]);
 
   const handleAuthError = useCallback(async (authError: AuthError | Error, context: string) => {
-    authLogger.error(`Auth error in ${context}:`, authError);
-    
     const classification = classifyAuthError(authError);
     
     if (classification.shouldSignOut) {
-      authLogger.warn('Error requires sign out, clearing session');
       await clearStaleSessionData();
       setUser(null);
       setSupabaseUser(null);
     }
     
     if (classification.isRetryable && retryCount < 3) {
-      authLogger.debug('Error is retryable, scheduling retry');
       await retryAuth();
     } else {
       setError(authError as Error);
@@ -148,12 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initializeAuth = useCallback(async () => {
     if (initializingRef.current) {
-      authLogger.debug('Auth initialization already in progress');
       return;
     }
 
     initializingRef.current = true;
-    authLogger.info('Initializing authentication...');
 
     try {
       // Perform startup session validation
@@ -162,11 +145,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSessionRecovered(startupResult.recovered);
       
       if (startupResult.isAuthenticated && startupResult.user) {
-        authLogger.info('Startup validation successful', {
-          userId: startupResult.user.id,
-          recovered: startupResult.recovered
-        });
-        
         setSupabaseUser(startupResult.user);
         
         // Sync user profile
@@ -192,11 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Start session monitoring
         sessionMonitorRef.current = new SessionMonitor({
           onSessionExpired: async () => {
-            authLogger.warn('Session expired, attempting recovery');
             await handleAuthError(new Error('Session expired'), 'session monitor');
           },
           onSessionRefreshed: (session) => {
-            authLogger.info('Session refreshed by monitor');
             setError(null);
             setRetryCount(0);
           },
@@ -209,10 +185,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Reset retry count on successful auth
         setRetryCount(0);
       } else {
-        authLogger.debug('No valid session found during startup');
       }
     } catch (err) {
-      authLogger.error('Auth initialization failed:', err);
       await handleAuthError(err as Error, 'initialization');
     } finally {
       setLoading(false);
@@ -223,7 +197,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if Supabase client is properly initialized
     if (!supabase) {
-      authLogger.error('Supabase client not initialized');
       setError(new Error('Supabase client not initialized'));
       setLoading(false);
       return;
@@ -236,7 +209,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loadingTimeout = setTimeout(() => {
       setLoading(currentLoading => {
         if (currentLoading) {
-          authLogger.warn('Auth loading timeout after 15 seconds - forcing loading to false');
           return false;
         }
         return currentLoading;
@@ -246,12 +218,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       try {
-        authLogger.debug('Auth state change event:', {
-          event,
-          hasSession: !!session,
-          userId: session?.user?.id
-        });
-        
         setError(null);
         setLoading(false);
         
@@ -299,7 +265,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
             }
           } else if (event === 'TOKEN_REFRESHED') {
-            authLogger.debug('Token refreshed successfully');
             setRetryCount(0); // Reset retry count on successful refresh
           }
           
@@ -307,11 +272,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!sessionMonitorRef.current) {
             sessionMonitorRef.current = new SessionMonitor({
               onSessionExpired: async () => {
-                authLogger.warn('Session expired, attempting recovery');
                 await handleAuthError(new Error('Session expired'), 'session monitor');
               },
               onSessionRefreshed: (refreshedSession) => {
-                authLogger.info('Session refreshed by monitor');
                 setError(null);
                 setRetryCount(0);
               },
@@ -333,15 +296,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // Track logout and reset Mixpanel user
           if (event === 'SIGNED_OUT') {
-            authLogger.info('User signed out');
-            trackEvent('User Logged Out');
             if (process.env.NEXT_PUBLIC_MIXPANEL_TOKEN) {
               mixpanel.reset();
             }
           }
         }
       } catch (err) {
-        authLogger.error('Error handling auth state change:', err);
         await handleAuthError(err as Error, 'auth state change');
       } finally {
         setLoading(false);

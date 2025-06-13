@@ -3,14 +3,14 @@ import type { Session, AuthError, User as SupabaseUser } from '@supabase/supabas
 
 // Auth debugging and logging utilities
 export const authLogger = {
-  debug: (message: string, data?: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[AUTH DEBUG] ${message}`, data || '')
-    }
-  },
-  info: (message: string, data?: any) => {
-    console.log(`[AUTH INFO] ${message}`, data || '')
-  },
+  // debug: (message: string, data?: any) => {
+  //   if (process.env.NODE_ENV === 'development') {
+  //     console.log(`[AUTH DEBUG] ${message}`, data || '')
+  //   }
+  // },
+  // info: (message: string, data?: any) => {
+  //   console.log(`[AUTH INFO] ${message}`, data || '')
+  // },
   warn: (message: string, data?: any) => {
     console.warn(`[AUTH WARN] ${message}`, data || '')
   },

@@ -20,11 +20,8 @@ export default function SessionRecovery({ onRecovered, onFailed }: SessionRecove
 
   const handleRetry = async () => {
     setIsRetrying(true);
-    authLogger.info('User initiated session recovery');
-    
     try {
       await retryAuth();
-      authLogger.info('Session recovery successful');
       onRecovered?.();
     } catch (err) {
       authLogger.error('Session recovery failed:', err);

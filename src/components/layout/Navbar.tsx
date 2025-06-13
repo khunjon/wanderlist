@@ -27,16 +27,14 @@ export default function Navbar() {
                             referrer.includes('/auth/callback');
       
       if (!isFromAuthPage) {
-        console.log('[NAVBAR] Redirecting authenticated user from home to /lists');
-        // Add a small delay to ensure auth state is fully settled
+        // Redirect authenticated user from home to /lists
         const timeoutId = setTimeout(() => {
           router.push('/lists');
         }, 100);
         
         return () => clearTimeout(timeoutId);
-      } else {
-        console.log('[NAVBAR] User came from auth page, skipping home redirect to avoid conflicts');
       }
+      // else: User came from auth page, skipping home redirect to avoid conflicts
     }
   }, [user, loading, pathname, router]);
 

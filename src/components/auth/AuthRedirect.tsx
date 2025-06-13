@@ -11,35 +11,19 @@ interface AuthRedirectProps {
 export default function AuthRedirect({ redirectTo, message = 'Redirecting...' }: AuthRedirectProps) {
   const { user, loading } = useAuth();
 
-  // Debug logging to see if component is rendered
   useEffect(() => {
-    console.log('[AUTH REDIRECT] Component mounted');
-    console.log('[AUTH REDIRECT] Props:', { redirectTo, message });
-    console.log('[AUTH REDIRECT] User:', user ? { id: user.id, email: user.email } : 'null');
-    console.log('[AUTH REDIRECT] Loading:', loading);
   }, []);
 
   useEffect(() => {
     if (user && !loading) {
-      console.log('[AUTH REDIRECT] User authenticated, will redirect to:', redirectTo);
-      console.log('[AUTH REDIRECT] Current URL:', window.location.href);
-      console.log('[AUTH REDIRECT] User details:', { id: user.id, email: user.email });
-      
-      // Wait a moment to see what's happening, then redirect
       const timer = setTimeout(() => {
-        console.log('[AUTH REDIRECT] Executing redirect now...');
-        console.log('[AUTH REDIRECT] Target URL:', redirectTo);
-        
         try {
-          // Use replace to avoid adding to browser history
           window.location.replace(redirectTo);
         } catch (error) {
           console.error('[AUTH REDIRECT] Redirect failed:', error);
-          // Fallback to href
           window.location.href = redirectTo;
         }
-      }, 1500); // Wait 1.5 seconds so we can see the logs
-      
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [user, loading, redirectTo]);
