@@ -106,16 +106,22 @@ function LoginForm() {
               </div>
             </div>
 
-            <form onSubmit={handleEmailLogin} className="space-y-3 sm:space-y-4">
+            <form 
+              onSubmit={handleEmailLogin} 
+              className="space-y-3 sm:space-y-4"
+              id="login-form"
+              name="login"
+              noValidate
+            >
               <div>
-                <label htmlFor="email" className="sr-only">
+                <label htmlFor="login-email" className="sr-only">
                   Email address
                 </label>
                 <Input
-                  id="email"
-                  name="email"
+                  id="login-email"
+                  name="username"
                   type="email"
-                  autoComplete="email"
+                  autoComplete="username"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -124,11 +130,11 @@ function LoginForm() {
                 />
               </div>
               <div>
-                <label htmlFor="password" className="sr-only">
+                <label htmlFor="login-password" className="sr-only">
                   Password
                 </label>
                 <Input
-                  id="password"
+                  id="login-password"
                   name="password"
                   type="password"
                   autoComplete="current-password"
