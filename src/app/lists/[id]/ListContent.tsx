@@ -781,7 +781,7 @@ export default function ListContent({ id }: ListContentProps) {
                     <Button
                       onClick={handleSave}
                       disabled={saving}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       {saving ? 'Saving...' : 'Save Changes'}
                     </Button>

@@ -34,6 +34,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Auto-generated version files
+src/lib/version-info.json
+src/lib/version-constants.ts
+
 # Cursor AI local files (keep rules.md under version control)
 .cursor/history.json
 .cursor/sessions/
