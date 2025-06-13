@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { getUserCheckins, deleteCheckin, CheckinWithPlace } from '@/lib/checkins';
@@ -92,6 +91,29 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
     });
   };
 
+  const shortenAddress = (address: string) => {
+    if (!address) return '';
+    
+    // Split address by commas and remove empty parts
+    const parts = address.split(',').map(part => part.trim()).filter(part => part);
+    
+    // Remove the last part if it looks like a country (common country names or codes)
+    const countryPatterns = /^(Thailand|United States|USA|US|UK|United Kingdom|Canada|Australia|Singapore|Malaysia|Japan|South Korea|China|India|Germany|France|Italy|Spain|Netherlands|Belgium|Sweden|Norway|Denmark|Finland|Switzerland|Austria|TH|SG|MY|JP|KR|CN|IN|DE|FR|IT|ES|NL|BE|SE|NO|DK|FI|CH|AT)$/i;
+    if (parts.length > 1 && countryPatterns.test(parts[parts.length - 1])) {
+      parts.pop();
+    }
+    
+    // Remove zip codes (patterns like 12345, 12345-6789, A1B 2C3, etc.)
+    const zipCodePatterns = /^\d{5}(-\d{4})?$|^\d{4,6}$|^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/;
+    const filteredParts = parts.filter(part => !zipCodePatterns.test(part.trim()));
+    
+    // Take first 3-4 parts to keep address reasonable length
+    const maxParts = 4;
+    const finalParts = filteredParts.slice(0, maxParts);
+    
+    return finalParts.join(', ');
+  };
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -148,24 +170,17 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
                   {checkin.place?.name || checkin.place_id}
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-400 mt-0.5 line-clamp-1">
-                  {checkin.place?.address || 'Place details not available'}
+                  {shortenAddress(checkin.place?.address || '') || 'Place details not available'}
                 </p>
                 
                 {/* Place details row */}
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-3">
-                    {checkin.place && (
-                      <>
-                        <span className="text-xs text-gray-500 capitalize">
-                          {checkin.place.place_types?.[0]?.replace(/_/g, ' ') || 'Place'}
-                        </span>
-                        {checkin.place.rating && checkin.place.rating > 0 && (
-                          <div className="flex items-center text-xs text-gray-500">
-                            <span className="mr-1">⭐</span>
-                            <span>{checkin.place.rating.toFixed(1)}</span>
-                          </div>
-                        )}
-                      </>
+                    {checkin.place && checkin.place.rating && checkin.place.rating > 0 && (
+                      <div className="flex items-center text-xs text-gray-500">
+                        <span className="mr-1">⭐</span>
+                        <span>{checkin.place.rating.toFixed(1)}</span>
+                      </div>
                     )}
                   </div>
                   
