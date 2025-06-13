@@ -16,6 +16,7 @@ import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TagInput } from '@/components/ui/tag-input';
@@ -95,6 +96,7 @@ export default function ListContent({ id }: ListContentProps) {
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [editIsPublic, setEditIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -428,6 +430,7 @@ export default function ListContent({ id }: ListContentProps) {
   useEffect(() => {
     if (isEditing && list) {
       setEditName(list.name);
+      setEditDescription(list.description || '');
       setEditTags(list.tags || []);
       setEditIsPublic(list.is_public || false);
     }
@@ -443,6 +446,7 @@ export default function ListContent({ id }: ListContentProps) {
 
       await updateList(list.id, {
         name: editName,
+        description: editDescription,
         tags: editTags,
         is_public: editIsPublic,
       });
@@ -451,6 +455,7 @@ export default function ListContent({ id }: ListContentProps) {
       setList(prev => prev ? {
         ...prev,
         name: editName,
+        description: editDescription,
         tags: editTags,
         is_public: editIsPublic,
       } : null);
@@ -462,7 +467,7 @@ export default function ListContent({ id }: ListContentProps) {
     } finally {
       setSaving(false);
     }
-  }, [list, user, editName, editTags, editIsPublic]);
+  }, [list, user, editName, editDescription, editTags, editIsPublic]);
 
   // Memoized delete handler
   const handleDelete = useCallback(async () => {
@@ -703,6 +708,21 @@ export default function ListContent({ id }: ListContentProps) {
                     id="name"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="description" className="text-sm font-medium text-white">
+                    Description
+                  </label>
+                  <Textarea
+                    id="description"
+                    rows={3}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="A collection of my favorite places..."
+                    disabled={saving}
                     className="bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
