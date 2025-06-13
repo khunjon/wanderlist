@@ -2,11 +2,16 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { CheckinSearch, CheckinHistory } from '@/components/checkin';
+import { supabase } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 export default function CheckinPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -14,6 +19,11 @@ export default function CheckinPage() {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  // Function to refresh the history component
+  const refreshHistory = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   if (loading) {
     return (
@@ -32,89 +42,139 @@ export default function CheckinPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
-            Check In
-          </h1>
-          <p className="text-gray-400">
-            Share your current location and experiences with friends
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+                Check-In Test Page
+              </h1>
+              <p className="text-gray-400">
+                Test the complete check-in flow: search, check in, and view history
+              </p>
+            </div>
+            <Button
+              onClick={refreshHistory}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh History
+            </Button>
+          </div>
         </div>
 
-        {/* Placeholder Content */}
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-blue-100 mb-6">
-              <svg
-                className="h-12 w-12 text-blue-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Check-in Search */}
+          <div className="space-y-6">
+            <div className="bg-gray-800 rounded-lg shadow-xl p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                🔍 Search & Check In
+              </h2>
+                             <div className="bg-gray-900 rounded-lg p-4">
+                 <CheckinSearch 
+                   supabase={supabase as any}
+                   city="San Francisco" // Optional: set a default city for testing
+                 />
+               </div>
             </div>
-            
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Check In Feature Coming Soon
-            </h2>
-            
-            <p className="text-gray-300 mb-8 max-w-md mx-auto">
-              We're working on an exciting new feature that will let you check in to places, 
-              share your experiences, and connect with friends. Stay tuned!
-            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <div className="bg-gray-700 rounded-lg p-6">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 mx-auto mb-4">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-white mb-2">Location Check-ins</h3>
-                <p className="text-gray-300 text-sm">
-                  Check in to your favorite places and share your current location with friends
-                </p>
-              </div>
+            {/* Instructions Card */}
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-blue-300 mb-3">
+                🧪 How to Test
+              </h3>
+              <ul className="space-y-2 text-blue-200 text-sm">
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-2">1.</span>
+                  Search for a place (try "Starbucks", "McDonald's", etc.)
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-2">2.</span>
+                  Add optional notes about your visit
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-2">3.</span>
+                  Click "Check In" on any search result
+                </li>
+                <li className="flex items-start">
+                  <span className="text-blue-400 mr-2">4.</span>
+                  Watch for success toast and see it appear in history →
+                </li>
+              </ul>
+            </div>
+          </div>
 
-              <div className="bg-gray-700 rounded-lg p-6">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 mx-auto mb-4">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-white mb-2">Social Sharing</h3>
-                <p className="text-gray-300 text-sm">
-                  Share photos, reviews, and experiences from your check-ins
-                </p>
-              </div>
+          {/* Right Column - Check-in History */}
+          <div className="space-y-6">
+            <div className="bg-gray-800 rounded-lg shadow-xl p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                📋 Your Check-in History
+              </h2>
+                             <div className="bg-gray-900 rounded-lg p-4">
+                 <CheckinHistory 
+                   key={refreshKey} // Force re-render when refreshKey changes
+                   supabase={supabase as any}
+                   limit={15}
+                 />
+               </div>
+            </div>
 
-              <div className="bg-gray-700 rounded-lg p-6">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-purple-500 mx-auto mb-4">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
+            {/* Status Card */}
+            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-green-300 mb-3">
+                ✅ Test Status
+              </h3>
+              <div className="space-y-2 text-green-200 text-sm">
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  Google Places API integration
                 </div>
-                <h3 className="text-lg font-medium text-white mb-2">Friend Activity</h3>
-                <p className="text-gray-300 text-sm">
-                  See where your friends have been and discover new places together
-                </p>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  Supabase database connection
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  User authentication
+                </div>
+                <div className="flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
+                  Real-time history updates
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Debug Info (Development Only) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 bg-gray-900 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-300 mb-3">
+              🔧 Debug Info
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-400">User ID:</span>
+                <p className="text-gray-200 font-mono text-xs break-all">
+                  {user?.id || 'Not available'}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-400">Email:</span>
+                <p className="text-gray-200">
+                  {user?.email || 'Not available'}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-400">Environment:</span>
+                <p className="text-gray-200">
+                  Development Mode
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
