@@ -18,10 +18,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center gap-4">
               <Button asChild size="lg">
-                <Link
-                  href="/signup"
-                  className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
-                >
+                <Link href="/signup">
                   Get Started
                 </Link>
               </Button>
@@ -105,10 +102,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center">
               <Button asChild size="lg" className="w-full md:w-auto">
-                <Link
-                  href="/signup"
-                  className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
-                >
+                <Link href="/signup">
                   Get Started
                 </Link>
               </Button>

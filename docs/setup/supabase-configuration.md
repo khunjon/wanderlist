@@ -1,5 +1,7 @@
 # Supabase Setup Guide
 
+> **Update 2025:** Authentication flow is now greatly simplified: minimal redirects, robust error handling, only warnings/errors logged, and all auth UI uses shadcn/ui Button for consistency.
+
 This guide will help you set up a new Supabase project and migrate from Firebase to Supabase for the Placemarks application.
 
 ## 1. Create Supabase Project
@@ -341,6 +343,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 3. **Service Role Key**: Found in Settings > API under "Project API keys" (keep this secret!)
 
 ## 6. Authentication Setup
+
+- The authentication flow is now minimal and robust. No more complex redirect logic or verbose logging.
+- All authentication UI (login, signup, etc.) uses shadcn/ui Button for a modern, accessible experience.
+- Only warnings and errors are logged for troubleshooting; info/debug logs have been removed.
 
 1. Go to Authentication > Settings in your Supabase dashboard
 2. Configure your authentication providers:

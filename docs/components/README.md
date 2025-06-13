@@ -497,6 +497,13 @@ React.useEffect(() => {
 - **[API Integration](../api/)** - How components integrate with backend APIs
 - **[Performance Baseline](../performance/)** - Performance measurement and analysis
 
+## 🆕 UI Modernization: shadcn/ui Adoption
+
+- All primary CTAs (e.g., "Get Started", "Log In", "Sign Up") and Navbar actions now use the shadcn/ui Button component.
+- This ensures a modern, accessible, and consistent look across the app.
+- Authentication-related buttons (login, signup, etc.) are always shadcn/ui Button for clarity and accessibility.
+- See the Navbar and home page for reference implementations of this style.
+
 ---
 
 *Last Updated: June 10, 2025* 

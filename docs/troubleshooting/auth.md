@@ -1,5 +1,7 @@
 # 🔐 Authentication Troubleshooting
 
+> **Update 2025:** The authentication flow and UI have been simplified: no more redirect loops, minimal middleware, robust error handling, and all auth CTAs use shadcn/ui Button. Only warnings/errors are logged for troubleshooting; info/debug logs have been removed.
+
 This guide covers authentication issues including Google OAuth, Supabase Auth, session management, and JWT token problems.
 
 ## 🚨 Quick Fixes for Critical Auth Issues
