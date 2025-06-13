@@ -87,7 +87,7 @@ function LoginForm() {
               onClick={handleGoogleLogin}
               disabled={isLoading}
               variant="outline"
-              className="w-full bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
             >
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
