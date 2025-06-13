@@ -45,10 +45,10 @@ export default function CheckinPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
-                Check-In Test Page
+                Check In
               </h1>
               <p className="text-gray-400">
-                Test the complete check-in flow: search, check in, and view history
+                Search for places and check in to track your visits
               </p>
             </div>
             <Button
@@ -69,79 +69,31 @@ export default function CheckinPage() {
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg shadow-xl p-6">
               <h2 className="text-xl font-semibold text-white mb-4">
-                🔍 Search & Check In
+                Search & Check In
               </h2>
-                             <div className="bg-gray-900 rounded-lg p-4">
-                 <CheckinSearch 
-                   supabase={supabase as any}
-                   initialCity="Bangkok, Thailand" // Set Bangkok as default city
-                 />
-               </div>
+              <div className="bg-gray-900 rounded-lg p-4">
+                <CheckinSearch 
+                  supabase={supabase as any}
+                  initialCity="Bangkok, Thailand" // Set Bangkok as default city
+                />
+              </div>
             </div>
 
-            {/* Instructions Card */}
-            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-blue-300 mb-3">
-                🧪 How to Test
-              </h3>
-              <ul className="space-y-2 text-blue-200 text-sm">
-                <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">1.</span>
-                  Search for a place (try "Starbucks", "McDonald's", etc.)
-                </li>
-                <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">2.</span>
-                  Add optional notes about your visit
-                </li>
-                <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">3.</span>
-                  Click "Check In" on any search result
-                </li>
-                <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">4.</span>
-                  Watch for success toast and see it appear in history →
-                </li>
-              </ul>
-            </div>
+            {/* Instructions Card - REMOVED */}
           </div>
 
           {/* Right Column - Check-in History */}
           <div className="space-y-6">
             <div className="bg-gray-800 rounded-lg shadow-xl p-6">
               <h2 className="text-xl font-semibold text-white mb-4">
-                📋 Your Check-in History
+                Your Check-in History
               </h2>
-                             <div className="bg-gray-900 rounded-lg p-4">
-                 <CheckinHistory 
-                   key={refreshKey} // Force re-render when refreshKey changes
-                   supabase={supabase as any}
-                   limit={15}
-                 />
-               </div>
-            </div>
-
-            {/* Status Card */}
-            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
-              <h3 className="text-lg font-medium text-green-300 mb-3">
-                ✅ Test Status
-              </h3>
-              <div className="space-y-2 text-green-200 text-sm">
-                <div className="flex items-center">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  Google Places API integration
-                </div>
-                <div className="flex items-center">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  Supabase database connection
-                </div>
-                <div className="flex items-center">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  User authentication
-                </div>
-                <div className="flex items-center">
-                  <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                  Real-time history updates
-                </div>
+              <div className="bg-gray-900 rounded-lg p-4">
+                <CheckinHistory 
+                  key={refreshKey} // Force re-render when refreshKey changes
+                  supabase={supabase as any}
+                  limit={15}
+                />
               </div>
             </div>
           </div>
