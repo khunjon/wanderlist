@@ -16,6 +16,27 @@ export default function AuthLoadingState({
 }: AuthLoadingStateProps) {
   const [showContent, setShowContent] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
+
+  // Debug logging
+  useEffect(() => {
+    const info = `isInitializing: ${isInitializing}, hasAttemptedAuth: ${hasAttemptedAuth}`;
+    setDebugInfo(info);
+    console.log('[AuthLoadingState]', info);
+  }, [isInitializing, hasAttemptedAuth]);
+
+  // Fallback timeout to prevent infinite loading
+  useEffect(() => {
+    const fallbackTimeout = setTimeout(() => {
+      if (isInitializing || !hasAttemptedAuth) {
+        console.warn('[AuthLoadingState] Fallback timeout reached, forcing content display');
+        setShowContent(true);
+        setFadeIn(true);
+      }
+    }, 15000); // 15 second fallback
+
+    return () => clearTimeout(fallbackTimeout);
+  }, [isInitializing, hasAttemptedAuth]);
 
   useEffect(() => {
     if (!isInitializing && hasAttemptedAuth) {
@@ -32,7 +53,7 @@ export default function AuthLoadingState({
     }
   }, [isInitializing, hasAttemptedAuth]);
 
-  if (isInitializing || !hasAttemptedAuth) {
+  if ((isInitializing || !hasAttemptedAuth) && !showContent) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center space-y-6 max-w-md mx-auto px-4">
@@ -74,6 +95,13 @@ export default function AuthLoadingState({
           <div className="w-full bg-gray-700 rounded-full h-1 mt-8">
             <div className="bg-blue-500 h-1 rounded-full animate-pulse" style={{ width: '60%' }}></div>
           </div>
+
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-gray-500 mt-4 p-2 bg-gray-800 rounded">
+              Debug: {debugInfo}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -85,7 +113,7 @@ export default function AuthLoadingState({
         fadeIn ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      {showContent && children}
+      {children}
     </div>
   );
 } 

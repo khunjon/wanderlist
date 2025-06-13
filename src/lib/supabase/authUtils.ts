@@ -30,13 +30,7 @@ export interface SessionValidationResult {
 
 export async function validateSession(): Promise<SessionValidationResult> {
   try {
-    // Use a shorter timeout for faster response
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-    
     const { data, error } = await supabase.auth.getSession();
-    clearTimeout(timeoutId);
-    
     const session = data?.session;
     
     if (error) {
@@ -89,16 +83,6 @@ export async function validateSession(): Promise<SessionValidationResult> {
       needsRefresh
     }
   } catch (error) {
-    // Handle abort error gracefully
-    if (error instanceof Error && error.name === 'AbortError') {
-      authLogger.warn('Session validation timed out')
-      return {
-        isValid: false,
-        session: null,
-        error: new Error('Session validation timeout') as AuthError
-      }
-    }
-    
     authLogger.error('Session validation failed:', error)
     return {
       isValid: false,
@@ -314,72 +298,47 @@ export async function validateSessionOnStartup(): Promise<{
 }> {
   
   try {
-    // Use Promise.race to ensure we don't wait too long
-    const validationPromise = validateSession();
-    const timeoutPromise = new Promise<SessionValidationResult>((_, reject) => {
-      setTimeout(() => reject(new Error('Startup validation timeout')), 5000);
-    });
-    
-    // First attempt: validate current session with timeout
-    let validation: SessionValidationResult;
-    try {
-      validation = await Promise.race([validationPromise, timeoutPromise]);
-    } catch (timeoutError) {
-      authLogger.warn('Startup validation timed out, trying fallback');
-      // If validation times out, try direct getUser call
-      try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (!userError && userData.user) {
-          return {
-            isAuthenticated: true,
-            user: userData.user,
-            session: null, // We don't have session but have user
-            recovered: false
-          };
-        }
-      } catch (fallbackError) {
-        authLogger.error('Fallback getUser failed:', fallbackError);
-      }
-      
-      return {
-        isAuthenticated: false,
-        user: null,
-        session: null,
-        recovered: false
-      };
-    }
-    
+    // Simple approach: just validate the current session
+    const validation = await validateSession();
     let recovered = false;
     
-    // If session is invalid or expired, attempt recovery
-    if (!validation.isValid || validation.isExpired) {
-      authLogger.warn('Initial session validation failed, attempting recovery');
-      validation = await recoverSession();
-      recovered = validation.isValid;
+    // If session is invalid or expired, try a simple recovery
+    if (!validation.isValid && validation.needsRefresh) {
+      authLogger.warn('Session needs refresh, attempting recovery');
+      try {
+        const refreshResult = await refreshSessionWithRetry(1);
+        if (refreshResult.success && refreshResult.session) {
+          return {
+            isAuthenticated: true,
+            user: refreshResult.session.user,
+            session: refreshResult.session,
+            recovered: true
+          };
+        }
+      } catch (refreshError) {
+        authLogger.error('Session refresh failed:', refreshError);
+      }
     }
     
-    // If session validation still fails, try getUser() as a fallback
+    // If we still don't have a valid session, try getUser as fallback
     if (!validation.isValid) {
-      authLogger.warn('Session recovery failed, trying getUser() fallback');
+      authLogger.warn('Session invalid, trying getUser fallback');
       try {
         const { data: userData, error: userError } = await supabase.auth.getUser();
         
         if (!userError && userData.user) {
-          // User exists but session might be stale, try to refresh
-          const refreshResult = await refreshSessionWithRetry(1);
-          
-          if (refreshResult.success && refreshResult.session) {
-            authLogger.warn('Successfully recovered session via getUser() + refresh');
-            return {
-              isAuthenticated: true,
-              user: refreshResult.session.user,
-              session: refreshResult.session,
-              recovered: true
-            };
-          }
+          // We have a user but no valid session - this can happen
+          // Return the user but mark as not fully authenticated
+          authLogger.warn('Found user without valid session');
+          return {
+            isAuthenticated: true,
+            user: userData.user,
+            session: null,
+            recovered: false
+          };
         }
       } catch (fallbackError) {
-        authLogger.error('getUser() fallback failed:', fallbackError);
+        authLogger.error('getUser fallback failed:', fallbackError);
       }
     }
     

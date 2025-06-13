@@ -139,55 +139,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initializeAuth = useCallback(async () => {
     if (initializingRef.current) {
+      console.log('[AUTH] Already initializing, skipping');
       return;
     }
 
+    console.log('[AUTH] Starting initialization');
     initializingRef.current = true;
     setIsInitializing(true);
 
     try {
-      // Check if we have a cached auth result from very recent initialization
-      const cacheKey = 'auth-init-cache';
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        try {
-          const { timestamp, result } = JSON.parse(cached);
-          // Use cache if less than 5 seconds old
-          if (Date.now() - timestamp < 5000) {
-            setHasAttemptedAuth(true);
-            if (result.isAuthenticated && result.user) {
-              setSupabaseUser(result.user);
-              const userProfile = await syncUserProfile(result.user);
-              const appUser = convertToUser(result.user, userProfile);
-              if (appUser.photo_url) {
-                appUser.photo_url = addCacheBuster(appUser.photo_url);
-              }
-              setUser(appUser);
-            }
-            setLoading(false);
-            setIsInitializing(false);
-            initializingRef.current = false;
-            return;
-          }
-        } catch (e) {
-          // Invalid cache, continue with normal flow
-          sessionStorage.removeItem(cacheKey);
-        }
-      }
-
-      // Perform startup session validation
-      const startupResult = await validateSessionOnStartup();
+      // Perform startup session validation with a timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Auth initialization timeout')), 8000);
+      });
       
-      // Cache the result for rapid subsequent checks
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        timestamp: Date.now(),
-        result: startupResult
-      }));
+      console.log('[AUTH] Validating session on startup');
+      const startupResult = await Promise.race([
+        validateSessionOnStartup(),
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof validateSessionOnStartup>>;
+      
+      console.log('[AUTH] Startup validation result:', startupResult);
       
       setSessionRecovered(startupResult.recovered);
       setHasAttemptedAuth(true);
       
       if (startupResult.isAuthenticated && startupResult.user) {
+        console.log('[AUTH] User authenticated, setting up user state');
         setSupabaseUser(startupResult.user);
         
         // Sync user profile
@@ -228,14 +206,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Reset retry count on successful auth
         setRetryCount(0);
       } else {
+        console.log('[AUTH] No authenticated user found');
         // No authenticated user found
         setUser(null);
         setSupabaseUser(null);
       }
     } catch (err) {
+      console.error('[AUTH] Initialization failed:', err);
       await handleAuthError(err as Error, 'initialization');
       setHasAttemptedAuth(true);
     } finally {
+      console.log('[AUTH] Initialization complete, setting loading states to false');
       setLoading(false);
       setIsInitializing(false);
       initializingRef.current = false;
@@ -247,26 +228,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) {
       setError(new Error('Supabase client not initialized'));
       setLoading(false);
+      setIsInitializing(false);
+      setHasAttemptedAuth(true);
       return;
     }
 
-    let isInitialized = false;
-
     // Initialize authentication
-    const initAuth = async () => {
-      await initializeAuth();
-      isInitialized = true;
-    };
-    
-    initAuth();
+    initializeAuth();
 
-    // Safety timeout to prevent infinite loading state - but only if auth hasn't initialized
+    // Safety timeout to prevent infinite loading state
     const loadingTimeout = setTimeout(() => {
-      if (!isInitialized) {
-        console.warn('[AUTH] Initialization timeout reached, setting loading to false');
-        setLoading(false);
+      console.warn('[AUTH] Safety timeout reached, forcing loading to false');
+      setLoading(false);
+      setIsInitializing(false);
+      if (!hasAttemptedAuth) {
+        setHasAttemptedAuth(true);
       }
-    }, 15000);
+    }, 10000); // Reduced to 10 seconds
 
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
@@ -382,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         retryTimeoutRef.current = null;
       }
     };
-  }, [initializeAuth, handleAuthError]);
+  }, [initializeAuth, handleAuthError, hasAttemptedAuth]);
 
   return (
     <AuthContext.Provider value={{ 
