@@ -76,7 +76,8 @@ export default function CheckinSearch({ supabase, initialCity = "Bangkok, Thaila
     try {
       const result = await createCheckin(supabase, {
         place_id: place.place_id,
-        notes: notes.trim() || undefined
+        notes: notes.trim() || undefined,
+        googlePlace: place // Pass the full Google Place data
       });
 
       if (result.error) {
@@ -89,6 +90,7 @@ export default function CheckinSearch({ supabase, initialCity = "Bangkok, Thaila
         toast({
           title: "Check-in Successful!",
           description: `Checked in to ${place.name}`,
+          variant: "success",
         });
         
         // Clear the form after successful check-in

@@ -5,7 +5,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { getUserCheckins, deleteCheckin, CheckinRecord } from '@/lib/checkins';
+import { getUserCheckins, deleteCheckin, CheckinWithPlace } from '@/lib/checkins';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@supabase/supabase-js';
 import { Trash2, Loader2 } from 'lucide-react';
@@ -16,7 +16,7 @@ interface CheckinHistoryProps {
 }
 
 export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryProps) {
-  const [checkins, setCheckins] = useState<CheckinRecord[]>([]);
+  const [checkins, setCheckins] = useState<CheckinWithPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -154,13 +154,28 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
           <Card key={checkin.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-white">
-                    {checkin.place_id}
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Place ID (will show place name later)
-                  </p>
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div>
+                    <h3 className="font-medium text-white">
+                      {checkin.place?.name || checkin.place_id}
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {checkin.place?.address || 'Place details not available'}
+                    </p>
+                  </div>
+                  {checkin.place && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500 capitalize">
+                        {checkin.place.place_types?.[0]?.replace(/_/g, ' ') || 'Place'}
+                      </p>
+                      {checkin.place.rating && checkin.place.rating > 0 && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <span className="mr-1">⭐</span>
+                          <span>{checkin.place.rating.toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 ml-4 shrink-0">
                   <Badge variant="secondary">
