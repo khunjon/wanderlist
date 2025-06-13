@@ -14,6 +14,7 @@ import { addCacheBuster } from '@/lib/utils/imageUtils';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { EnhancedProfileData, ProfileUpdateResult, PhotoUpdateResult } from '@/lib/supabase/auth';
+import { Button } from '@/components/ui/button';
 
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading, signOut, refreshProfile } = useAuth();
@@ -358,11 +359,12 @@ export default function ProfilePage() {
                 
                 <div className="flex-1">
                   <h3 className="text-lg font-medium text-white mb-4">Profile Photo</h3>
-                  <button
+                  <Button
                     type="button"
-                    className="inline-flex items-center px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-colors"
                     onClick={handleSelectPhoto}
                     disabled={loading || uploadingPhoto}
+                    variant="secondary"
+                    className="mb-2"
                   >
                     {uploadingPhoto ? (
                       <>
@@ -377,7 +379,7 @@ export default function ProfilePage() {
                         {getDisplayImageUrl() ? 'Change Photo' : 'Add Photo'}
                       </>
                     )}
-                  </button>
+                  </Button>
                   <p className="mt-2 text-xs text-gray-400">
                     JPG, PNG, GIF, or WebP. Max 5MB. Images will be automatically optimized.
                   </p>
@@ -526,42 +528,15 @@ export default function ProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
-                <Link
-                  href="/lists"
-                  className="inline-flex justify-center items-center px-6 py-3 border border-gray-600 text-sm font-medium rounded-md text-gray-300 bg-transparent hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors"
-                >
-                  Back to My Lists
-                </Link>
-                <button
-                  type="submit"
-                  disabled={loading || uploadingPhoto}
-                  className="inline-flex justify-center items-center rounded-md border border-transparent bg-blue-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                      Updating...
-                    </>
-                  ) : (
-                    'Save Changes'
-                  )}
-                </button>
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <Button type="submit" size="lg" disabled={loading || uploadingPhoto}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Button>
+                <Button type="button" variant="outline" size="lg" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
               </div>
             </form>
-
-            {/* Account Actions Section */}
-            <div className="mt-12 pt-8 border-t border-gray-600">
-              <h3 className="text-lg font-medium text-white mb-4">Account Actions</h3>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleSignOut}
-                  className="inline-flex justify-center items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-md text-red-400 bg-transparent hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
