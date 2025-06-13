@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TagInput } from '@/components/ui/tag-input';
 
 const placeSortOptions: SortOption[] = [
   { value: 'addedAt', label: 'Date Added' },
@@ -94,7 +95,7 @@ export default function ListContent({ id }: ListContentProps) {
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
-  const [editTags, setEditTags] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
   const [editIsPublic, setEditIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -423,6 +424,15 @@ export default function ListContent({ id }: ListContentProps) {
     }
   }, [id]);
 
+  // Initialize edit form when editing starts
+  useEffect(() => {
+    if (isEditing && list) {
+      setEditName(list.name);
+      setEditTags(list.tags || []);
+      setEditIsPublic(list.is_public || false);
+    }
+  }, [isEditing, list]);
+
   // Memoized save handler
   const handleSave = useCallback(async () => {
     if (!list || !user) return;
@@ -431,14 +441,9 @@ export default function ListContent({ id }: ListContentProps) {
       setSaving(true);
       setError(null);
 
-      const tags = editTags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-
       await updateList(list.id, {
         name: editName,
-        tags,
+        tags: editTags,
         is_public: editIsPublic,
       });
 
@@ -446,7 +451,7 @@ export default function ListContent({ id }: ListContentProps) {
       setList(prev => prev ? {
         ...prev,
         name: editName,
-        tags,
+        tags: editTags,
         is_public: editIsPublic,
       } : null);
 
@@ -704,15 +709,18 @@ export default function ListContent({ id }: ListContentProps) {
                 
                 <div className="space-y-2">
                   <label htmlFor="tags" className="text-sm font-medium text-white">
-                    Tags (comma-separated)
+                    Tags
                   </label>
-                  <Input
-                    id="tags"
+                  <TagInput
                     value={editTags}
-                    onChange={(e) => setEditTags(e.target.value)}
+                    onChange={setEditTags}
                     placeholder="food, travel, favorites"
-                    className="bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                    disabled={saving}
+                    className="bg-gray-700 border-gray-600 text-white focus-within:border-blue-500 focus-within:ring-blue-500"
                   />
+                  <p className="text-xs text-gray-400">
+                    Press Enter or comma to add tags. Click × to remove them.
+                  </p>
                 </div>
                 
                 <div className="flex items-center space-x-3">
