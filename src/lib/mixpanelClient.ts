@@ -2,6 +2,9 @@ import mixpanel from 'mixpanel-browser';
 
 const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 
+// Track initialization state
+let isMixpanelInitialized = false;
+
 // Get the correct domain for tracking
 const getTrackingDomain = () => {
   if (typeof window === 'undefined') return '';
@@ -40,6 +43,8 @@ export const initMixpanel = () => {
           'url_origin': trackingDomain
         });
       }
+      // Mark as initialized
+      isMixpanelInitialized = true;
     }
   });
 };
@@ -281,29 +286,66 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
     return;
   }
 
-  try {
-    // Skip tracking for bots and crawlers
-    if (isBotUserAgent(navigator.userAgent)) {
-      console.log('Skipping Mixpanel event tracking for bot:', navigator.userAgent);
+  // If already initialized, track immediately
+  if (isMixpanelInitialized && mixpanel && typeof mixpanel.track === 'function') {
+    try {
+      if (isBotUserAgent(navigator.userAgent)) {
+        console.log('Skipping Mixpanel event tracking for bot:', navigator.userAgent);
+        return;
+      }
+      
+      mixpanel.track(eventName, {
+        ...properties,
+        timestamp: new Date().toISOString(),
+        domain: window.location.hostname,
+        current_url: window.location.href
+      });
+      return;
+    } catch (error) {
+      console.error('Error tracking Mixpanel event:', eventName, error);
       return;
     }
-
-    // Check if mixpanel is properly initialized
-    if (!mixpanel || typeof mixpanel.track !== 'function') {
-      console.warn('Mixpanel not properly initialized, skipping event:', eventName);
-      return;
-    }
-
-    mixpanel.track(eventName, {
-      ...properties,
-      timestamp: new Date().toISOString(),
-      // Ensure correct domain is tracked
-      domain: window.location.hostname,
-      current_url: window.location.href
-    });
-  } catch (error) {
-    console.error('Error tracking Mixpanel event:', eventName, error);
   }
+
+  // Retry function for when Mixpanel isn't ready yet
+  const attemptTrack = (retryCount = 0) => {
+    try {
+      // Skip tracking for bots and crawlers
+      if (isBotUserAgent(navigator.userAgent)) {
+        console.log('Skipping Mixpanel event tracking for bot:', navigator.userAgent);
+        return;
+      }
+
+      // Check if mixpanel is properly initialized
+      if (!isMixpanelInitialized || !mixpanel || typeof mixpanel.track !== 'function') {
+        if (retryCount < 2) {
+          // Retry after a short delay (fewer retries for events)
+          setTimeout(() => attemptTrack(retryCount + 1), 300 * (retryCount + 1));
+          return;
+        } else {
+          console.warn('Mixpanel not properly initialized, skipping event:', eventName);
+          return;
+        }
+      }
+
+      mixpanel.track(eventName, {
+        ...properties,
+        timestamp: new Date().toISOString(),
+        // Ensure correct domain is tracked
+        domain: window.location.hostname,
+        current_url: window.location.href
+      });
+    } catch (error) {
+      if (retryCount < 2) {
+        console.warn(`Mixpanel track attempt ${retryCount + 1} failed, retrying:`, error);
+        setTimeout(() => attemptTrack(retryCount + 1), 300 * (retryCount + 1));
+      } else {
+        console.error('Error tracking Mixpanel event after retries:', eventName, error);
+      }
+    }
+  };
+
+  attemptTrack();
 };
 
 // List-specific tracking functions
@@ -387,26 +429,61 @@ export const identifyUser = (userId: string, userProperties?: Record<string, any
     return;
   }
 
-  try {
-    // Skip tracking for bots and crawlers
-    if (isBotUserAgent(navigator.userAgent)) {
-      console.log('Skipping Mixpanel user identification for bot:', navigator.userAgent);
+  // If already initialized, identify immediately
+  if (isMixpanelInitialized && mixpanel && typeof mixpanel.identify === 'function' && typeof mixpanel.get_distinct_id === 'function') {
+    try {
+      if (isBotUserAgent(navigator.userAgent)) {
+        console.log('Skipping Mixpanel user identification for bot:', navigator.userAgent);
+        return;
+      }
+      
+      mixpanel.identify(userId);
+      if (userProperties && mixpanel.people && typeof mixpanel.people.set === 'function') {
+        mixpanel.people.set(userProperties);
+      }
+      return;
+    } catch (error) {
+      console.error('Error identifying Mixpanel user:', userId, error);
       return;
     }
-
-    // Check if mixpanel is properly initialized
-    if (!mixpanel || typeof mixpanel.identify !== 'function') {
-      console.warn('Mixpanel not properly initialized, skipping user identification');
-      return;
-    }
-
-    mixpanel.identify(userId);
-    if (userProperties && mixpanel.people && typeof mixpanel.people.set === 'function') {
-      mixpanel.people.set(userProperties);
-    }
-  } catch (error) {
-    console.error('Error identifying Mixpanel user:', userId, error);
   }
+
+  // Retry function for when Mixpanel isn't ready yet
+  const attemptIdentify = (retryCount = 0) => {
+    try {
+      // Skip tracking for bots and crawlers
+      if (isBotUserAgent(navigator.userAgent)) {
+        console.log('Skipping Mixpanel user identification for bot:', navigator.userAgent);
+        return;
+      }
+
+      // Check if mixpanel is properly initialized
+      if (!isMixpanelInitialized || !mixpanel || typeof mixpanel.identify !== 'function' || typeof mixpanel.get_distinct_id !== 'function') {
+        if (retryCount < 3) {
+          // Retry after a short delay
+          setTimeout(() => attemptIdentify(retryCount + 1), 500 * (retryCount + 1));
+          return;
+        } else {
+          console.warn('Mixpanel not properly initialized after retries, skipping user identification');
+          return;
+        }
+      }
+
+      mixpanel.identify(userId);
+      if (userProperties && mixpanel.people && typeof mixpanel.people.set === 'function') {
+        mixpanel.people.set(userProperties);
+      }
+    } catch (error) {
+      if (retryCount < 3) {
+        console.warn(`Mixpanel identify attempt ${retryCount + 1} failed, retrying:`, error);
+        setTimeout(() => attemptIdentify(retryCount + 1), 500 * (retryCount + 1));
+      } else {
+        console.error('Error identifying Mixpanel user after retries:', userId, error);
+      }
+    }
+  };
+
+  attemptIdentify();
 };
 
 export const setUserProperties = (properties: Record<string, any>) => {
