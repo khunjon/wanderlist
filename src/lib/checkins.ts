@@ -26,6 +26,11 @@ export interface CreateCheckinResult {
   error: string | null;
 }
 
+export interface DeleteCheckinResult {
+  success: boolean;
+  error: string | null;
+}
+
 /**
  * Creates a new check-in record with minimal required input
  * Automatically handles user authentication and required field defaults
@@ -132,6 +137,72 @@ export async function getUserCheckins(
   } catch (err) {
     return {
       data: null,
+      error: err instanceof Error ? err.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+/**
+ * Deletes a check-in record
+ * Only allows users to delete their own check-ins
+ */
+export async function deleteCheckin(
+  supabase: ReturnType<typeof createClient>,
+  checkinId: string
+): Promise<DeleteCheckinResult> {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'User not authenticated'
+      };
+    }
+
+    // First verify the check-in belongs to the current user
+    const { data: checkin, error: fetchError } = await supabase
+      .from('checkins')
+      .select('user_id')
+      .eq('id', checkinId)
+      .single();
+
+    if (fetchError) {
+      return {
+        success: false,
+        error: 'Check-in not found'
+      };
+    }
+
+    if (checkin.user_id !== user.id) {
+      return {
+        success: false,
+        error: 'You can only delete your own check-ins'
+      };
+    }
+
+    // Delete the check-in
+    const { error: deleteError } = await supabase
+      .from('checkins')
+      .delete()
+      .eq('id', checkinId)
+      .eq('user_id', user.id); // Extra safety check
+
+    if (deleteError) {
+      return {
+        success: false,
+        error: deleteError.message
+      };
+    }
+
+    return {
+      success: true,
+      error: null
+    };
+
+  } catch (err) {
+    return {
+      success: false,
       error: err instanceof Error ? err.message : 'An unexpected error occurred'
     };
   }

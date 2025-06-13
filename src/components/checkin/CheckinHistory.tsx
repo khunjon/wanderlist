@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getUserCheckins, CheckinRecord } from '@/lib/checkins';
+import { Button } from '@/components/ui/button';
+import { getUserCheckins, deleteCheckin, CheckinRecord } from '@/lib/checkins';
+import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@supabase/supabase-js';
+import { Trash2, Loader2 } from 'lucide-react';
 
 interface CheckinHistoryProps {
   supabase: ReturnType<typeof createClient>;
@@ -16,6 +19,8 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
   const [checkins, setCheckins] = useState<CheckinRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchCheckins() {
@@ -35,6 +40,45 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
 
     fetchCheckins();
   }, [supabase, limit]);
+
+  const handleDelete = async (checkinId: string) => {
+    // Add to deleting set
+    setDeletingIds(prev => new Set(prev).add(checkinId));
+
+    try {
+      const result = await deleteCheckin(supabase, checkinId);
+
+      if (result.success) {
+        // Remove from local state
+        setCheckins(prev => prev.filter(checkin => checkin.id !== checkinId));
+        
+        toast({
+          title: "Check-in deleted",
+          description: "The check-in has been successfully removed.",
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "Delete failed",
+          description: result.error || "Failed to delete check-in.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      // Remove from deleting set
+      setDeletingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(checkinId);
+        return newSet;
+      });
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -110,7 +154,7 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
           <Card key={checkin.id} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-white">
                     {checkin.place_id}
                   </h3>
@@ -118,9 +162,24 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
                     Place ID (will show place name later)
                   </p>
                 </div>
-                <Badge variant="secondary" className="ml-4 shrink-0">
-                  {formatDate(checkin.checked_in_at)}
-                </Badge>
+                <div className="flex items-center gap-2 ml-4 shrink-0">
+                  <Badge variant="secondary">
+                    {formatDate(checkin.checked_in_at)}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(checkin.id)}
+                    disabled={deletingIds.has(checkin.id)}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20 border-red-400/30"
+                  >
+                    {deletingIds.has(checkin.id) ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             {checkin.notes && (
