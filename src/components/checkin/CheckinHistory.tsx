@@ -51,7 +51,7 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
   if (loading) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Check-in History</h2>
+        <h2 className="text-2xl font-bold text-white">Check-in History</h2>
         {Array.from({ length: 3 }).map((_, index) => (
           <Card key={index}>
             <CardHeader>
@@ -73,12 +73,12 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
   if (error) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Check-in History</h2>
+        <h2 className="text-2xl font-bold text-white">Check-in History</h2>
         <Card className="border-red-200">
           <CardContent className="pt-6">
-            <div className="text-red-600">
+            <div className="text-red-400">
               <p className="font-medium">Error loading check-ins</p>
-              <p className="text-sm text-red-500 mt-1">{error}</p>
+              <p className="text-sm text-red-300 mt-1">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -89,10 +89,10 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
   if (checkins.length === 0) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Check-in History</h2>
+        <h2 className="text-2xl font-bold text-white">Check-in History</h2>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center text-gray-500">
+            <div className="text-center text-gray-400">
               <p className="font-medium">No check-ins yet</p>
               <p className="text-sm mt-1">Your check-ins will appear here once you start checking in to places.</p>
             </div>
@@ -111,10 +111,10 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-medium text-gray-900">
+                  <h3 className="font-medium text-white">
                     {checkin.place_id}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-400 mt-1">
                     Place ID (will show place name later)
                   </p>
                 </div>
@@ -125,8 +125,8 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
             </CardHeader>
             {checkin.notes && (
               <CardContent className="pt-0">
-                <div className="bg-gray-50 rounded-md p-3">
-                  <p className="text-sm text-gray-700">{checkin.notes}</p>
+                <div className="bg-gray-800 rounded-md p-3">
+                  <p className="text-sm text-gray-300">{checkin.notes}</p>
                 </div>
               </CardContent>
             )}
@@ -135,7 +135,7 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
       </div>
       {checkins.length === limit && (
         <div className="text-center pt-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Showing {limit} most recent check-ins
           </p>
         </div>

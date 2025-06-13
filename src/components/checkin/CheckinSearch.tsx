@@ -14,15 +14,16 @@ import { Search, MapPin, Loader2 } from 'lucide-react';
 
 interface CheckinSearchProps {
   supabase: ReturnType<typeof createClient>;
-  city?: string; // Optional city context for better search results
+  initialCity?: string; // Optional initial city value
 }
 
-export default function CheckinSearch({ supabase, city }: CheckinSearchProps) {
+export default function CheckinSearch({ supabase, initialCity = "Bangkok, Thailand" }: CheckinSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [places, setPlaces] = useState<GooglePlace[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [checkingInPlaceId, setCheckingInPlaceId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [city, setCity] = useState(initialCity);
   const { toast } = useToast();
 
   // Debounced search function using your existing Google Places implementation
@@ -125,25 +126,49 @@ export default function CheckinSearch({ supabase, city }: CheckinSearchProps) {
       <div className="space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Check In to a Place</h2>
-          {city && (
-            <p className="text-sm text-gray-500 mt-1">
-              Searching in {city}
-            </p>
-          )}
+          <p className="text-sm text-gray-500 mt-1">
+            Search for places to check in to
+          </p>
+        </div>
+        
+        {/* City Input */}
+        <div className="space-y-2">
+          <label htmlFor="city" className="text-sm font-medium text-gray-700">
+            Search Location
+          </label>
+          <Input
+            id="city"
+            type="text"
+            placeholder="Enter city or location..."
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="w-full"
+          />
         </div>
         
         {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Search for places..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-          {isSearching && (
-            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+        <div className="space-y-2">
+          <label htmlFor="search" className="text-sm font-medium text-gray-700">
+            Search for Places
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              id="search"
+              type="text"
+              placeholder="Search for places..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+            )}
+          </div>
+          {city && (
+            <p className="text-xs text-gray-500">
+              Searching in: <span className="font-medium">{city}</span>
+            </p>
           )}
         </div>
 
@@ -177,7 +202,7 @@ export default function CheckinSearch({ supabase, city }: CheckinSearchProps) {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0 space-y-2">
                       <div>
-                        <h4 className="font-medium text-gray-900 truncate">
+                        <h4 className="font-medium text-white truncate">
                           {place.name}
                         </h4>
                         <div className="flex items-center mt-1 text-sm text-gray-500">

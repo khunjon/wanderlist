@@ -74,7 +74,7 @@ export default function CheckinPage() {
                              <div className="bg-gray-900 rounded-lg p-4">
                  <CheckinSearch 
                    supabase={supabase as any}
-                   city="San Francisco" // Optional: set a default city for testing
+                   initialCity="Bangkok, Thailand" // Set Bangkok as default city
                  />
                </div>
             </div>
