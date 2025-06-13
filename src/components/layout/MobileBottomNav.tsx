@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { List, MapPin, Compass, User } from 'lucide-react';
+import { List, MapPin, Compass, User, CheckCircle } from 'lucide-react';
 
 interface TabItem {
   name: string;
@@ -20,9 +20,9 @@ const tabs: TabItem[] = [
     requiresAuth: true,
   },
   {
-    name: 'Near Me',
-    href: '/near-me',
-    icon: MapPin,
+    name: 'Check In',
+    href: '/checkin',
+    icon: CheckCircle,
     requiresAuth: true,
   },
   {
@@ -49,7 +49,6 @@ export default function MobileBottomNav() {
     pathname?.startsWith('/login') ||
     pathname?.startsWith('/signup') ||
     pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/checkin') ||
     pathname === '/';
   
   // Don't show on desktop or on hidden pages
@@ -69,7 +68,7 @@ export default function MobileBottomNav() {
             {visibleTabs.map((tab) => {
               const isActive = pathname === tab.href || 
                 (tab.href === '/lists' && pathname?.startsWith('/lists') && pathname !== '/lists/new') ||
-                (tab.href === '/near-me' && pathname?.startsWith('/near-me')) ||
+                (tab.href === '/checkin' && pathname?.startsWith('/checkin')) ||
                 (tab.href === '/discover' && pathname?.startsWith('/discover')) ||
                 (tab.href === '/profile' && pathname?.startsWith('/profile'));
 

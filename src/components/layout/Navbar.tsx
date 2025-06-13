@@ -99,8 +99,8 @@ export default function Navbar() {
                 <Link href="/discover" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Discover
                 </Link>
-                <Link href="/search" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                  Search
+                <Link href="/checkin" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                  Check In
                 </Link>
                 <UserMenu user={user} onSignOut={signOut} />
               </>
