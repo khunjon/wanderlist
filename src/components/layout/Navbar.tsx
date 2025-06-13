@@ -69,12 +69,20 @@ export default function Navbar() {
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
                 {user && (
-                  <Link
-                    href="/lists"
-                    className="rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-gray-700"
-                  >
-                    My Lists
-                  </Link>
+                  <>
+                    <Link
+                      href="/checkin"
+                      className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+                    >
+                      Check In
+                    </Link>
+                    <Link
+                      href="/lists"
+                      className="rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                    >
+                      My Lists
+                    </Link>
+                  </>
                 )}
                 <Link
                   href="/discover"
@@ -231,13 +239,22 @@ export default function Navbar() {
           <div className="relative z-50 md:hidden bg-gray-800 border-t border-gray-600 shadow-lg transform transition-all duration-200 ease-in-out">
             <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
               {user && (
-                <Link
-                  href="/lists"
-                  className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-gray-700"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Lists
-                </Link>
+                <>
+                  <Link
+                    href="/checkin"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Check In
+                  </Link>
+                  <Link
+                    href="/lists"
+                    className="block rounded-md px-3 py-2 text-base font-medium text-white hover:bg-gray-700"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Lists
+                  </Link>
+                </>
               )}
               <Link
                 href="/discover"

@@ -49,6 +49,7 @@ export default function MobileBottomNav() {
     pathname?.startsWith('/login') ||
     pathname?.startsWith('/signup') ||
     pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/checkin') ||
     pathname === '/';
   
   // Don't show on desktop or on hidden pages
