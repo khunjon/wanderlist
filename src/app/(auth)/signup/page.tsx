@@ -137,6 +137,7 @@ function SignupForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 disabled={loading}
                 required
+                autoComplete="name"
                 className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
               />
             </div>
@@ -148,6 +149,7 @@ function SignupForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 disabled={loading}
                 required
+                autoComplete="email"
                 className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
               />
             </div>
@@ -159,6 +161,7 @@ function SignupForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 disabled={loading}
                 required
+                autoComplete="new-password"
                 className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
               />
             </div>
@@ -170,6 +173,7 @@ function SignupForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                 disabled={loading}
                 required
+                autoComplete="new-password"
                 className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
               />
             </div>
