@@ -192,56 +192,56 @@ export default function CheckinSearch({ supabase, initialCity = "Bangkok, Thaila
 
       {/* Search Results */}
       {places.length > 0 && (
-        <div className="space-y-4 border-t pt-6">
+        <div className="space-y-3 border-t border-gray-700 pt-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Search Results</h3>
-            <span className="text-sm text-gray-500">{places.length} result{places.length !== 1 ? 's' : ''}</span>
+            <h3 className="text-base font-semibold text-white">Search Results</h3>
+            <span className="text-xs text-gray-500">{places.length} result{places.length !== 1 ? 's' : ''}</span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {places.map((place) => (
-              <Card key={place.place_id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div>
-                        <h4 className="font-medium text-white truncate">
-                          {place.name}
-                        </h4>
-                        <div className="flex items-center mt-1 text-sm text-gray-500">
-                          <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate">{place.formatted_address}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-400 capitalize">
-                          {getPlaceTypeDisplay(place.types)}
-                        </p>
-                        {place.rating && (
-                          <div className="flex items-center text-xs text-gray-500">
-                            <span className="mr-1">⭐</span>
-                            <span>{place.rating.toFixed(1)}</span>
-                          </div>
-                        )}
-                      </div>
+              <div key={place.place_id} className="bg-gray-900 rounded-lg p-3 hover:bg-gray-800 transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-white text-sm truncate">
+                      {place.name}
+                    </h4>
+                    <div className="flex items-center mt-1 text-xs text-gray-400">
+                      <MapPin className="h-3 w-3 mr-1 shrink-0" />
+                      <span className="truncate">{place.formatted_address}</span>
                     </div>
-                    <Button
-                      onClick={() => handleCheckin(place)}
-                      disabled={checkingInPlaceId === place.place_id}
-                      size="sm"
-                      className="flex-shrink-0"
-                    >
-                      {checkingInPlaceId === place.place_id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Checking In...
-                        </>
-                      ) : (
-                        'Check In'
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-gray-500 capitalize">
+                        {getPlaceTypeDisplay(place.types)}
+                      </span>
+                      {place.rating && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <span className="mr-1">⭐</span>
+                          <span>{place.rating.toFixed(1)}</span>
+                        </div>
                       )}
-                    </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                  <Button
+                    onClick={() => handleCheckin(place)}
+                    disabled={checkingInPlaceId === place.place_id}
+                    size="sm"
+                    className="shrink-0 h-8 px-3 text-xs"
+                  >
+                    {checkingInPlaceId === place.place_id ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        <span className="hidden sm:inline">Checking In...</span>
+                        <span className="sm:hidden">...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="hidden sm:inline">Check In</span>
+                        <span className="sm:hidden">✓</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -249,29 +249,25 @@ export default function CheckinSearch({ supabase, initialCity = "Bangkok, Thaila
 
       {/* No Results Message */}
       {searchQuery.length >= 3 && !isSearching && places.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-gray-500">
-              <p className="font-medium">No places found</p>
-              <p className="text-sm mt-1">Try searching with different keywords.</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-900 rounded-lg p-4 text-center border-t border-gray-700 mt-4">
+          <div className="text-gray-400">
+            <p className="font-medium">No places found</p>
+            <p className="text-sm mt-1">Try searching with different keywords.</p>
+          </div>
+        </div>
       )}
 
       {/* Search Instructions */}
       {searchQuery.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-gray-500">
-              <Search className="h-8 w-8 mx-auto mb-3 text-gray-300" />
-              <p className="font-medium">Search for places to check in</p>
-              <p className="text-sm mt-1">
-                Type at least 3 characters to start searching for restaurants, cafes, attractions, and more.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-900 rounded-lg p-4 text-center border-t border-gray-700 mt-4">
+          <div className="text-gray-400">
+            <Search className="h-6 w-6 mx-auto mb-2 text-gray-500" />
+            <p className="font-medium">Search for places to check in</p>
+            <p className="text-sm mt-1">
+              Type at least 3 characters to start searching for restaurants, cafes, attractions, and more.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -39,15 +39,15 @@ export default function CheckinPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-1">
                 Check In
               </h1>
-              <p className="text-gray-400">
+              <p className="text-gray-400 text-sm sm:text-base">
                 Search for places and check in to track your visits
               </p>
             </div>
@@ -55,57 +55,47 @@ export default function CheckinPage() {
               onClick={refreshHistory}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 shrink-0"
             >
               <RefreshCw className="h-4 w-4" />
-              Refresh History
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Check-in Search */}
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg shadow-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Search & Check In
-              </h2>
-              <div className="bg-gray-900 rounded-lg p-4">
-                <CheckinSearch 
-                  supabase={supabase as any}
-                  initialCity="Bangkok, Thailand" // Set Bangkok as default city
-                />
-              </div>
-            </div>
-
-            {/* Instructions Card - REMOVED */}
+        {/* Main Content - Single Column */}
+        <div className="space-y-6">
+          {/* Check-in Search */}
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">
+              Search & Check In
+            </h2>
+            <CheckinSearch 
+              supabase={supabase as any}
+              initialCity="Bangkok, Thailand"
+            />
           </div>
 
-          {/* Right Column - Check-in History */}
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg shadow-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Your Check-in History
-              </h2>
-              <div className="bg-gray-900 rounded-lg p-4">
-                <CheckinHistory 
-                  key={refreshKey} // Force re-render when refreshKey changes
-                  supabase={supabase as any}
-                  limit={15}
-                />
-              </div>
-            </div>
+          {/* Check-in History */}
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">
+              Your Check-in History
+            </h2>
+            <CheckinHistory 
+              key={refreshKey}
+              supabase={supabase as any}
+              limit={15}
+            />
           </div>
         </div>
 
         {/* Debug Info (Development Only) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 bg-gray-900 rounded-lg p-6">
+          <div className="mt-8 bg-gray-900 rounded-lg p-4 sm:p-6">
             <h3 className="text-lg font-medium text-gray-300 mb-3">
               🔧 Debug Info
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-gray-400">User ID:</span>
                 <p className="text-gray-200 font-mono text-xs break-all">

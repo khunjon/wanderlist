@@ -94,21 +94,21 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-white">Check-in History</h2>
+      <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-6 w-24" />
+          <div key={index} className="bg-gray-900 rounded-lg p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-3 w-full mb-2" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-4 w-full mb-2" />
-              <Skeleton className="h-4 w-3/4" />
-            </CardContent>
-          </Card>
+              <Skeleton className="h-8 w-8" />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -116,100 +116,95 @@ export default function CheckinHistory({ supabase, limit = 10 }: CheckinHistoryP
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-white">Check-in History</h2>
-        <Card className="border-red-200">
-          <CardContent className="pt-6">
-            <div className="text-red-400">
-              <p className="font-medium">Error loading check-ins</p>
-              <p className="text-sm text-red-300 mt-1">{error}</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="bg-red-900/20 border border-red-400/30 rounded-lg p-4">
+        <div className="text-red-400">
+          <p className="font-medium">Error loading check-ins</p>
+          <p className="text-sm text-red-300 mt-1">{error}</p>
+        </div>
       </div>
     );
   }
 
   if (checkins.length === 0) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-white">Check-in History</h2>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-gray-400">
-              <p className="font-medium">No check-ins yet</p>
-              <p className="text-sm mt-1">Your check-ins will appear here once you start checking in to places.</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="bg-gray-900 rounded-lg p-6 text-center">
+        <div className="text-gray-400">
+          <p className="font-medium">No check-ins yet</p>
+          <p className="text-sm mt-1">Your check-ins will appear here once you start checking in to places.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Check-in History</h2>
-      <div className="space-y-3">
+    <div className="space-y-3">
+      <div className="space-y-2">
         {checkins.map((checkin) => (
-          <Card key={checkin.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div>
-                    <h3 className="font-medium text-white">
-                      {checkin.place?.name || checkin.place_id}
-                    </h3>
-                    <p className="text-sm text-gray-400 mt-1">
-                      {checkin.place?.address || 'Place details not available'}
-                    </p>
-                  </div>
-                  {checkin.place && (
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-500 capitalize">
-                        {checkin.place.place_types?.[0]?.replace(/_/g, ' ') || 'Place'}
-                      </p>
-                      {checkin.place.rating && checkin.place.rating > 0 && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <span className="mr-1">⭐</span>
-                          <span>{checkin.place.rating.toFixed(1)}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 ml-4 shrink-0">
-                  <Badge variant="secondary">
-                    {formatDate(checkin.checked_in_at)}
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(checkin.id)}
-                    disabled={deletingIds.has(checkin.id)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20 border-red-400/30"
-                  >
-                    {deletingIds.has(checkin.id) ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
+          <div key={checkin.id} className="bg-gray-900 rounded-lg p-3 hover:bg-gray-800 transition-colors">
+            {/* Main content */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-white text-sm sm:text-base truncate">
+                  {checkin.place?.name || checkin.place_id}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-400 mt-0.5 line-clamp-1">
+                  {checkin.place?.address || 'Place details not available'}
+                </p>
+                
+                {/* Place details row */}
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-3">
+                    {checkin.place && (
+                      <>
+                        <span className="text-xs text-gray-500 capitalize">
+                          {checkin.place.place_types?.[0]?.replace(/_/g, ' ') || 'Place'}
+                        </span>
+                        {checkin.place.rating && checkin.place.rating > 0 && (
+                          <div className="flex items-center text-xs text-gray-500">
+                            <span className="mr-1">⭐</span>
+                            <span>{checkin.place.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </>
                     )}
-                  </Button>
+                  </div>
+                  
+                  {/* Timestamp */}
+                  <span className="text-xs text-gray-500 shrink-0">
+                    {formatDate(checkin.checked_in_at)}
+                  </span>
                 </div>
               </div>
-            </CardHeader>
+              
+              {/* Delete button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDelete(checkin.id)}
+                disabled={deletingIds.has(checkin.id)}
+                className="text-red-400 hover:text-red-300 hover:bg-red-900/20 border-red-400/30 shrink-0 h-8 w-8 p-0"
+              >
+                {deletingIds.has(checkin.id) ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
+            
+            {/* Notes */}
             {checkin.notes && (
-              <CardContent className="pt-0">
-                <div className="bg-gray-800 rounded-md p-3">
-                  <p className="text-sm text-gray-300">{checkin.notes}</p>
-                </div>
-              </CardContent>
+              <div className="mt-3 pt-3 border-t border-gray-700">
+                <p className="text-sm text-gray-300">{checkin.notes}</p>
+              </div>
             )}
-          </Card>
+          </div>
         ))}
       </div>
+      
       {checkins.length === limit && (
-        <div className="text-center pt-4">
-          <p className="text-sm text-gray-400">
+        <div className="text-center pt-3">
+          <p className="text-xs text-gray-500">
             Showing {limit} most recent check-ins
           </p>
         </div>
