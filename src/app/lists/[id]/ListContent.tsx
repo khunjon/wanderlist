@@ -14,6 +14,10 @@ import SortControl, { SortState, SortOption } from '@/components/ui/SortControl'
 import SwipeView from '@/components/SwipeView';
 import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const placeSortOptions: SortOption[] = [
   { value: 'addedAt', label: 'Date Added' },
@@ -635,62 +639,18 @@ export default function ListContent({ id }: ListContentProps) {
             </div>
             
             {/* Right side: Action buttons - Mobile optimized */}
-            {isOwner && (
+            {isOwner && !isEditing && (
               <div className="flex items-center space-x-2 flex-shrink-0">
-                {!isEditing ? (
-                  <>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-                      title="Edit list"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      <span className="hidden sm:inline text-sm font-medium">Edit</span>
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      disabled={deleting}
-                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50"
-                      title="Delete list"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <span className="hidden sm:inline text-sm font-medium">
-                        {deleting ? 'Deleting...' : 'Delete'}
-                      </span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50"
-                      title="Save changes"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="hidden sm:inline text-sm font-medium">
-                        {saving ? 'Saving...' : 'Save'}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => setIsEditing(false)}
-                      disabled={saving}
-                      className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-gray-600 hover:bg-gray-700 text-white transition-colors"
-                      title="Cancel editing"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span className="hidden sm:inline text-sm font-medium">Cancel</span>
-                    </button>
-                  </>
-                )}
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-full sm:rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                  title="Edit list"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span className="hidden sm:inline text-sm font-medium">Edit</span>
+                </button>
               </div>
             )}
           </div>
@@ -725,52 +685,82 @@ export default function ListContent({ id }: ListContentProps) {
       {isEditing && (
         <div className="bg-gray-800 border-b border-gray-700">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-white">
-                  List Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="tags" className="block text-sm font-medium text-white">
-                  Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  id="tags"
-                  value={editTags}
-                  onChange={(e) => setEditTags(e.target.value)}
-                  className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="food, travel, favorites"
-                />
-              </div>
-              <div className="flex items-start">
-                <div className="flex h-5 items-center">
-                  <input
-                    id="isPublic"
-                    type="checkbox"
-                    checked={editIsPublic}
-                    onChange={(e) => setEditIsPublic(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Edit List</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium text-white">
+                    List Name
+                  </label>
+                  <Input
+                    id="name"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="ml-3 text-sm">
-                  <label htmlFor="isPublic" className="font-medium text-white">
-                    Public List
+                
+                <div className="space-y-2">
+                  <label htmlFor="tags" className="text-sm font-medium text-white">
+                    Tags (comma-separated)
                   </label>
-                  <p className="text-gray-300">
-                    If checked, this list will be discoverable by other users.
-                  </p>
+                  <Input
+                    id="tags"
+                    value={editTags}
+                    onChange={(e) => setEditTags(e.target.value)}
+                    placeholder="food, travel, favorites"
+                    className="bg-gray-700 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
+                  />
                 </div>
-              </div>
-            </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    id="isPublic"
+                    checked={editIsPublic}
+                    onCheckedChange={setEditIsPublic}
+                  />
+                  <div className="space-y-1">
+                    <label htmlFor="isPublic" className="text-sm font-medium text-white">
+                      Public List
+                    </label>
+                    <p className="text-xs text-gray-400">
+                      If enabled, this list will be discoverable by other users.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {deleting ? 'Deleting...' : 'Delete List'}
+                  </Button>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      disabled={saving}
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
