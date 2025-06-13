@@ -51,7 +51,19 @@ export async function validateSession(): Promise<SessionValidationResult> {
 
     // Check if session is expired
     const now = Math.floor(Date.now() / 1000)
-    const expiresAt = session.expires_at || 0
+    const expiresAt = session.expires_at
+    
+    // If expires_at is null/undefined, treat as invalid session
+    if (!expiresAt || expiresAt <= 0) {
+      authLogger.warn('Session has no expiration time, treating as invalid')
+      return {
+        isValid: false,
+        session,
+        isExpired: true,
+        needsRefresh: true
+      }
+    }
+    
     const isExpired = now >= expiresAt
     const needsRefresh = now >= (expiresAt - 300) // Refresh 5 minutes before expiry
 
@@ -292,8 +304,34 @@ export async function validateSessionOnStartup(): Promise<{
     
     // If session is invalid or expired, attempt recovery
     if (!validation.isValid || validation.isExpired) {
+      authLogger.warn('Initial session validation failed, attempting recovery')
       validation = await recoverSession()
       recovered = validation.isValid
+    }
+    
+    // If session validation still fails, try getUser() as a fallback
+    if (!validation.isValid) {
+      authLogger.warn('Session recovery failed, trying getUser() fallback')
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        
+        if (!userError && userData.user) {
+          // User exists but session might be stale, try to refresh
+          const refreshResult = await refreshSessionWithRetry(1)
+          
+          if (refreshResult.success && refreshResult.session) {
+            authLogger.warn('Successfully recovered session via getUser() + refresh')
+            return {
+              isAuthenticated: true,
+              user: refreshResult.session.user,
+              session: refreshResult.session,
+              recovered: true
+            }
+          }
+        }
+      } catch (fallbackError) {
+        authLogger.error('getUser() fallback failed:', fallbackError)
+      }
     }
     
     const result = {
@@ -302,6 +340,13 @@ export async function validateSessionOnStartup(): Promise<{
       session: validation.session,
       recovered
     }
+    
+    authLogger.warn('Startup validation result:', {
+      isAuthenticated: result.isAuthenticated,
+      hasUser: !!result.user,
+      hasSession: !!result.session,
+      recovered: result.recovered
+    })
     
     return result
   } catch (error) {

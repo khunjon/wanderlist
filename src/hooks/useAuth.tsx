@@ -202,18 +202,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Initialize authentication
-    initializeAuth();
+    let isInitialized = false;
 
-    // Safety timeout to prevent infinite loading state
+    // Initialize authentication
+    const initAuth = async () => {
+      await initializeAuth();
+      isInitialized = true;
+    };
+    
+    initAuth();
+
+    // Safety timeout to prevent infinite loading state - but only if auth hasn't initialized
     const loadingTimeout = setTimeout(() => {
-      setLoading(currentLoading => {
-        if (currentLoading) {
-          return false;
-        }
-        return currentLoading;
-      });
-    }, 15000); // Increased timeout for better UX
+      if (!isInitialized) {
+        console.warn('[AUTH] Initialization timeout reached, setting loading to false');
+        setLoading(false);
+      }
+    }, 15000);
 
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {

@@ -19,7 +19,40 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     // Enhanced session persistence settings
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storage: typeof window !== 'undefined' ? {
+      getItem: (key: string) => {
+        try {
+          const item = window.localStorage.getItem(key);
+          if (process.env.NODE_ENV === 'development' && key.includes('auth')) {
+            console.log(`[STORAGE] Getting ${key}:`, item ? 'found' : 'not found');
+          }
+          return item;
+        } catch (error) {
+          console.error(`[STORAGE] Error getting ${key}:`, error);
+          return null;
+        }
+      },
+      setItem: (key: string, value: string) => {
+        try {
+          window.localStorage.setItem(key, value);
+          if (process.env.NODE_ENV === 'development' && key.includes('auth')) {
+            console.log(`[STORAGE] Setting ${key}:`, 'success');
+          }
+        } catch (error) {
+          console.error(`[STORAGE] Error setting ${key}:`, error);
+        }
+      },
+      removeItem: (key: string) => {
+        try {
+          window.localStorage.removeItem(key);
+          if (process.env.NODE_ENV === 'development' && key.includes('auth')) {
+            console.log(`[STORAGE] Removing ${key}:`, 'success');
+          }
+        } catch (error) {
+          console.error(`[STORAGE] Error removing ${key}:`, error);
+        }
+      }
+    } : undefined,
     storageKey: 'sb-auth-token',
     // Debug mode for development
     debug: process.env.NODE_ENV === 'development'
