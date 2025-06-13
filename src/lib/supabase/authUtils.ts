@@ -30,8 +30,6 @@ export interface SessionValidationResult {
 
 export async function validateSession(): Promise<SessionValidationResult> {
   try {
-    authLogger.debug('Validating current session...')
-    
     const { data, error } = await supabase.auth.getSession();
     const session = data?.session;
     
@@ -45,7 +43,6 @@ export async function validateSession(): Promise<SessionValidationResult> {
     }
 
     if (!session) {
-      authLogger.debug('No active session found')
       return {
         isValid: false,
         session: null
@@ -57,14 +54,6 @@ export async function validateSession(): Promise<SessionValidationResult> {
     const expiresAt = session.expires_at || 0
     const isExpired = now >= expiresAt
     const needsRefresh = now >= (expiresAt - 300) // Refresh 5 minutes before expiry
-
-    authLogger.debug('Session validation result:', {
-      userId: session.user?.id,
-      expiresAt: new Date(expiresAt * 1000).toISOString(),
-      isExpired,
-      needsRefresh,
-      timeUntilExpiry: expiresAt - now
-    })
 
     if (isExpired) {
       authLogger.warn('Session is expired')
@@ -104,8 +93,6 @@ export async function refreshSessionWithRetry(maxRetries = 3): Promise<RefreshRe
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      authLogger.debug(`Attempting token refresh (attempt ${attempt}/${maxRetries})`)
-      
       const { data, error } = await supabase.auth.refreshSession()
       
       if (error) {
@@ -122,17 +109,12 @@ export async function refreshSessionWithRetry(maxRetries = 3): Promise<RefreshRe
         // Wait before retrying (exponential backoff)
         if (attempt < maxRetries) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
-          authLogger.debug(`Waiting ${delay}ms before retry...`)
           await new Promise(resolve => setTimeout(resolve, delay))
         }
         continue
       }
 
       if (data.session) {
-        authLogger.info('Token refresh successful', {
-          userId: data.session.user?.id,
-          expiresAt: new Date((data.session.expires_at || 0) * 1000).toISOString()
-        })
         return {
           success: true,
           session: data.session,
@@ -156,24 +138,20 @@ export async function refreshSessionWithRetry(maxRetries = 3): Promise<RefreshRe
 
 // Session recovery utilities
 export async function recoverSession(): Promise<SessionValidationResult> {
-  authLogger.info('Attempting session recovery...')
   
   // First, validate current session
   const validation = await validateSession()
   
   if (validation.isValid && !validation.needsRefresh) {
-    authLogger.debug('Session is valid, no recovery needed')
     return validation
   }
 
   // If session needs refresh or is expired, try to refresh
   if (validation.needsRefresh || validation.isExpired) {
-    authLogger.debug('Session needs refresh, attempting recovery...')
     
     const refreshResult = await refreshSessionWithRetry()
     
     if (refreshResult.success && refreshResult.session) {
-      authLogger.info('Session recovery successful')
       return {
         isValid: true,
         session: refreshResult.session
@@ -195,7 +173,6 @@ export async function recoverSession(): Promise<SessionValidationResult> {
 // Clear stale session data
 export async function clearStaleSessionData(): Promise<void> {
   try {
-    authLogger.debug('Clearing stale session data...')
     
     // Clear localStorage auth data
     if (typeof window !== 'undefined') {
@@ -203,7 +180,6 @@ export async function clearStaleSessionData(): Promise<void> {
       keys.forEach(key => {
         if (key.startsWith('sb-') && key.includes('auth')) {
           localStorage.removeItem(key)
-          authLogger.debug(`Cleared localStorage key: ${key}`)
         }
       })
     }
@@ -211,7 +187,6 @@ export async function clearStaleSessionData(): Promise<void> {
     // Sign out to clear any server-side session
     await supabase.auth.signOut()
     
-    authLogger.debug('Stale session data cleared')
   } catch (error) {
     authLogger.error('Failed to clear stale session data:', error)
   }
@@ -270,8 +245,6 @@ export class SessionMonitor {
     if (this.checkInterval) {
       this.stop()
     }
-
-    authLogger.debug('Starting session monitor', { intervalMs })
     
     this.checkInterval = setInterval(async () => {
       try {
@@ -281,7 +254,6 @@ export class SessionMonitor {
           authLogger.warn('Session monitor detected expired session')
           this.onSessionExpired?.()
         } else if (validation.needsRefresh) {
-          authLogger.debug('Session monitor triggering refresh')
           const refreshResult = await refreshSessionWithRetry()
           
           if (refreshResult.success && refreshResult.session) {
@@ -301,7 +273,6 @@ export class SessionMonitor {
     if (this.checkInterval) {
       clearInterval(this.checkInterval)
       this.checkInterval = null
-      authLogger.debug('Session monitor stopped')
     }
   }
 }
@@ -313,7 +284,6 @@ export async function validateSessionOnStartup(): Promise<{
   session: Session | null
   recovered: boolean
 }> {
-  authLogger.info('Performing startup session validation...')
   
   try {
     // First attempt: validate current session
@@ -322,7 +292,6 @@ export async function validateSessionOnStartup(): Promise<{
     
     // If session is invalid or expired, attempt recovery
     if (!validation.isValid || validation.isExpired) {
-      authLogger.debug('Initial session invalid, attempting recovery...')
       validation = await recoverSession()
       recovered = validation.isValid
     }
@@ -333,12 +302,6 @@ export async function validateSessionOnStartup(): Promise<{
       session: validation.session,
       recovered
     }
-    
-    authLogger.info('Startup session validation complete:', {
-      isAuthenticated: result.isAuthenticated,
-      userId: result.user?.id,
-      recovered
-    })
     
     return result
   } catch (error) {
