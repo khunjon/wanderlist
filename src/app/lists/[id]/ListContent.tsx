@@ -208,7 +208,8 @@ export default function ListContent({ id }: ListContentProps) {
         // Use server-side API route
         
         // Get the current session token to send with the request
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+        const session = data?.session;
         const headers: HeadersInit = {
           'Content-Type': 'application/json'
         };
@@ -383,7 +384,8 @@ export default function ListContent({ id }: ListContentProps) {
     if (!id) return;
     try {
       // Get the current session token to send with the request
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
+      const session = data?.session;
       const headers: HeadersInit = {
         'Content-Type': 'application/json'
       };

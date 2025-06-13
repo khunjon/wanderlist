@@ -45,7 +45,8 @@ export async function validateClient(): Promise<ValidationResult> {
 // Validate auth configuration
 export async function validateAuth(): Promise<ValidationResult> {
   try {
-    const { data, error } = await supabase.auth.getSession()
+    const { data, error } = await supabase.auth.getSession();
+    const session = data?.session;
     
     if (error) {
       return {
@@ -58,7 +59,7 @@ export async function validateAuth(): Promise<ValidationResult> {
     return {
       success: true,
       message: 'Auth configuration is valid',
-      details: { hasSession: !!data.session }
+      details: { hasSession: !!session }
     }
   } catch (error) {
     return {

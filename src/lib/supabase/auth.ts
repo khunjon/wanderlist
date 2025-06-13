@@ -172,12 +172,11 @@ export async function getCurrentUser() {
 
 // Get current session
 export async function getCurrentSession() {
-  const { data: { session }, error } = await supabase.auth.getSession()
-  
+  const { data, error } = await supabase.auth.getSession();
+  const session = data?.session;
   if (error) {
     throw error
   }
-
   return session
 }
 

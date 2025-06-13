@@ -32,7 +32,8 @@ export async function validateSession(): Promise<SessionValidationResult> {
   try {
     authLogger.debug('Validating current session...')
     
-    const { data: { session }, error } = await supabase.auth.getSession()
+    const { data, error } = await supabase.auth.getSession();
+    const session = data?.session;
     
     if (error) {
       authLogger.error('Session validation error:', error)
