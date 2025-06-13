@@ -39,6 +39,10 @@ export default function CheckinSearch({ supabase, city }: CheckinSearchProps) {
         // Use your existing searchPlaces function which proxies through your API
         const results = await searchPlacesAPI(query, city);
         
+        // Debug logging
+        console.log('Search results:', results);
+        console.log('Number of results:', results?.length || 0);
+        
         // Limit to top 5 results for better UX
         setPlaces(results.slice(0, 5));
       } catch (error) {
@@ -161,50 +165,58 @@ export default function CheckinSearch({ supabase, city }: CheckinSearchProps) {
 
       {/* Search Results */}
       {places.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-900">Search Results</h3>
-          {places.map((place) => (
-            <Card key={place.place_id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-gray-900 truncate">
-                      {place.name}
-                    </h4>
-                    <div className="flex items-center mt-1 text-sm text-gray-500">
-                      <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
-                      <span className="truncate">{place.formatted_address}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-gray-400 capitalize">
-                        {getPlaceTypeDisplay(place.types)}
-                      </p>
-                      {place.rating && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <span className="mr-1">⭐</span>
-                          <span>{place.rating.toFixed(1)}</span>
+        <div className="space-y-4 border-t pt-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Search Results</h3>
+            <span className="text-sm text-gray-500">{places.length} result{places.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-3">
+            {places.map((place) => (
+              <Card key={place.place_id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+                <CardContent className="py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <h4 className="font-medium text-gray-900 truncate">
+                          {place.name}
+                        </h4>
+                        <div className="flex items-center mt-1 text-sm text-gray-500">
+                          <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{place.formatted_address}</span>
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-400 capitalize">
+                          {getPlaceTypeDisplay(place.types)}
+                        </p>
+                        {place.rating && (
+                          <div className="flex items-center text-xs text-gray-500">
+                            <span className="mr-1">⭐</span>
+                            <span>{place.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    <Button
+                      onClick={() => handleCheckin(place)}
+                      disabled={checkingInPlaceId === place.place_id}
+                      size="sm"
+                      className="flex-shrink-0"
+                    >
+                      {checkingInPlaceId === place.place_id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Checking In...
+                        </>
+                      ) : (
+                        'Check In'
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => handleCheckin(place)}
-                    disabled={checkingInPlaceId === place.place_id}
-                    className="ml-4 flex-shrink-0"
-                  >
-                    {checkingInPlaceId === place.place_id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Checking In...
-                      </>
-                    ) : (
-                      'Check In'
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
