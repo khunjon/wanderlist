@@ -277,10 +277,20 @@ function categorize404Path(path: string): string {
 }
 
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
-  if (MIXPANEL_TOKEN) {
+  if (!MIXPANEL_TOKEN || typeof window === 'undefined') {
+    return;
+  }
+
+  try {
     // Skip tracking for bots and crawlers
-    if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+    if (isBotUserAgent(navigator.userAgent)) {
       console.log('Skipping Mixpanel event tracking for bot:', navigator.userAgent);
+      return;
+    }
+
+    // Check if mixpanel is properly initialized
+    if (!mixpanel || typeof mixpanel.track !== 'function') {
+      console.warn('Mixpanel not properly initialized, skipping event:', eventName);
       return;
     }
 
@@ -288,9 +298,11 @@ export const trackEvent = (eventName: string, properties?: Record<string, any>) 
       ...properties,
       timestamp: new Date().toISOString(),
       // Ensure correct domain is tracked
-      domain: typeof window !== 'undefined' ? window.location.hostname : '',
-      current_url: typeof window !== 'undefined' ? window.location.href : ''
+      domain: window.location.hostname,
+      current_url: window.location.href
     });
+  } catch (error) {
+    console.error('Error tracking Mixpanel event:', eventName, error);
   }
 };
 
@@ -371,17 +383,29 @@ export const trackListCreate = (listData: {
 };
 
 export const identifyUser = (userId: string, userProperties?: Record<string, any>) => {
-  if (MIXPANEL_TOKEN) {
+  if (!MIXPANEL_TOKEN || typeof window === 'undefined') {
+    return;
+  }
+
+  try {
     // Skip tracking for bots and crawlers
-    if (typeof window !== 'undefined' && isBotUserAgent(navigator.userAgent)) {
+    if (isBotUserAgent(navigator.userAgent)) {
       console.log('Skipping Mixpanel user identification for bot:', navigator.userAgent);
       return;
     }
 
+    // Check if mixpanel is properly initialized
+    if (!mixpanel || typeof mixpanel.identify !== 'function') {
+      console.warn('Mixpanel not properly initialized, skipping user identification');
+      return;
+    }
+
     mixpanel.identify(userId);
-    if (userProperties) {
+    if (userProperties && mixpanel.people && typeof mixpanel.people.set === 'function') {
       mixpanel.people.set(userProperties);
     }
+  } catch (error) {
+    console.error('Error identifying Mixpanel user:', userId, error);
   }
 };
 

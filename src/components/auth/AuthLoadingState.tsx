@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 interface AuthLoadingStateProps {
@@ -9,36 +10,93 @@ interface AuthLoadingStateProps {
   children: React.ReactNode;
 }
 
+// Pages that don't require authentication and should load immediately
+const PUBLIC_PAGES = [
+  '/',
+  '/discover',
+  '/login',
+  '/signup',
+  '/auth/callback',
+  '/auth/error',
+  '/not-found'
+];
+
+// Pages that require authentication and should show loading
+const PROTECTED_PAGES = [
+  '/lists',
+  '/profile',
+  '/search',
+  '/checkin',
+  '/admin',
+  '/dashboard'
+];
+
+function shouldShowAuthLoading(pathname: string): boolean {
+  // Always show loading for protected pages
+  if (PROTECTED_PAGES.some(page => pathname.startsWith(page))) {
+    return true;
+  }
+  
+  // Never show loading for public pages
+  if (PUBLIC_PAGES.includes(pathname)) {
+    return false;
+  }
+  
+  // For dynamic routes, check patterns
+  if (pathname.startsWith('/lists/') && pathname !== '/lists') {
+    return true; // Individual list pages need auth to check permissions
+  }
+  
+  // Default to not showing loading for unknown pages
+  return false;
+}
+
 export default function AuthLoadingState({ 
   isInitializing, 
   hasAttemptedAuth, 
   children 
 }: AuthLoadingStateProps) {
+  const pathname = usePathname();
   const [showContent, setShowContent] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
 
+  const needsAuthLoading = shouldShowAuthLoading(pathname);
+
   // Debug logging
   useEffect(() => {
-    const info = `isInitializing: ${isInitializing}, hasAttemptedAuth: ${hasAttemptedAuth}`;
+    const info = `isInitializing: ${isInitializing}, hasAttemptedAuth: ${hasAttemptedAuth}, needsAuthLoading: ${needsAuthLoading}, pathname: ${pathname}`;
     setDebugInfo(info);
     console.log('[AuthLoadingState]', info);
-  }, [isInitializing, hasAttemptedAuth]);
+  }, [isInitializing, hasAttemptedAuth, needsAuthLoading, pathname]);
 
-  // Fallback timeout to prevent infinite loading
+  // For public pages, show content immediately
   useEffect(() => {
+    if (!needsAuthLoading) {
+      setShowContent(true);
+      setFadeIn(true);
+    }
+  }, [needsAuthLoading]);
+
+  // Fallback timeout to prevent infinite loading (only for protected pages)
+  useEffect(() => {
+    if (!needsAuthLoading) return;
+
     const fallbackTimeout = setTimeout(() => {
       if (isInitializing || !hasAttemptedAuth) {
         console.warn('[AuthLoadingState] Fallback timeout reached, forcing content display');
         setShowContent(true);
         setFadeIn(true);
       }
-    }, 8000); // Reduced to 8 seconds to match auth timeout
+    }, 8000);
 
     return () => clearTimeout(fallbackTimeout);
-  }, [isInitializing, hasAttemptedAuth]);
+  }, [isInitializing, hasAttemptedAuth, needsAuthLoading]);
 
+  // Show content when auth is ready (only for protected pages)
   useEffect(() => {
+    if (!needsAuthLoading) return;
+
     if (!isInitializing && hasAttemptedAuth) {
       // Small delay to ensure smooth transition
       const timer = setTimeout(() => {
@@ -51,9 +109,10 @@ export default function AuthLoadingState({
 
       return () => clearTimeout(timer);
     }
-  }, [isInitializing, hasAttemptedAuth]);
+  }, [isInitializing, hasAttemptedAuth, needsAuthLoading]);
 
-  if ((isInitializing || !hasAttemptedAuth) && !showContent) {
+  // Show loading screen only for protected pages that need auth
+  if (needsAuthLoading && (isInitializing || !hasAttemptedAuth) && !showContent) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center space-y-6 max-w-md mx-auto px-4">
