@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading, signOut, refreshProfile } = useAuth();
@@ -475,26 +476,20 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="profileVisibility" className="block text-sm font-medium text-white mb-2">
-                    Profile Visibility
+                  <label htmlFor="profileVisibilitySwitch" className="block text-sm font-medium text-white mb-2">
+                    Public Profile
                   </label>
-                  <Select
-                    value={profileVisibility}
-                    onValueChange={(value) => setProfileVisibility(value as 'public' | 'private' | 'friends')}
-                    disabled={loading}
-                  >
-                    <SelectTrigger id="profileVisibility">
-                      <SelectValue placeholder="Select profile visibility" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="private">Private</SelectItem>
-                      <SelectItem value="public">Public</SelectItem>
-                      <SelectItem value="friends">Friends Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="mt-1 text-xs text-gray-400">
-                    Control who can see your profile and lists
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="profileVisibilitySwitch"
+                      checked={profileVisibility === 'public'}
+                      onCheckedChange={(checked) => setProfileVisibility(checked ? 'public' : 'private')}
+                      disabled={loading}
+                    />
+                    <span className="text-sm text-gray-300">
+                      {profileVisibility === 'public' ? 'Anyone can view your profile and lists' : 'Only you can view your profile and lists'}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -544,9 +539,9 @@ export default function ProfilePage() {
                 </div>
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                   size="lg"
-                  className="border border-red-600 text-red-500 hover:bg-red-600 hover:text-white mt-4"
+                  className="border border-red-600 text-red-600 hover:bg-red-600 hover:text-white mt-4"
                   onClick={handleSignOut}
                 >
                   Sign Out
