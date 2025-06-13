@@ -15,6 +15,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { EnhancedProfileData, ProfileUpdateResult, PhotoUpdateResult } from '@/lib/supabase/auth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 export default function ProfilePage() {
   const { user: authUser, loading: authLoading, signOut, refreshProfile } = useAuth();
@@ -392,7 +395,7 @@ export default function ProfilePage() {
                   <label htmlFor="displayName" className="block text-sm font-medium text-white mb-2">
                     Display Name *
                   </label>
-                  <input
+                  <Input
                     type="text"
                     name="displayName"
                     id="displayName"
@@ -408,7 +411,7 @@ export default function ProfilePage() {
                   <label htmlFor="bio" className="block text-sm font-medium text-white mb-2">
                     Bio
                   </label>
-                  <textarea
+                  <Textarea
                     id="bio"
                     name="bio"
                     rows={4}
@@ -437,7 +440,7 @@ export default function ProfilePage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-400 sm:text-sm">@</span>
                     </div>
-                    <input
+                    <Input
                       type="text"
                       name="instagram"
                       id="instagram"
@@ -458,7 +461,7 @@ export default function ProfilePage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-400 sm:text-sm">@</span>
                     </div>
-                    <input
+                    <Input
                       type="text"
                       name="tiktok"
                       id="tiktok"
@@ -475,18 +478,20 @@ export default function ProfilePage() {
                   <label htmlFor="profileVisibility" className="block text-sm font-medium text-white mb-2">
                     Profile Visibility
                   </label>
-                  <select
-                    id="profileVisibility"
-                    name="profileVisibility"
-                    className="block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-12 px-4 transition-colors"
+                  <Select
                     value={profileVisibility}
-                    onChange={(e) => setProfileVisibility(e.target.value as 'public' | 'private' | 'friends')}
+                    onValueChange={(value) => setProfileVisibility(value as 'public' | 'private' | 'friends')}
                     disabled={loading}
                   >
-                    <option value="private">Private</option>
-                    <option value="public">Public</option>
-                    <option value="friends">Friends Only</option>
-                  </select>
+                    <SelectTrigger id="profileVisibility">
+                      <SelectValue placeholder="Select profile visibility" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="friends">Friends Only</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="mt-1 text-xs text-gray-400">
                     Control who can see your profile and lists
                   </p>
@@ -528,11 +533,22 @@ export default function ProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <Button type="submit" size="lg" disabled={loading || uploadingPhoto}>
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </Button>
-                <Button type="button" variant="outline" size="lg" onClick={handleSignOut}>
+              <div className="flex flex-col gap-4 mt-8">
+                <div className="flex flex-row gap-4">
+                  <Button type="submit" size="lg" disabled={loading || uploadingPhoto}>
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>
+                    Cancel
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="lg"
+                  className="border border-red-600 text-red-500 hover:bg-red-600 hover:text-white mt-4"
+                  onClick={handleSignOut}
+                >
                   Sign Out
                 </Button>
               </div>
