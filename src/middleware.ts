@@ -8,17 +8,10 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const { pathname } = request.nextUrl;
   
-  // Skip auth checks for auth-related routes to prevent redirect loops
-  if (pathname.startsWith('/auth/') || 
-      pathname.startsWith('/login') || 
-      pathname.startsWith('/signup')) {
-    return response;
-  }
-  
-  // Handle auth session refresh for authenticated routes
-  if (pathname.startsWith('/lists') || 
-      pathname.startsWith('/profile') || 
-      pathname.startsWith('/admin')) {
+  // Handle auth token refresh for all routes (except static assets)
+  if (!pathname.startsWith('/_next/') && 
+      !pathname.startsWith('/static/') &&
+      !/\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$/i.test(pathname)) {
     
     try {
       // Create a Supabase client configured to use cookies
@@ -42,50 +35,12 @@ export async function middleware(request: NextRequest) {
         }
       );
 
-      // Attempt to refresh the session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.warn('Middleware session check error:', error);
-      }
-      
-      // If no session and trying to access protected route, redirect to login
-      // But add a small delay check to handle OAuth callback timing issues
-      if (!session && (pathname.startsWith('/lists') || pathname.startsWith('/profile') || pathname.startsWith('/admin'))) {
-        // Check if this might be coming from an OAuth callback by looking for recent auth activity
-        const hasRecentAuthActivity = request.headers.get('referer')?.includes('/auth/callback') ||
-                                     request.headers.get('referer')?.includes('/login') ||
-                                     request.cookies.get('sb-auth-token') ||
-                                     request.cookies.get('sb-refresh-token');
-        
-        // If there's recent auth activity, let the client handle the redirect to avoid loops
-        if (hasRecentAuthActivity) {
-          console.log('[MIDDLEWARE] Detected recent auth activity, allowing client-side auth handling for:', pathname);
-          return response;
-        }
-        
-        console.log('[MIDDLEWARE] No session found, redirecting to login for:', pathname);
-        const redirectUrl = new URL('/login', request.url);
-        redirectUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(redirectUrl);
-      }
-      
-      // If we have a session, log success
-      if (session) {
-        console.log('[MIDDLEWARE] Session found for user:', session.user.id, 'accessing:', pathname);
-      }
-      
-      // Add session info to response headers for debugging
-      if (session) {
-        response.headers.set('X-Auth-Status', 'authenticated');
-        response.headers.set('X-User-ID', session.user.id);
-      } else {
-        response.headers.set('X-Auth-Status', 'unauthenticated');
-      }
+      // This automatically refreshes the session if needed
+      await supabase.auth.getUser();
       
     } catch (error) {
       console.error('Middleware auth error:', error);
-      // Don't block the request on auth errors, let the client handle it
+      // Don't block the request on auth errors
     }
   }
   

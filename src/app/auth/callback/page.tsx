@@ -33,6 +33,11 @@ export default async function AuthCallback({
   }
 
   console.log('[AUTH CALLBACK] Redirecting to /lists')
-  // Redirect directly to lists page to avoid extra redirect hop
+  
+  // Check if there was a redirect parameter in the original request
+  // This might be stored in the state parameter or we need to handle it differently
+  console.log('[AUTH CALLBACK] Checking for original redirect destination...')
+  
+  // For now, redirect directly to lists page to avoid extra redirect hop
   redirect('/lists')
 } 

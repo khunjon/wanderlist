@@ -11,6 +11,14 @@ interface AuthRedirectProps {
 export default function AuthRedirect({ redirectTo, message = 'Redirecting...' }: AuthRedirectProps) {
   const { user, loading } = useAuth();
 
+  // Debug logging to see if component is rendered
+  useEffect(() => {
+    console.log('[AUTH REDIRECT] Component mounted');
+    console.log('[AUTH REDIRECT] Props:', { redirectTo, message });
+    console.log('[AUTH REDIRECT] User:', user ? { id: user.id, email: user.email } : 'null');
+    console.log('[AUTH REDIRECT] Loading:', loading);
+  }, []);
+
   useEffect(() => {
     if (user && !loading) {
       console.log('[AUTH REDIRECT] User authenticated, will redirect to:', redirectTo);
