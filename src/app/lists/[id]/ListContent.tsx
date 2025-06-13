@@ -606,20 +606,37 @@ export default function ListContent({ id }: ListContentProps) {
       {/* Sticky Header - Mobile Optimized */}
       <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 shadow-lg">
         <div className="mx-auto max-w-7xl px-4 py-2 sm:py-3 sm:px-6 lg:px-8">
-          {/* Top row with back button and action buttons */}
+          {/* Main row with back button, title, and action buttons */}
           <div className="flex items-center justify-between mb-2 sm:mb-1">
-            <Link
-              href="/lists"
-              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </Link>
+            {/* Left side: Back button and title */}
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <Link
+                href="/lists"
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors flex-shrink-0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-tight truncate">
+                  {list.name}
+                </h1>
+                {/* Private indicator - only show for private lists */}
+                {!list.is_public && (
+                  <div className="flex-shrink-0" title="Private list">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
             
-            {/* Action buttons - Mobile optimized */}
+            {/* Right side: Action buttons - Mobile optimized */}
             {isOwner && (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-shrink-0">
                 {!isEditing ? (
                   <>
                     <button
@@ -678,29 +695,14 @@ export default function ListContent({ id }: ListContentProps) {
             )}
           </div>
           
-          {/* Title row with privacy indicator */}
-          <div className="flex items-start justify-between mb-1">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-tight truncate">
-                  {list.name}
-                </h1>
-                {/* Private indicator - only show for private lists */}
-                {!list.is_public && (
-                  <div className="flex-shrink-0" title="Private list">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {list.description && (
-                <p className="text-sm text-gray-300 leading-relaxed mt-1 line-clamp-2">
-                  {list.description}
-                </p>
-              )}
+          {/* Description row */}
+          {list.description && (
+            <div className="mb-1">
+              <p className="text-sm text-gray-300 leading-relaxed line-clamp-2">
+                {list.description}
+              </p>
             </div>
-          </div>
+          )}
           
           {/* Author info - integrated into header, de-emphasized */}
           {author && (
