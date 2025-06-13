@@ -1,11 +1,19 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useRequireAuth } from '@/hooks/useAuth';
-import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function CheckinPage() {
-  const { user, loading, NavigationHandler } = useRequireAuth('/login');
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   if (loading) {
     return (
@@ -15,12 +23,12 @@ export default function CheckinPage() {
     );
   }
 
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <Suspense fallback={null}>
-        <NavigationHandler />
-      </Suspense>
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

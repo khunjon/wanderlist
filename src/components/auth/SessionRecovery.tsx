@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
-import { authLogger } from '@/lib/supabase/authUtils';
 
 interface SessionRecoveryProps {
   onRecovered?: () => void;
@@ -10,24 +9,21 @@ interface SessionRecoveryProps {
 }
 
 export default function SessionRecovery({ onRecovered, onFailed }: SessionRecoveryProps) {
-  const { error, retryAuth, loading, sessionRecovered } = useAuth();
-  const [isRetrying, setIsRetrying] = useState(false);
+  const { error, loading } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Don't show if no error or if loading
   if (!error || loading) {
     return null;
   }
 
-  const handleRetry = async () => {
-    setIsRetrying(true);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
     try {
-      await retryAuth();
-      onRecovered?.();
+      window.location.reload();
     } catch (err) {
-      authLogger.error('Session recovery failed:', err);
+      console.error('Page refresh failed:', err);
       onFailed?.();
-    } finally {
-      setIsRetrying(false);
     }
   };
 
@@ -64,18 +60,10 @@ export default function SessionRecovery({ onRecovered, onFailed }: SessionRecove
         <div className="mb-4">
           <p className="text-sm text-gray-600">
             {isSessionError 
-              ? 'Your session has expired. We can try to restore it automatically or you can sign in again.'
+              ? 'Your session has expired. Please refresh the page or sign in again.'
               : 'There was a problem with your authentication. Please try again or sign in.'
             }
           </p>
-          
-          {sessionRecovered && (
-            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-              <p className="text-sm text-green-700">
-                ✓ Your session was previously recovered automatically.
-              </p>
-            </div>
-          )}
           
           <div className="mt-3 p-3 bg-gray-50 rounded">
             <p className="text-xs text-gray-500 font-mono">
@@ -85,40 +73,29 @@ export default function SessionRecovery({ onRecovered, onFailed }: SessionRecove
         </div>
         
         <div className="flex space-x-3">
-          {isSessionError && (
-            <button
-              onClick={handleRetry}
-              disabled={isRetrying}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              {isRetrying ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Recovering...
-                </span>
-              ) : (
-                'Try to Recover'
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          >
+            {isRefreshing ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Refreshing...
+              </span>
+            ) : (
+              'Refresh Page'
+            )}
+          </button>
           
           <button
             onClick={handleSignIn}
             className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
             Sign In Again
-          </button>
-        </div>
-        
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => window.location.reload()}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
-          >
-            Refresh Page
           </button>
         </div>
       </div>

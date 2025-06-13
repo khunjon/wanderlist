@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAuth, useRequireAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   getEnhancedUserProfile, 
   updateUserProfile, 
@@ -45,8 +45,12 @@ export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use the updated require auth hook with NavigationHandler
-  const { NavigationHandler } = useRequireAuth();
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !authUser) {
+      router.push('/login');
+    }
+  }, [authUser, authLoading, router]);
 
   // Fetch enhanced user profile data
   useEffect(() => {
@@ -280,10 +284,13 @@ export default function ProfilePage() {
     );
   }
 
+  // Redirect if not authenticated
+  if (!authLoading && !authUser) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <NavigationHandler />
-      
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-gray-800 shadow-xl rounded-lg overflow-hidden">
           {/* Header */}

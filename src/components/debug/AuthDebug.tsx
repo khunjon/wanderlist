@@ -2,10 +2,10 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
-import { validateSession, authLogger } from '@/lib/supabase/authUtils';
+import { supabase } from '@/lib/supabase';
 
 export default function AuthDebug() {
-  const { user, loading, error, supabaseUser, sessionRecovered, retryAuth } = useAuth();
+  const { user, loading, error, supabaseUser } = useAuth();
   const [sessionInfo, setSessionInfo] = useState<any>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -18,11 +18,11 @@ export default function AuthDebug() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const validation = await validateSession();
-        setSessionInfo(validation);
+        const { data: session } = await supabase.auth.getSession();
+        setSessionInfo(session);
         setLastRefresh(new Date());
       } catch (err) {
-        authLogger.error('Session check failed in debug component:', err);
+        console.error('Session check failed in debug component:', err);
       }
     };
 
@@ -33,12 +33,8 @@ export default function AuthDebug() {
     return () => clearInterval(interval);
   }, [user]);
 
-  const handleRetry = async () => {
-    try {
-      await retryAuth();
-    } catch (err) {
-      authLogger.error('Manual retry failed:', err);
-    }
+  const handleRefresh = () => {
+    window.location.reload();
   };
 
   const getStatusColor = () => {
@@ -49,11 +45,13 @@ export default function AuthDebug() {
   };
 
   const getSessionStatus = () => {
-    if (!sessionInfo) return 'Unknown';
-    if (sessionInfo.isValid) return 'Valid';
-    if (sessionInfo.isExpired) return 'Expired';
-    if (sessionInfo.needsRefresh) return 'Needs Refresh';
-    return 'Invalid';
+    if (!sessionInfo?.session) return 'No Session';
+    const expiresAt = sessionInfo.session.expires_at;
+    if (!expiresAt) return 'No Expiry';
+    const now = Math.floor(Date.now() / 1000);
+    if (expiresAt < now) return 'Expired';
+    if (expiresAt - now < 300) return 'Expires Soon'; // Less than 5 minutes
+    return 'Valid';
   };
 
   return (
@@ -72,7 +70,6 @@ export default function AuthDebug() {
             <div><strong>Status:</strong> {loading ? 'Loading' : user ? 'Authenticated' : 'Not Authenticated'}</div>
             <div><strong>User ID:</strong> {user?.id || 'None'}</div>
             <div><strong>Email:</strong> {user?.email || supabaseUser?.email || 'None'}</div>
-            <div><strong>Session Recovered:</strong> {sessionRecovered ? 'Yes' : 'No'}</div>
           </div>
           
           <div className="border-t border-gray-600 pt-2">
@@ -90,10 +87,10 @@ export default function AuthDebug() {
             <div className="border-t border-gray-600 pt-2">
               <div><strong>Error:</strong> {error.message}</div>
               <button 
-                onClick={handleRetry}
+                onClick={handleRefresh}
                 className="mt-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
               >
-                Retry Auth
+                Refresh Page
               </button>
             </div>
           )}
