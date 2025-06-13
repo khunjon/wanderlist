@@ -87,10 +87,10 @@ function SignupForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4 py-4 sm:py-6">
       <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">Create your account</CardTitle>
+        <CardHeader className="space-y-1 pb-4 sm:pb-6">
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center text-white">Create your account</CardTitle>
           <CardDescription className="text-center text-gray-300">
             Or{' '}
             <Link href="/login" className="font-medium text-blue-400 hover:text-blue-300">
@@ -98,7 +98,7 @@ function SignupForm() {
             </Link>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           {error && (
             <div className="p-3 text-sm text-red-200 bg-red-900/70 border border-red-700 rounded-md">
               {error}
@@ -128,7 +128,7 @@ function SignupForm() {
             </div>
           </div>
 
-          <form className="space-y-4" onSubmit={handleEmailSignup}>
+          <form className="space-y-3 sm:space-y-4" onSubmit={handleEmailSignup}>
             <div className="space-y-2">
               <Input
                 type="text"
