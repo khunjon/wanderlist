@@ -610,10 +610,9 @@ const SkeletonCard = React.memo(() => (
   <div className="bg-gray-800 overflow-hidden shadow-lg rounded-xl border border-gray-700">
     <div className="px-4 py-4 sm:px-6 sm:py-6">
       <div className="animate-pulse">
-        {/* Title and badge */}
-        <div className="flex justify-between items-start mb-2 sm:mb-3">
+        {/* Title row - no longer needs space for badge */}
+        <div className="mb-2 sm:mb-3">
           <div className="h-6 bg-gray-700 rounded w-3/4"></div>
-          <div className="h-5 bg-gray-700 rounded w-16"></div>
         </div>
         
         {/* Description lines */}

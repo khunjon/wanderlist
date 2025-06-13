@@ -28,14 +28,9 @@ const ListItem = React.memo<ListItemProps>(({ list, onListClick }) => {
       className="bg-gray-800 overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-105 border border-gray-700 hover:border-gray-600"
     >
       <div className="px-4 py-4 sm:px-6 sm:py-6">
-        <div className="flex justify-between items-start mb-2 sm:mb-3">
-          <h3 className="text-lg sm:text-xl font-semibold text-white truncate pr-2">{list.name}</h3>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-green-900 text-green-200">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
-            </svg>
-            Public
-          </span>
+        {/* Title row - gets full width since all discover lists are public */}
+        <div className="mb-2 sm:mb-3">
+          <h3 className="text-lg sm:text-xl font-semibold text-white">{list.name}</h3>
         </div>
         <p className="text-sm text-gray-300 line-clamp-2 mb-3 sm:mb-4 min-h-[2.5rem]">
           {list.description || 'No description'}
