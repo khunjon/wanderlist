@@ -55,10 +55,10 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-4 sm:py-6 lg:py-8 px-4 sm:px-6 lg:px-8 bg-gray-900">
+    <div className="flex min-h-screen flex-col items-center justify-start sm:justify-center pt-4 sm:py-6 lg:py-8 px-4 sm:px-6 lg:px-8 bg-gray-900">
       <div className="w-full max-w-md space-y-3 sm:space-y-4">
         <div className="text-center">
-          <h2 className="mt-0 sm:mt-2 text-center text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          <h2 className="mt-0 text-center text-2xl sm:text-3xl font-bold tracking-tight text-white">
             Log in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">

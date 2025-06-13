@@ -87,7 +87,7 @@ function SignupForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4 py-4 sm:py-6">
+    <div className="flex items-center justify-start sm:justify-center min-h-screen bg-gray-900 px-4 pt-4 sm:py-6">
       <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-xl">
         <CardHeader className="space-y-1 pb-4 sm:pb-6">
           <CardTitle className="text-xl sm:text-2xl font-bold text-center text-white">Create your account</CardTitle>
