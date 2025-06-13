@@ -127,7 +127,9 @@ export async function createCheckin(
       };
     }
 
-    // Track the check-in event with Mixpanel
+    // Track the check-in event with Mixpanel (temporarily disabled due to hanging issue)
+    // TODO: Re-enable once Mixpanel tracking issue is resolved
+    /*
     try {
       trackEvent('Place Check In', {
         place_id: finalPlaceId,
@@ -152,6 +154,7 @@ export async function createCheckin(
       // Don't fail the check-in if Mixpanel tracking fails
       console.warn('Failed to track check-in event:', mixpanelError);
     }
+    */
 
     return {
       data: data as unknown as CheckinRecord,
