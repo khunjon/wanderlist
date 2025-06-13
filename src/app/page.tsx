@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
   return (
@@ -16,12 +17,14 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col items-center gap-4">
-              <Link
-                href="/signup"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
-              >
-                Get Started
-              </Link>
+              <Button asChild size="lg">
+                <Link
+                  href="/signup"
+                  className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
+                >
+                  Get Started
+                </Link>
+              </Button>
               <Link
                 href="/discover"
                 className="text-sm text-blue-400 hover:text-blue-300 underline"
@@ -101,12 +104,14 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col items-center">
-              <Link
-                href="/signup"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700 w-full md:w-auto"
-              >
-                Get Started
-              </Link>
+              <Button asChild size="lg" className="w-full md:w-auto">
+                <Link
+                  href="/signup"
+                  className="inline-flex h-12 items-center justify-center rounded-md bg-blue-600 px-8 text-base font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-700"
+                >
+                  Get Started
+                </Link>
+              </Button>
               <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
                 <p className="text-sm text-gray-400">
                   No credit card required • Works on any device

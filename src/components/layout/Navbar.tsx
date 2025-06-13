@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAdmin } from '@/hooks/useAdmin';
 // signOut is now handled by the auth context
 import { useRouter, usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default function Navbar() {
   const { user, loading, signOut } = useAuth();
@@ -162,18 +163,16 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="flex items-center space-x-4">
-                  <Link
-                    href="/login"
-                    className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
-                  >
-                    Sign Up
-                  </Link>
+                  <Button asChild>
+                    <Link href="/login">
+                      Log In
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/signup">
+                      Sign Up
+                    </Link>
+                  </Button>
                 </div>
               )}
             </div>
@@ -313,20 +312,16 @@ export default function Navbar() {
             ) : (
               <div className="border-t border-gray-700 pb-3 pt-4">
                 <div className="space-y-1 px-2">
-                  <Link
-                    href="/login"
-                    className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="block rounded-md bg-blue-600 px-3 py-2 text-base font-medium text-white hover:bg-blue-500"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Sign Up
-                  </Link>
+                  <Button asChild className="w-full" size="lg">
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                      Log In
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full" size="lg">
+                    <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                      Sign Up
+                    </Link>
+                  </Button>
                 </div>
               </div>
             )}
