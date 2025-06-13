@@ -143,78 +143,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('[AUTH] Starting initialization');
+    console.log('[AUTH] Starting simplified initialization');
     initializingRef.current = true;
     setIsInitializing(true);
 
     try {
-      // Perform startup session validation with a timeout
+      // Simple approach: just try to get the current user with a short timeout
+      const userPromise = supabase.auth.getUser();
+      const sessionPromise = supabase.auth.getSession();
+      
+      // Race against a 3-second timeout
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Auth initialization timeout')), 8000);
+        setTimeout(() => reject(new Error('Auth check timeout')), 3000);
       });
       
-      console.log('[AUTH] Validating session on startup');
-      const startupResult = await Promise.race([
-        validateSessionOnStartup(),
-        timeoutPromise
-      ]) as Awaited<ReturnType<typeof validateSessionOnStartup>>;
+      console.log('[AUTH] Checking current user and session');
       
-      console.log('[AUTH] Startup validation result:', startupResult);
+      // Try to get both user and session, but don't wait too long
+      let userData, sessionData;
+      try {
+        [userData, sessionData] = await Promise.race([
+          Promise.all([userPromise, sessionPromise]),
+          timeoutPromise
+        ]) as [any, any];
+      } catch (timeoutError) {
+        console.warn('[AUTH] Auth check timed out, assuming no user');
+        setUser(null);
+        setSupabaseUser(null);
+        setHasAttemptedAuth(true);
+        return;
+      }
       
-      setSessionRecovered(startupResult.recovered);
+      const user = userData?.data?.user;
+      const session = sessionData?.data?.session;
+      
+      console.log('[AUTH] Auth check result:', { 
+        hasUser: !!user, 
+        hasSession: !!session,
+        userError: userData?.error?.message,
+        sessionError: sessionData?.error?.message
+      });
+      
       setHasAttemptedAuth(true);
       
-      if (startupResult.isAuthenticated && startupResult.user) {
-        console.log('[AUTH] User authenticated, setting up user state');
-        setSupabaseUser(startupResult.user);
+      if (user && !userData.error) {
+        console.log('[AUTH] User found, setting up user state');
+        setSupabaseUser(user);
         
         // Sync user profile
-        const userProfile = await syncUserProfile(startupResult.user);
-        const appUser = convertToUser(startupResult.user, userProfile);
-        
-        // Apply cache busting to photo URL
-        if (appUser.photo_url) {
-          appUser.photo_url = addCacheBuster(appUser.photo_url);
-        }
-        setUser(appUser);
-
-        // Identify user with Mixpanel
-        identifyUser(startupResult.user.id, {
-          email: startupResult.user.email,
-          name: appUser.displayName,
-          created_at: startupResult.user.created_at,
-          provider: startupResult.user.app_metadata?.provider,
-          is_admin: appUser.is_admin,
-          photo_url: appUser.photo_url
-        });
-
-        // Start session monitoring
-        sessionMonitorRef.current = new SessionMonitor({
-          onSessionExpired: async () => {
-            await handleAuthError(new Error('Session expired'), 'session monitor');
-          },
-          onSessionRefreshed: (session) => {
-            setError(null);
-            setRetryCount(0);
-          },
-          onError: (error) => {
-            handleAuthError(error, 'session monitor');
+        try {
+          const userProfile = await syncUserProfile(user);
+          const appUser = convertToUser(user, userProfile);
+          
+          // Apply cache busting to photo URL
+          if (appUser.photo_url) {
+            appUser.photo_url = addCacheBuster(appUser.photo_url);
           }
-        });
-        sessionMonitorRef.current.start();
-        
-        // Reset retry count on successful auth
-        setRetryCount(0);
+          setUser(appUser);
+
+          // Identify user with Mixpanel
+          identifyUser(user.id, {
+            email: user.email,
+            name: appUser.displayName,
+            created_at: user.created_at,
+            provider: user.app_metadata?.provider,
+            is_admin: appUser.is_admin,
+            photo_url: appUser.photo_url
+          });
+
+          // Start session monitoring
+          sessionMonitorRef.current = new SessionMonitor({
+            onSessionExpired: async () => {
+              await handleAuthError(new Error('Session expired'), 'session monitor');
+            },
+            onSessionRefreshed: (session) => {
+              setError(null);
+              setRetryCount(0);
+            },
+            onError: (error) => {
+              handleAuthError(error, 'session monitor');
+            }
+          });
+          sessionMonitorRef.current.start();
+          
+          setRetryCount(0);
+        } catch (profileError) {
+          console.error('[AUTH] Error syncing user profile:', profileError);
+          // Still set the user even if profile sync fails
+          setSupabaseUser(user);
+          setUser({
+            id: user.id,
+            email: user.email || '',
+            displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            photo_url: user.user_metadata?.avatar_url || null,
+            is_admin: false,
+            createdAt: new Date(user.created_at),
+            created_at: user.created_at,
+            updated_at: user.updated_at || user.created_at
+          });
+        }
       } else {
         console.log('[AUTH] No authenticated user found');
-        // No authenticated user found
         setUser(null);
         setSupabaseUser(null);
       }
     } catch (err) {
       console.error('[AUTH] Initialization failed:', err);
-      await handleAuthError(err as Error, 'initialization');
+      setError(err as Error);
       setHasAttemptedAuth(true);
+      // Even on error, clear the user state
+      setUser(null);
+      setSupabaseUser(null);
     } finally {
       console.log('[AUTH] Initialization complete, setting loading states to false');
       setLoading(false);

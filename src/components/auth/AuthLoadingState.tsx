@@ -33,7 +33,7 @@ export default function AuthLoadingState({
         setShowContent(true);
         setFadeIn(true);
       }
-    }, 15000); // 15 second fallback
+    }, 8000); // Reduced to 8 seconds to match auth timeout
 
     return () => clearTimeout(fallbackTimeout);
   }, [isInitializing, hasAttemptedAuth]);
