@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 // Memoized empty state component to prevent unnecessary re-renders
 const ListsEmptyState = React.memo(() => {
@@ -23,12 +24,11 @@ const ListsEmptyState = React.memo(() => {
         <h3 className="mt-2 text-sm font-medium text-white">No lists</h3>
         <p className="mt-1 text-sm text-gray-300">Get started by creating a new list.</p>
         <div className="mt-6">
-          <Link
-            href="/lists/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Create New List
-          </Link>
+          <Button asChild>
+            <Link href="/lists/new">
+              Create New List
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import SortControl, { SortState, SortOption } from '@/components/ui/SortControl';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { perf } from '@/lib/utils/performance';
 
 // Optimized props interface - combine related state and reduce prop count
@@ -48,35 +50,36 @@ const ListsHeader = React.memo<ListsHeaderProps>(({ search, sort, hasLists }) =>
             {/* Header row with title and New List button */}
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold tracking-tight text-white">My Lists</h1>
-              <Link
-                href="/lists/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                New List
-              </Link>
+              <Button asChild>
+                <Link href="/lists/new">
+                  New List
+                </Link>
+              </Button>
             </div>
             
             {/* Search bar - full width */}
             <div className="flex items-center relative">
-              <input
+              <Input
                 type="text"
                 placeholder="Search my lists..."
                 value={search.value}
                 onChange={handleSearchInputChange}
-                className="w-full px-4 py-2 rounded-md border-0 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={search.disabled}
+                className="w-full"
               />
               {search.value && (
-                <button
+                <Button
                   type="button"
                   onClick={search.onClear}
-                  className="absolute right-3 text-gray-400 hover:text-white"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 h-7 w-7 text-gray-400 hover:text-white"
                   aria-label="Clear search"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
+                </Button>
               )}
             </div>
           </div>
