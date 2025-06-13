@@ -75,17 +75,17 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4">
+      <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-xl">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-white">Welcome back</CardTitle>
+          <CardDescription className="text-center text-gray-300">
             Sign in to your account to continue
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            <div className="p-3 text-sm text-red-200 bg-red-900/70 border border-red-700 rounded-md">
               {error}
             </div>
           )}
@@ -94,7 +94,7 @@ function LoginForm() {
             onClick={handleGoogleLogin}
             disabled={isLoading}
             variant="outline"
-            className="w-full"
+            className="w-full bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -106,10 +106,10 @@ function LoginForm() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
+              <Separator className="w-full bg-gray-700" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or continue with</span>
+              <span className="bg-gray-800 px-2 text-gray-400">Or continue with</span>
             </div>
           </div>
 
@@ -122,6 +122,7 @@ function LoginForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 disabled={isLoading}
                 required
+                className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
               />
             </div>
             <div className="space-y-2">
@@ -132,9 +133,10 @@ function LoginForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
+                className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading || !email || !password}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white" disabled={isLoading || !email || !password}>
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -147,8 +149,8 @@ function LoginForm() {
           </form>
 
           <div className="text-center text-sm">
-            <span className="text-gray-600">Don't have an account? </span>
-            <Link href="/signup" className="text-blue-600 hover:underline">
+            <span className="text-gray-400">Don't have an account? </span>
+            <Link href="/signup" className="text-blue-400 hover:underline">
               Sign up
             </Link>
           </div>
