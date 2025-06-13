@@ -4,18 +4,21 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { searchPlaces } from '@/lib/google/places';
-import { createPlace, addPlaceToList } from '@/lib/supabase';
+import { createPlace, addPlaceToList, isPlaceInList } from '@/lib/supabase';
 import { GooglePlace } from '@/types';
 import { debounce } from 'lodash';
+import { useToast } from '@/hooks/use-toast';
 
 interface FloatingActionButtonProps {
   listId?: string;
+  listName?: string;
   listCity?: string;
   onPlaceAdded?: () => void;
 }
 
 export default function FloatingActionButton({ 
   listId, 
+  listName,
   listCity, 
   onPlaceAdded 
 }: FloatingActionButtonProps) {
@@ -34,6 +37,7 @@ export default function FloatingActionButton({
   const lastScrollY = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // Set mounted state for portal
   useEffect(() => {
@@ -142,7 +146,11 @@ export default function FloatingActionButton({
   // Add place to list
   const handleAddToList = useCallback(async (place: GooglePlace) => {
     if (!listId) {
-      setError('No list selected.');
+      toast({
+        title: "No List Selected",
+        description: "Please select a list to add places to.",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -168,6 +176,18 @@ export default function FloatingActionButton({
       };
       
       const createdPlace = await createPlace(placeData);
+      
+      // Check if place is already in the list
+      const alreadyInList = await isPlaceInList(listId, createdPlace.id);
+      if (alreadyInList) {
+        toast({
+          title: "Already Added",
+          description: `${place.name} is already in ${listName || 'this list'}.`,
+          variant: "default"
+        });
+        return;
+      }
+      
       await addPlaceToList({
         list_id: listId,
         place_id: createdPlace.id
@@ -175,6 +195,13 @@ export default function FloatingActionButton({
       
       // Mark as added and show success feedback
       setAddedToList(prev => ({ ...prev, [place.place_id]: true }));
+      
+      // Show success toast
+      toast({
+        title: "Place Added!",
+        description: `Added ${place.name} to ${listName || 'your list'}.`,
+        variant: "success"
+      });
       
       // Trigger haptic feedback
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -193,12 +220,45 @@ export default function FloatingActionButton({
       
     } catch (err) {
       console.error('Error adding place to list:', err);
-      setError('Failed to add place to list. Please try again.');
+      
+      // Handle specific error cases
+      let errorTitle = "Failed to Add Place";
+      let errorDescription = "Please try again.";
+      
+      if (err instanceof Error) {
+        if (err.message.includes('duplicate key') || err.message.includes('unique constraint') || err.message.includes('already exists')) {
+          // This place is already in the list
+          toast({
+            title: "Already Added",
+            description: `${place.name} is already in ${listName || 'this list'}.`,
+            variant: "default"
+          });
+          return; // Don't show error toast for duplicates
+        } else if (err.message.includes('timeout')) {
+          errorDescription = "Request timed out. Please check your connection and try again.";
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorDescription = "Network error. Please check your internet connection.";
+        } else if (err.message.includes('permission') || err.message.includes('unauthorized')) {
+          errorDescription = "You don't have permission to add places to this list.";
+        } else if (err.message.includes('not found')) {
+          errorDescription = "The list was not found. Please refresh the page.";
+        } else {
+          errorDescription = err.message;
+        }
+      }
+      
+      toast({
+        title: errorTitle,
+        description: errorDescription,
+        variant: "destructive"
+      });
+      
+      setError(errorDescription);
     } finally {
       // Clear loading state for this place
       setAddingToList(prev => ({ ...prev, [place.place_id]: false }));
     }
-  }, [listId, onPlaceAdded]);
+  }, [listId, listName, onPlaceAdded, toast]);
 
   // Handle FAB click
   const handleFABClick = useCallback(() => {

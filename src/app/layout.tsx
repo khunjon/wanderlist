@@ -9,6 +9,7 @@ import Navbar from "@/components/layout/Navbar";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import VersionNotification from "@/components/version/VersionNotification";
 import { VersionMeta } from "@/components/version/VersionedAssets";
+import { ToastContainer } from "@/components/ui/toast";
 // Using Supabase for authentication and database
 
 const inter = Inter({ subsets: ["latin"] });
@@ -44,6 +45,7 @@ export default function RootLayout({
               <Footer />
               <MobileBottomNav />
               <VersionNotification />
+              <ToastContainer />
               {/* Using Supabase for all backend services */}
             </MixpanelProvider>
           </AnalyticsProvider>

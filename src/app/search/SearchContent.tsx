@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { searchPlaces } from '@/lib/google/places';
-import { createPlace, addPlaceToList, getUserListsWithPlaceCounts, getListById, upsertPlace } from '@/lib/supabase';
+import { createPlace, addPlaceToList, getUserListsWithPlaceCounts, getListById, upsertPlace, isPlaceInList } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GooglePlace, List } from '@/types';
@@ -29,6 +30,7 @@ export default function SearchContent() {
   
   const router = useRouter();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { toast } = useToast();
 
   // Memoized callback for handling list ID from URL - no longer needed
   // const handleListIdFromUrl = useCallback((listId: string | null) => {
@@ -169,7 +171,11 @@ export default function SearchContent() {
   // Memoized add to list handler
   const handleAddToList = useCallback(async (place: GooglePlace) => {
     if (!selectedListId || !user) {
-      setError('Please make sure you are logged in and have a valid list selected.');
+      toast({
+        title: "Authentication Required",
+        description: "Please make sure you are logged in and have a valid list selected.",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -202,6 +208,17 @@ export default function SearchContent() {
       
       const createdPlace = await Promise.race([createPlacePromise, timeoutPromise]) as any;
       
+      // Check if place is already in the list
+      const alreadyInList = await isPlaceInList(selectedListId, createdPlace.id);
+      if (alreadyInList) {
+        toast({
+          title: "Already Added",
+          description: `${place.name} is already in ${selectedList?.name || 'this list'}.`,
+          variant: "default"
+        });
+        return;
+      }
+      
       // Then add it to the selected list
       const addToListPromise = addPlaceToList({
         list_id: selectedListId,
@@ -216,6 +233,13 @@ export default function SearchContent() {
       // Mark as added and show success feedback
       setAddedToList(prev => ({ ...prev, [place.place_id]: true }));
       
+      // Show success toast
+      toast({
+        title: "Place Added!",
+        description: `Added ${place.name} to ${selectedList?.name || 'your list'}.`,
+        variant: "success"
+      });
+      
       // Clear the added state after 3 seconds
       setTimeout(() => {
         setAddedToList(prev => ({ ...prev, [place.place_id]: false }));
@@ -224,31 +248,46 @@ export default function SearchContent() {
     } catch (err) {
       console.error('Error adding place to list:', err);
       
-      // Show specific error message
-      let errorMessage = 'Failed to add place to list. Please try again.';
+      // Handle specific error cases
+      let errorTitle = "Failed to Add Place";
+      let errorDescription = "Please try again.";
       
       if (err instanceof Error) {
-        if (err.message.includes('timeout')) {
-          errorMessage = 'Request timed out. Please check your internet connection and try again.';
+        if (err.message.includes('duplicate key') || err.message.includes('unique constraint') || err.message.includes('already exists')) {
+          // This place is already in the list
+          toast({
+            title: "Already Added",
+            description: `${place.name} is already in ${selectedList?.name || 'this list'}.`,
+            variant: "default"
+          });
+          return; // Don't show error toast for duplicates
+        } else if (err.message.includes('timeout')) {
+          errorDescription = 'Request timed out. Please check your internet connection and try again.';
         } else if (err.message.includes('permission')) {
-          errorMessage = 'Permission denied. Please check that you own this list and your account is properly configured.';
+          errorDescription = 'Permission denied. Please check that you own this list and your account is properly configured.';
         } else if (err.message.includes('authenticated')) {
-          errorMessage = 'You must be logged in to add places to lists. Please refresh the page and try again.';
+          errorDescription = 'You must be logged in to add places to lists. Please refresh the page and try again.';
         } else if (err.message.includes('not found')) {
-          errorMessage = 'The list was not found. Please refresh the page and try again.';
+          errorDescription = 'The list was not found. Please refresh the page and try again.';
         } else if (err.message.includes('network') || err.message.includes('fetch')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
+          errorDescription = 'Network error. Please check your internet connection and try again.';
         } else {
-          errorMessage = `Error: ${err.message}`;
+          errorDescription = err.message;
         }
       }
       
-      setError(errorMessage);
+      toast({
+        title: errorTitle,
+        description: errorDescription,
+        variant: "destructive"
+      });
+      
+      setError(errorDescription);
     } finally {
       // Clear loading state for this place
       setAddingToList(prev => ({ ...prev, [place.place_id]: false }));
     }
-  }, [selectedListId, user]);
+  }, [selectedListId, selectedList, user, toast]);
 
   // Memoized filtered and sorted search results
   const processedSearchResults = useMemo(() => {

@@ -1090,6 +1090,7 @@ export default function ListContent({ id }: ListContentProps) {
       {isOwner && (
         <FloatingActionButton 
           listId={list.id}
+          listName={list.name}
           listCity={list.city || undefined}
           onPlaceAdded={handlePlaceAdded} 
         />

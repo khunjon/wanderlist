@@ -4,7 +4,7 @@ export interface Toast {
   id: string;
   title: string;
   description?: string;
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'destructive' | 'success';
 }
 
 // Simple in-memory toast store
@@ -41,18 +41,22 @@ export function useToast() {
   }, []);
 
   const toast = useCallback(({ title, description, variant = 'default' }: Omit<Toast, 'id'>) => {
-    // For now, just use console.log and browser alert for simplicity
-    console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
+    // Create a visual toast notification
+    const toastId = addToast({ title, description, variant });
     
-    // Show browser notification for important messages
+    // Also show browser notification for better visibility
     if (variant === 'destructive') {
-      alert(`Error: ${title}${description ? `\n${description}` : ''}`);
-    } else {
-      // For success messages, just log to console
+      // For errors, show both toast and console error
+      console.error(`Toast Error: ${title}${description ? ` - ${description}` : ''}`);
+    } else if (variant === 'success') {
+      // For success, show positive console message
       console.log(`✅ ${title}${description ? ` - ${description}` : ''}`);
+    } else {
+      // For default, just log
+      console.log(`Toast: ${title}${description ? ` - ${description}` : ''}`);
     }
     
-    return addToast({ title, description, variant });
+    return toastId;
   }, []);
 
   return {
