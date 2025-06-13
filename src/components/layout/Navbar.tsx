@@ -93,13 +93,13 @@ export default function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Link href="/lists" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                <Link href="/lists" className="hidden md:block text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   My Lists
                 </Link>
-                <Link href="/discover" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                <Link href="/discover" className="hidden md:block text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Discover
                 </Link>
-                <Link href="/checkin" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                <Link href="/checkin" className="hidden md:block text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Check In
                 </Link>
                 <UserMenu user={user} onSignOut={signOut} />
