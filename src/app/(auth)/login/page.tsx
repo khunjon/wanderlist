@@ -34,7 +34,7 @@ function LoginForm() {
       router.push(redirectTo);
     } catch (error: any) {
       console.error('[LOGIN] Email login error:', error);
-      setError(error.message || 'Failed to sign in');
+      setError(error.message || 'Failed to log in');
     } finally {
       setIsLoading(false);
     }
@@ -49,17 +49,17 @@ function LoginForm() {
       // OAuth will handle the redirect
     } catch (error: any) {
       console.error('[LOGIN] Google login error:', error);
-      setError(error.message || 'Failed to sign in with Google');
+      setError(error.message || 'Failed to log in with Google');
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-screen flex-col items-center justify-center py-6 px-4 sm:px-6 lg:px-8 bg-gray-900">
+      <div className="w-full max-w-md space-y-4">
         <div className="text-center">
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
-            Sign in to your account
+          <h2 className="mt-2 text-center text-3xl font-bold tracking-tight text-white">
+            Log in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
             Or{' '}
@@ -73,7 +73,7 @@ function LoginForm() {
           <CardHeader>
             <CardTitle className="text-white">Welcome back</CardTitle>
             <CardDescription className="text-gray-300">
-              Sign in to access your saved places
+              Log in to access your saved places
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -148,10 +148,10 @@ function LoginForm() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
+                    Logging in...
                   </>
                 ) : (
-                  'Sign in'
+                  'Log in'
                 )}
               </Button>
             </form>

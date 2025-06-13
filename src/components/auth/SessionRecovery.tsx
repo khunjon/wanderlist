@@ -35,6 +35,10 @@ export default function SessionRecovery({ onRecovered, onFailed }: SessionRecove
                         error.message?.toLowerCase().includes('token') ||
                         error.message?.toLowerCase().includes('expired');
 
+  const message = isSessionError 
+    ? 'Your session has expired. Please refresh the page or log in again.'
+    : 'There was a problem with your authentication. Please try again or log in.'
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
@@ -59,10 +63,7 @@ export default function SessionRecovery({ onRecovered, onFailed }: SessionRecove
         
         <div className="mb-4">
           <p className="text-sm text-gray-600">
-            {isSessionError 
-              ? 'Your session has expired. Please refresh the page or sign in again.'
-              : 'There was a problem with your authentication. Please try again or sign in.'
-            }
+            {message}
           </p>
           
           <div className="mt-3 p-3 bg-gray-50 rounded">
@@ -95,7 +96,7 @@ export default function SessionRecovery({ onRecovered, onFailed }: SessionRecove
             onClick={handleSignIn}
             className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
-            Sign In Again
+            Log In Again
           </button>
         </div>
       </div>

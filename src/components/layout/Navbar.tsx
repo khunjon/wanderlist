@@ -108,7 +108,7 @@ export default function Navbar() {
               <div className="flex items-center space-x-2">
                 <Link href="/login">
                   <Button variant="ghost" className="text-gray-300 hover:text-white">
-                    Sign In
+                    Log In
                   </Button>
                 </Link>
                 <Link href="/signup">

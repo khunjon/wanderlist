@@ -26,7 +26,7 @@ function AuthErrorContent() {
       return {
         title: 'Access Denied',
         description: 'You denied access to your Google account.',
-        suggestion: 'To sign in with Google, you need to allow access to your basic profile information.'
+        suggestion: 'To log in with Google, you need to allow access to your basic profile information.'
       };
     }
     

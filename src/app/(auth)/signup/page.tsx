@@ -94,7 +94,7 @@ function SignupForm() {
           <CardDescription className="text-center text-gray-300">
             Or{' '}
             <Link href="/login" className="font-medium text-blue-400 hover:text-blue-300">
-              sign in to your account
+              log in to your account
             </Link>
           </CardDescription>
         </CardHeader>
