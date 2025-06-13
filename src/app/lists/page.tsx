@@ -10,6 +10,7 @@ import { SortState, SortOption } from '@/components/ui/SortControl';
 import { ListsHeader, ListsGrid, ListsLoading, ListsEmptyState } from '@/components/lists';
 import type { ListWithPlaceCount } from '@/components/lists/ListsGrid';
 import { perf } from '@/lib/utils/performance';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 const sortOptions: SortOption[] = [
   { value: 'updatedAt', label: 'Last Edited' },
@@ -23,7 +24,7 @@ const sortOptions: SortOption[] = [
 const listsCache = new Map<string, { data: ListWithPlaceCount[]; timestamp: number }>();
 const CACHE_DURATION = 30 * 1000; // 30 seconds
 
-export default function ListsPage() {
+function ListsContent() {
   const { user, loading: authLoading } = useAuth();
   const [allLists, setAllLists] = useState<ListWithPlaceCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,5 +254,13 @@ export default function ListsPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function ListsPage() {
+  return (
+    <ProtectedRoute>
+      <ListsContent />
+    </ProtectedRoute>
   );
 } 

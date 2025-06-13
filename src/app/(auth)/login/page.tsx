@@ -11,24 +11,16 @@ import { Separator } from '@/components/ui/separator';
 import { FcGoogle } from 'react-icons/fc';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/lists';
-
-  // If user is already authenticated, redirect them
-  useEffect(() => {
-    if (user) {
-      console.log('[LOGIN] User already authenticated, redirecting to:', redirectTo);
-      router.push(redirectTo);
-    }
-  }, [user, router, redirectTo]);
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,7 +31,7 @@ function LoginForm() {
 
     try {
       await signIn(email, password);
-      // The useEffect above will handle the redirect once user state updates
+      router.push(redirectTo);
     } catch (error: any) {
       console.error('[LOGIN] Email login error:', error);
       setError(error.message || 'Failed to sign in');
@@ -54,7 +46,7 @@ function LoginForm() {
 
     try {
       await signInWithGoogle();
-      // Google OAuth will redirect to callback, then to the redirect URL
+      // OAuth will handle the redirect
     } catch (error: any) {
       console.error('[LOGIN] Google login error:', error);
       setError(error.message || 'Failed to sign in with Google');
@@ -62,112 +54,124 @@ function LoginForm() {
     }
   };
 
-  // Don't render the form if user is already authenticated
-  if (user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 px-4">
-      <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-white">Welcome back</CardTitle>
-          <CardDescription className="text-center text-gray-300">
-            Sign in to your account to continue
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm text-red-200 bg-red-900/70 border border-red-700 rounded-md">
-              {error}
-            </div>
-          )}
-
-          <Button
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            variant="outline"
-            className="w-full bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <FcGoogle className="h-4 w-4 mr-2" />
-            )}
-            Continue with Google
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full bg-gray-700" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-gray-800 px-2 text-gray-400">Or continue with</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                disabled={isLoading}
-                required
-                className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
-              />
-            </div>
-            <div className="space-y-2">
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                disabled={isLoading}
-                required
-                className="bg-gray-900 text-white border-gray-700 placeholder:text-gray-400"
-              />
-            </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white" disabled={isLoading || !email || !password}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </Button>
-          </form>
-
-          <div className="text-center text-sm">
-            <span className="text-gray-400">Don't have an account? </span>
-            <Link href="/signup" className="text-blue-400 hover:underline">
-              Sign up
+    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
+            Sign in to your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-300">
+            Or{' '}
+            <Link href="/signup" className="font-medium text-blue-400 hover:text-blue-300">
+              create a new account
             </Link>
-          </div>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Welcome back</CardTitle>
+            <CardDescription className="text-gray-300">
+              Sign in to access your saved places
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {error && (
+              <div className="rounded-md bg-red-900 border border-red-700 p-4">
+                <div className="text-sm text-red-200">{error}</div>
+              </div>
+            )}
+
+            <Button
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FcGoogle className="mr-2 h-4 w-4" />
+              )}
+              Continue with Google
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full bg-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gray-800 px-2 text-gray-400">Or continue with</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleEmailLogin} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="sr-only">
+                  Email address
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading || !email || !password}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign in'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
+    <ProtectedRoute requireAuth={false}>
+      <Suspense fallback={
+        <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-900">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      }>
+        <LoginForm />
+      </Suspense>
+    </ProtectedRoute>
   );
 } 

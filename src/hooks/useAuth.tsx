@@ -26,6 +26,8 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   retryAuth: () => Promise<void>;
   sessionRecovered: boolean;
+  hasAttemptedAuth: boolean;
+  isInitializing: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -37,6 +39,8 @@ const AuthContext = createContext<AuthContextType>({
   refreshProfile: async () => {},
   retryAuth: async () => {},
   sessionRecovered: false,
+  hasAttemptedAuth: false,
+  isInitializing: true,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -46,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const [sessionRecovered, setSessionRecovered] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [hasAttemptedAuth, setHasAttemptedAuth] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   
   // Refs to prevent multiple simultaneous operations
   const initializingRef = useRef(false);
@@ -137,12 +143,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     initializingRef.current = true;
+    setIsInitializing(true);
 
     try {
+      // Check if we have a cached auth result from very recent initialization
+      const cacheKey = 'auth-init-cache';
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { timestamp, result } = JSON.parse(cached);
+          // Use cache if less than 5 seconds old
+          if (Date.now() - timestamp < 5000) {
+            setHasAttemptedAuth(true);
+            if (result.isAuthenticated && result.user) {
+              setSupabaseUser(result.user);
+              const userProfile = await syncUserProfile(result.user);
+              const appUser = convertToUser(result.user, userProfile);
+              if (appUser.photo_url) {
+                appUser.photo_url = addCacheBuster(appUser.photo_url);
+              }
+              setUser(appUser);
+            }
+            setLoading(false);
+            setIsInitializing(false);
+            initializingRef.current = false;
+            return;
+          }
+        } catch (e) {
+          // Invalid cache, continue with normal flow
+          sessionStorage.removeItem(cacheKey);
+        }
+      }
+
       // Perform startup session validation
       const startupResult = await validateSessionOnStartup();
       
+      // Cache the result for rapid subsequent checks
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        timestamp: Date.now(),
+        result: startupResult
+      }));
+      
       setSessionRecovered(startupResult.recovered);
+      setHasAttemptedAuth(true);
       
       if (startupResult.isAuthenticated && startupResult.user) {
         setSupabaseUser(startupResult.user);
@@ -185,11 +228,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Reset retry count on successful auth
         setRetryCount(0);
       } else {
+        // No authenticated user found
+        setUser(null);
+        setSupabaseUser(null);
       }
     } catch (err) {
       await handleAuthError(err as Error, 'initialization');
+      setHasAttemptedAuth(true);
     } finally {
       setLoading(false);
+      setIsInitializing(false);
       initializingRef.current = false;
     }
   }, [handleAuthError]);
@@ -224,7 +272,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       try {
         setError(null);
-        setLoading(false);
         
         if (session?.user) {
           setSupabaseUser(session.user);
@@ -306,10 +353,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
         }
+        
+        // Mark that we've attempted auth (for state changes after initial load)
+        if (!hasAttemptedAuth) {
+          setHasAttemptedAuth(true);
+        }
       } catch (err) {
         await handleAuthError(err as Error, 'auth state change');
       } finally {
         setLoading(false);
+        setIsInitializing(false);
       }
     });
 
@@ -340,7 +393,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: handleSignOut, 
       refreshProfile,
       retryAuth,
-      sessionRecovered
+      sessionRecovered,
+      hasAttemptedAuth,
+      isInitializing
     }}>
       {children}
     </AuthContext.Provider>
