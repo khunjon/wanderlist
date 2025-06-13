@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { upsertPlace } from '@/lib/supabase/database';
+import { trackEvent } from '@/lib/mixpanelClient';
 import { GooglePlace } from '@/types';
 
 // Types for the check-in function
@@ -124,6 +125,32 @@ export async function createCheckin(
         data: null,
         error: error.message
       };
+    }
+
+    // Track the check-in event with Mixpanel
+    try {
+      trackEvent('Place Check In', {
+        place_id: finalPlaceId,
+        place_name: params.googlePlace?.name || 'Unknown Place',
+        place_types: params.googlePlace?.types || [],
+        primary_place_type: params.googlePlace?.types?.[0] || 'unknown',
+        has_notes: !!(params.notes && params.notes.trim()),
+        notes_length: params.notes?.length || 0,
+        day_of_week: dayOfWeek,
+        time_of_day: timeOfDay,
+        hour_of_day: checkedInAt.getHours(),
+        privacy_level: 'private',
+        latitude: params.googlePlace?.geometry.location.lat || 0,
+        longitude: params.googlePlace?.geometry.location.lng || 0,
+        place_rating: params.googlePlace?.rating || null,
+        user_id: user.id,
+        checkin_id: data.id,
+        source: 'search_and_checkin', // Indicates this came from the search interface
+        timestamp: checkedInAtISO
+      });
+    } catch (mixpanelError) {
+      // Don't fail the check-in if Mixpanel tracking fails
+      console.warn('Failed to track check-in event:', mixpanelError);
     }
 
     return {
