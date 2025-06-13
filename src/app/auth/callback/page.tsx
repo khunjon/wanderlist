@@ -9,7 +9,7 @@ export default async function AuthCallback({
 }) {
   const { code, error } = await searchParams
 
-  console.log('[AUTH CALLBACK] Processing callback with:', { hasCode: !!code, error })
+  // console.log('[AUTH CALLBACK] Processing callback with:', { hasCode: !!code, error })
 
   if (error) {
     console.error('[AUTH CALLBACK] OAuth error:', error)
@@ -18,7 +18,7 @@ export default async function AuthCallback({
 
   if (code) {
     const supabase = await createClient()
-    console.log('[AUTH CALLBACK] Exchanging code for session...')
+    // console.log('[AUTH CALLBACK] Exchanging code for session...')
     
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
@@ -28,15 +28,15 @@ export default async function AuthCallback({
     }
 
     if (data.session) {
-      console.log('[AUTH CALLBACK] Session established successfully for user:', data.session.user.id)
+      // console.log('[AUTH CALLBACK] Session established successfully for user:', data.session.user.id)
     }
   }
 
-  console.log('[AUTH CALLBACK] Redirecting to /lists')
+  // console.log('[AUTH CALLBACK] Redirecting to /lists')
   
   // Check if there was a redirect parameter in the original request
   // This might be stored in the state parameter or we need to handle it differently
-  console.log('[AUTH CALLBACK] Checking for original redirect destination...')
+  // console.log('[AUTH CALLBACK] Checking for original redirect destination...')
   
   // For now, redirect directly to lists page to avoid extra redirect hop
   redirect('/lists')

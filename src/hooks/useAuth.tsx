@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const initializeAuth = async () => {
-    console.log('[AUTH] Starting simplified initialization');
+    // console.log('[AUTH] Starting simplified initialization');
     setIsInitializing(true);
 
     try {
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => reject(new Error('Auth check timeout')), 3000);
       });
       
-      console.log('[AUTH] Checking current user');
+      // console.log('[AUTH] Checking current user');
       
       const userPromise = supabase.auth.getUser();
       let userData: any;
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         userData = await Promise.race([userPromise, timeoutPromise]);
       } catch (timeoutError) {
-        console.warn('[AUTH] Auth check timed out, assuming no user');
+        // console.warn('[AUTH] Auth check timed out, assuming no user');
         setUser(null);
         setSupabaseUser(null);
         setHasAttemptedAuth(true);
@@ -93,15 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const user = userData?.data?.user;
       
-      console.log('[AUTH] Auth check result:', { 
-        hasUser: !!user, 
-        userError: userData?.error?.message
-      });
+      // console.log('[AUTH] Auth check result:', { 
+      //   hasUser: !!user, 
+      //   userError: userData?.error?.message
+      // });
       
       setHasAttemptedAuth(true);
       
       if (user && !userData.error) {
-        console.log('[AUTH] User found, setting up user state');
+        // console.log('[AUTH] User found, setting up user state');
         setSupabaseUser(user);
         
         try {
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
       } else {
-        console.log('[AUTH] No authenticated user found');
+        // console.log('[AUTH] No authenticated user found');
         setUser(null);
         setSupabaseUser(null);
       }
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSupabaseUser(null);
     } finally {
-      console.log('[AUTH] Initialization complete');
+      // console.log('[AUTH] Initialization complete');
       setLoading(false);
       setIsInitializing(false);
     }
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Safety timeout
     const loadingTimeout = setTimeout(() => {
-      console.warn('[AUTH] Safety timeout reached');
+      // console.warn('[AUTH] Safety timeout reached');
       setLoading(false);
       setIsInitializing(false);
       if (!hasAttemptedAuth) {

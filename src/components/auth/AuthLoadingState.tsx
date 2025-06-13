@@ -67,7 +67,7 @@ export default function AuthLoadingState({
   useEffect(() => {
     const info = `isInitializing: ${isInitializing}, hasAttemptedAuth: ${hasAttemptedAuth}, needsAuthLoading: ${needsAuthLoading}, pathname: ${pathname}`;
     setDebugInfo(info);
-    console.log('[AuthLoadingState]', info);
+    // console.log('[AuthLoadingState]', info);
   }, [isInitializing, hasAttemptedAuth, needsAuthLoading, pathname]);
 
   // For public pages, show content immediately
@@ -84,7 +84,7 @@ export default function AuthLoadingState({
 
     const fallbackTimeout = setTimeout(() => {
       if (isInitializing || !hasAttemptedAuth) {
-        console.warn('[AuthLoadingState] Fallback timeout reached, forcing content display');
+        // console.warn('[AuthLoadingState] Fallback timeout reached, forcing content display');
         setShowContent(true);
         setFadeIn(true);
       }
